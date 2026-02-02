@@ -77,14 +77,15 @@ def draw_kaomoji(draw, x, y, mood, color, outline_color, size=1, rng=None):
     # 加载字体 - Load font with fallback
     font = None
     try:
+        font_size = min(200, max(1, 10 * size))
         font = ImageFont.truetype(
-            "/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf", max(1, 10 * size)
+            "/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf", font_size
         )
     except:
         font = ImageFont.load_default()
 
     # 绘制颜文字（每行）
-    line_height = 12 * size
+    line_height = max(12, int(10 * size * 1.2))
     for line_idx, line_text in enumerate(kaomoji):
         current_y = y + line_idx * line_height
 
