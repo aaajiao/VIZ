@@ -46,11 +46,17 @@ class WaveEffect(BaseEffect):
     通过多层正弦波叠加产生流动的波纹图案。
 
     参数 (从 ctx.params 读取):
-        wave_count: 波的数量 (默认 5)
-        frequency: 波的频率 (默认 0.1)
-        amplitude: 波的振幅 (默认 1.0)
-        speed: 动画速度 (默认 1.0)
+        wave_count: 波的数量 (默认 5, 范围 1-10)
+        frequency: 波的频率 (默认 0.1, 范围 0.01-0.2)
+        amplitude: 波的振幅 (默认 1.0, 范围 0.5-3.0)
+        speed: 动画速度 (默认 1.0, 范围 0.1-5.0)
         color_scheme: 颜色方案 (默认 'ocean')
+
+    参数范围说明:
+        - wave_count: 1 (单波) 到 10 (复杂干涉)
+        - frequency: 0.01 (稀疏波纹) 到 0.2 (密集波纹)
+        - amplitude: 0.5 (低对比) 到 3.0 (高对比)
+        - speed: 0.1 (缓慢动画) 到 5.0 (快速动画)
 
     示例::
 

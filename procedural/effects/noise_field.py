@@ -57,13 +57,20 @@ class NoiseFieldEffect(BaseEffect):
     直接展示 ValueNoise 生成的噪声场，支持 FBM 多八度叠加。
 
     参数 (从 ctx.params 读取):
-        scale: 噪声缩放 (默认 0.05，越小越密集)
-        octaves: FBM 八度数 (默认 4，1=基础噪声)
-        lacunarity: 频率倍增因子 (默认 2.0)
-        gain: 振幅衰减因子 (默认 0.5)
+        scale: 噪声缩放 (默认 0.05, 范围 0.01-0.2，越小越密集)
+        octaves: FBM 八度数 (默认 4, 范围 1-8，1=基础噪声)
+        lacunarity: 频率倍增因子 (默认 2.0, 范围 1.5-3.0)
+        gain: 振幅衰减因子 (默认 0.5, 范围 0.3-0.8)
         animate: 是否动画 (默认 True)
-        speed: 动画速度 (默认 0.5)
+        speed: 动画速度 (默认 0.5, 范围 0.1-5.0)
         turbulence: 是否使用湍流模式 (默认 False)
+
+    参数范围说明:
+        - scale: 0.01 (密集) 到 0.2 (稀疏)
+        - octaves: 1 (简单) 到 8 (复杂细节)
+        - lacunarity: 1.5 (平缓) 到 3.0 (快速频率增长)
+        - gain: 0.3 (快速衰减) 到 0.8 (缓慢衰减)
+        - speed: 0.1 (缓慢) 到 5.0 (快速)
 
     示例::
 

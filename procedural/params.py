@@ -37,6 +37,7 @@ __all__ = [
     "ParamSpec",
     "resolve_params",
     "create_rng",
+    "generate_random_params",
 ]
 
 
@@ -208,3 +209,93 @@ def _validate_seed(seed: int) -> None:
         raise TypeError(f"Seed must be int, got {type(seed).__name__}")
     if seed < 0:
         raise ValueError(f"Seed must be non-negative, got {seed}")
+
+
+def generate_random_params(effect_name: str, rng: random.Random) -> dict:
+    """
+    为指定效果生成随机参数 - Generate Random Parameters for Effect
+
+    根据效果名称和随机数生成器，生成该效果的随机参数字典。
+    参数范围基于效果的设计特性，确保生成的参数在合理范围内。
+
+    参数:
+        effect_name: 效果名称 ('plasma', 'wave', 'flame', 'moire', 'noise_field', 'sdf_shapes')
+        rng: random.Random 实例 (用于可复现性)
+
+    返回:
+        参数字典 {param_name: value}
+
+    示例::
+
+        import random
+        from procedural.params import generate_random_params
+
+        # 使用固定种子生成可复现的参数
+        rng = random.Random(42)
+        params = generate_random_params('plasma', rng)
+        # → {'frequency': 0.087, 'speed': 2.34, 'color_phase': 0.56}
+
+        # 不同种子 → 不同参数
+        rng2 = random.Random(99)
+        params2 = generate_random_params('plasma', rng2)
+        # → {'frequency': 0.042, 'speed': 1.23, 'color_phase': 0.89}
+    """
+    if effect_name == "plasma":
+        return {
+            "frequency": rng.uniform(0.01, 0.2),
+            "speed": rng.uniform(0.1, 5.0),
+            "color_phase": rng.uniform(0.0, 1.0),
+        }
+
+    elif effect_name == "wave":
+        return {
+            "wave_count": rng.randint(1, 10),
+            "frequency": rng.uniform(0.01, 0.2),
+            "amplitude": rng.uniform(0.5, 3.0),
+            "speed": rng.uniform(0.1, 5.0),
+            "color_scheme": rng.choice(["ocean", "heat", "cool", "matrix", "rainbow"]),
+        }
+
+    elif effect_name == "flame":
+        return {
+            "intensity": rng.uniform(0.5, 3.0),
+        }
+
+    elif effect_name == "moire":
+        return {
+            "freq_a": rng.uniform(1.0, 20.0),
+            "freq_b": rng.uniform(1.0, 20.0),
+            "speed_a": rng.uniform(-5.0, 5.0),
+            "speed_b": rng.uniform(-5.0, 5.0),
+            "offset_a": rng.uniform(-0.5, 0.5),
+            "offset_b": rng.uniform(-0.5, 0.5),
+            "color_scheme": rng.choice(["rainbow", "heat", "cool", "matrix"]),
+        }
+
+    elif effect_name == "noise_field":
+        return {
+            "scale": rng.uniform(0.01, 0.2),
+            "octaves": rng.randint(1, 8),
+            "lacunarity": rng.uniform(1.5, 3.0),
+            "gain": rng.uniform(0.3, 0.8),
+            "animate": rng.choice([True, False]),
+            "speed": rng.uniform(0.1, 5.0),
+            "turbulence": rng.choice([True, False]),
+        }
+
+    elif effect_name == "sdf_shapes":
+        return {
+            "shape_count": rng.randint(1, 10),
+            "shape_type": rng.choice(["circle", "box"]),
+            "radius_min": rng.uniform(0.02, 0.1),
+            "radius_max": rng.uniform(0.1, 0.3),
+            "smoothness": rng.uniform(0.05, 0.3),
+            "animate": rng.choice([True, False]),
+            "speed": rng.uniform(0.1, 5.0),
+        }
+
+    else:
+        raise ValueError(
+            f"Unknown effect: {effect_name}. "
+            f"Supported effects: plasma, wave, flame, moire, noise_field, sdf_shapes"
+        )

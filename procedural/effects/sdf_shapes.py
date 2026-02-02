@@ -59,13 +59,20 @@ class SDFShapesEffect(BaseEffect):
     通过有符号距离场实现多个形状的有机融合。
 
     参数 (从 ctx.params 读取):
-        shape_count: 形状数量 (默认 5)
+        shape_count: 形状数量 (默认 5, 范围 1-10)
         shape_type: 形状类型 'circle' 或 'box' (默认 'circle')
-        radius_min: 最小半径 (默认 0.05)
-        radius_max: 最大半径 (默认 0.15)
-        smoothness: 平滑系数 (默认 0.1，越大越圆滑)
+        radius_min: 最小半径 (默认 0.05, 范围 0.02-0.1)
+        radius_max: 最大半径 (默认 0.15, 范围 0.1-0.3)
+        smoothness: 平滑系数 (默认 0.1, 范围 0.05-0.3，越大越圆滑)
         animate: 是否动画 (默认 True)
-        speed: 动画速度 (默认 1.0)
+        speed: 动画速度 (默认 1.0, 范围 0.1-5.0)
+
+    参数范围说明:
+        - shape_count: 1 (单形状) 到 10 (复杂融合)
+        - radius_min: 0.02 (微小) 到 0.1 (中等)
+        - radius_max: 0.1 (中等) 到 0.3 (大型)
+        - smoothness: 0.05 (尖锐) 到 0.3 (柔和)
+        - speed: 0.1 (缓慢) 到 5.0 (快速)
 
     示例::
 

@@ -57,8 +57,11 @@ class DoomFlameEffect(BaseEffect):
     通过热量传播和随机衰减产生动态火焰。
 
     参数 (从 ctx.params 读取):
-        intensity: 火焰强度 (默认 1.0)
+        intensity: 火焰强度 (默认 1.0, 范围 0.5-3.0)
         seed: 随机种子 (默认从 ctx.seed 读取)
+
+    参数范围说明:
+        - intensity: 0.5 (弱火焰) 到 3.0 (强烈火焰)
 
     示例::
 

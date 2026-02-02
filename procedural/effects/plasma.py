@@ -51,10 +51,15 @@ class PlasmaEffect(BaseEffect):
     通过多个正弦波叠加产生复杂的干涉图案。
 
     参数 (从 ctx.params 读取):
-        frequency: 波的频率 (默认 0.05)
-        speed: 动画速度 (默认 1.0)
-        color_phase: 颜色相位偏移 (默认 0.0)
+        frequency: 波的频率 (默认 0.05, 范围 0.01-0.2)
+        speed: 动画速度 (默认 1.0, 范围 0.1-5.0)
+        color_phase: 颜色相位偏移 (默认 0.0, 范围 0.0-1.0)
         seed: 随机种子 (默认 0)
+
+    参数范围说明:
+        - frequency: 0.01 (稀疏波纹) 到 0.2 (密集波纹)
+        - speed: 0.1 (缓慢动画) 到 5.0 (快速动画)
+        - color_phase: 0.0 到 1.0 (完整色环)
 
     示例::
 
