@@ -24,6 +24,9 @@ from procedural.types import Context, Cell, Buffer, Effect
 # 参数化框架
 from procedural.params import ParamSpec, resolve_params, create_rng
 
+# 引擎
+from procedural.engine import Engine
+
 __all__ = [
     # Types
     "Context",
@@ -34,6 +37,8 @@ __all__ = [
     "ParamSpec",
     "resolve_params",
     "create_rng",
+    # Engine
+    "Engine",
 ]
 
 __version__ = "0.1.0"
