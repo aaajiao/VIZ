@@ -5,7 +5,7 @@ Kaomoji Rendering Module
 提供 ASCII 颜文字绘制和分类功能。
 """
 
-from PIL import ImageDraw
+from PIL import ImageDraw, ImageFont
 import random
 
 # ========== ASCII 颜文字数据 ==========
@@ -40,7 +40,7 @@ MOOD_CATEGORIES = {
 }
 
 
-def draw_kaomoji(draw, x, y, mood, color, outline_color, size=1):
+def draw_kaomoji(draw, x, y, mood, color, outline_color, size=1, rng=None):
     """
     绘制 ASCII 颜文字
 
@@ -52,6 +52,7 @@ def draw_kaomoji(draw, x, y, mood, color, outline_color, size=1):
         color: 主颜色 (RGB 元组或十六进制字符串)
         outline_color: 轮廓颜色 (RGB 元组或十六进制字符串)
         size: 缩放大小 (默认 1)
+        rng: random.Random 对象 (可选，用于可复现性)
     """
     # 规范化 mood 到标准类别
     normalized_mood = _normalize_mood(mood)
@@ -61,7 +62,11 @@ def draw_kaomoji(draw, x, y, mood, color, outline_color, size=1):
         normalized_mood = "neutral"
 
     kaomoji_list = ASCII_KAOMOJI[normalized_mood]
-    kaomoji = random.choice(kaomoji_list)
+
+    if rng:
+        kaomoji = rng.choice(kaomoji_list)
+    else:
+        kaomoji = random.choice(kaomoji_list)
 
     # 转换颜色格式（如果是十六进制字符串）
     if isinstance(color, str):
@@ -69,25 +74,36 @@ def draw_kaomoji(draw, x, y, mood, color, outline_color, size=1):
     if isinstance(outline_color, str):
         outline_color = _hex_to_rgb(outline_color)
 
+    # 加载字体 - Load font with fallback
+    font = None
+    try:
+        font = ImageFont.truetype(
+            "/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf", max(1, 10 * size)
+        )
+    except:
+        font = ImageFont.load_default()
+
     # 绘制颜文字（每行）
     line_height = 12 * size
     for line_idx, line_text in enumerate(kaomoji):
         current_y = y + line_idx * line_height
 
-        # 绘制轮廓（多层偏移）
-        for offset_x in [-2, -1, 0, 1, 2]:
-            for offset_y in [-2, -1, 0, 1, 2]:
+        # 绘制轮廓（2D网格偏移）- Outline with 2D grid offset
+        outline_offset = max(1, 2 * size)
+        for offset_x in range(-outline_offset, outline_offset + 1):
+            for offset_y in range(-outline_offset, outline_offset + 1):
                 if offset_x != 0 or offset_y != 0:
                     draw.text(
-                        (x + offset_x * size, current_y + offset_y * size),
+                        (x + offset_x, current_y + offset_y),
                         line_text,
                         fill=outline_color,
-                        font=None,
+                        font=font,
                     )
 
-        # 绘制主文字
-        for i in range(size):
-            draw.text((x + i, current_y + i), line_text, fill=color, font=None)
+        # 绘制主文字（2D网格）- Main text with 2D grid
+        for dx in range(size):
+            for dy in range(size):
+                draw.text((x + dx, current_y + dy), line_text, fill=color, font=font)
 
 
 def get_moods_by_category(category):
