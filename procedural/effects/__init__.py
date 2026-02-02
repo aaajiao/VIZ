@@ -85,6 +85,30 @@ try:
 except ImportError:
     pass
 
-# 未来效果将在此处自动注册
-# from .wave import WaveEffect
-# EFFECT_REGISTRY['wave'] = WaveEffect
+try:
+    from .sdf_shapes import SDFShapesEffect
+
+    EFFECT_REGISTRY["sdf_shapes"] = SDFShapesEffect
+except ImportError:
+    pass
+
+try:
+    from .noise_field import NoiseFieldEffect
+
+    EFFECT_REGISTRY["noise_field"] = NoiseFieldEffect
+except ImportError:
+    pass
+
+try:
+    from .wave import WaveEffect
+
+    EFFECT_REGISTRY["wave"] = WaveEffect
+except ImportError:
+    pass
+
+try:
+    from .moire import MoireEffect
+
+    EFFECT_REGISTRY["moire"] = MoireEffect
+except ImportError:
+    pass
