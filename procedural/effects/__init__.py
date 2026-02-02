@@ -78,9 +78,13 @@ try:
 except ImportError:
     pass
 
+try:
+    from .flame import DoomFlameEffect
+
+    EFFECT_REGISTRY["flame"] = DoomFlameEffect
+except ImportError:
+    pass
+
 # 未来效果将在此处自动注册
-# from .flame import FlameEffect
-# EFFECT_REGISTRY['flame'] = FlameEffect
-#
 # from .wave import WaveEffect
 # EFFECT_REGISTRY['wave'] = WaveEffect
