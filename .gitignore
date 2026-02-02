@@ -1,0 +1,42 @@
+# Claude/OpenCode local settings
+.claude/settings.local.json
+.claude/*.local.*
+.opencode/
+
+# Output files (generated images/videos)
+media/
+
+# Archived code
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+.eggs/
+dist/
+build/
+*.egg
+
+# Virtual environments
+venv/
+.venv/
+env/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temp files
+*.tmp
+*.temp
+*.log
