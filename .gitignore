@@ -1,7 +1,9 @@
-# Claude/OpenCode local settings
-.claude/settings.local.json
-.claude/*.local.*
+# AI agent local settings
+.claude/
 .opencode/
+.sisyphus/
+opencode.json.example
+.mcp.json.example.claude
 
 # Output files (generated images/videos)
 media/
