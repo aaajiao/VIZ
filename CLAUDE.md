@@ -187,7 +187,7 @@ img.save(output_path, 'PNG', quality=95)
 ```python
 try:
     font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf", size)
-except:
+except (IOError, OSError):
     font = ImageFont.load_default()
 ```
 
