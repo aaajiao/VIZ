@@ -20,7 +20,7 @@ python3 viz.py generate --emotion euphoria --seed 42
 echo '{"source":"market","headline":"DOW +600","emotion":"bull","metrics":["BTC: $92k"]}' | python3 viz.py generate
 
 # Generate with CLI args
-python3 viz.py generate --emotion panic --title "CRASH" --source market --video
+python3 viz.py generate --emotion panic --title "CRASH" --source market --video --mp4
 
 # Convert image to ASCII art
 python3 viz.py convert image.png --charset blocks --emotion bull
@@ -183,10 +183,21 @@ def generate_viz(market_data, output_path):
 ## Forbidden Patterns
 
 - **NumPy** - all math must be pure Python
-- **MP4 output** - GIF only, no FFmpeg dependency
 - **High-res compute** - always 160x160 internally, upscale to 1080x1080
 - **Empty catch blocks** - only acceptable for pixel manipulation glitch effects and font loading fallbacks
 - **Type hints** - not used except in `procedural/types.py` and `procedural/flexible/`
+
+## MP4 Output (Optional)
+
+MP4 export is supported via **FFmpeg subprocess** (not a Python library). This keeps the dependency lightweight:
+- FFmpeg must be installed on the system (`brew install ffmpeg` / `apt install ffmpeg`)
+- If FFmpeg is not available, MP4 export gracefully degrades to GIF-only
+- No NumPy or additional Python dependencies required
+
+```python
+# Usage: generates GIF first, then converts to MP4
+python3 viz.py generate --emotion euphoria --video --mp4
+```
 
 ## Key Patterns
 
@@ -278,6 +289,9 @@ img = engine.render_frame(effect, time=1.5, seed=42)
 # GIF
 frames = engine.render_video(effect, duration=3.0, fps=15, seed=42)
 engine.save_gif(frames, 'output.gif', fps=15)
+
+# MP4 (requires FFmpeg)
+engine.save_mp4(frames, 'output.mp4', fps=15)  # Returns False if FFmpeg unavailable
 ```
 
 ### Available Effects
@@ -364,6 +378,7 @@ bear_words = ['down', 'fall', 'drop', 'decline', 'crash', 'bear', 'negative']
 | `--decoration` | string | auto | Decoration style |
 | `--gradient` | string | auto | ASCII gradient name |
 | `--output-dir` | string | `./media` | Output directory |
+| `--mp4` | flag | false | Also output MP4 (requires FFmpeg, --video implied) |
 
 **Stdin JSON support**: All arguments can be provided via stdin JSON. CLI args override stdin values.
 

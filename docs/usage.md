@@ -71,6 +71,7 @@ stdin JSON 字段全部可选，CLI 参数会覆盖 stdin 中的同名值。
 | `--decoration` | str | 自动 | 装饰风格 |
 | `--gradient` | str | 自动 | ASCII 梯度名 |
 | `--output-dir` | str | ./media | 输出目录 |
+| `--mp4` | flag | false | 同时输出 MP4（需要系统 FFmpeg） |
 
 ### 模式
 
@@ -90,6 +91,12 @@ python3 viz.py generate --text "hope" --variants 5
 ```bash
 python3 viz.py generate --emotion calm --video --duration 3 --fps 15
 # → media/viz_20260203_120000.gif
+```
+
+**动画 MP4**（需要系统安装 FFmpeg）：
+```bash
+python3 viz.py generate --emotion euphoria --video --mp4
+# → media/viz_20260203_120000.gif + media/viz_20260203_120000.mp4
 ```
 
 ### 内容来源词汇（Source Vocabulary）
@@ -161,7 +168,7 @@ python3 viz.py capabilities --format json  # 默认 JSON
 
 | 项 | 值 |
 |----|------|
-| 输出格式 | PNG (quality=95) 或 GIF |
+| 输出格式 | PNG (quality=95)、GIF 或 MP4 (via FFmpeg) |
 | 画布尺寸 | 1080 × 1080 像素 |
 | 内部渲染 | 160 × 160（最近邻上采样） |
 | 默认目录 | `./media/` |

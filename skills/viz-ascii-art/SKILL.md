@@ -1,6 +1,6 @@
 ---
 name: viz-ascii-art
-description: Generate 1080x1080 ASCII art visualizations with kaomoji, procedural effects, and emotion-driven styles. Use when users want to create visualizations, ASCII art images, emotion-based graphics, market mood images, or generate kaomoji art. Supports PNG and animated GIF output. Trigger words: visualization, ASCII art, kaomoji, emotion image, mood graphic, market visualization, generate viz.
+description: Generate 1080x1080 ASCII art visualizations with kaomoji, procedural effects, and emotion-driven styles. Use when users want to create visualizations, ASCII art images, emotion-based graphics, market mood images, or generate kaomoji art. Supports PNG, animated GIF, and MP4 output. Trigger words: visualization, ASCII art, kaomoji, emotion image, mood graphic, market visualization, generate viz.
 metadata: {"openclaw": {"requires": {"bins": ["python3"]}, "emoji": "🎨", "homepage": "https://github.com/aaajiao/VIZ", "install": [{"id": "git", "kind": "download", "url": "https://github.com/aaajiao/VIZ", "label": "Clone VIZ repository"}]}}
 ---
 
@@ -82,6 +82,7 @@ All fields are **optional**. VIZ auto-infers missing parameters.
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
 | `video` | bool | false | Output GIF animation |
+| `mp4` | bool | false | Also output MP4 (requires FFmpeg) |
 | `duration` | float | 3.0 | GIF duration (seconds) |
 | `fps` | int | 15 | Frames per second |
 | `variants` | int | 1 | Generate multiple variants |
@@ -175,7 +176,7 @@ echo '{
 }' | python3 viz.py generate
 ```
 
-### Panic Animation
+### Panic Animation (GIF)
 ```bash
 echo '{
   "source": "market",
@@ -185,6 +186,18 @@ echo '{
   "duration": 5,
   "fps": 20
 }' | python3 viz.py generate
+```
+
+### MP4 for Instagram (requires FFmpeg)
+```bash
+echo '{
+  "source": "market",
+  "headline": "BULL RUN",
+  "emotion": "euphoria",
+  "video": true,
+  "mp4": true
+}' | python3 viz.py generate
+# → outputs both .gif and .mp4
 ```
 
 ### Direct VAD
@@ -213,7 +226,7 @@ Returns all emotions, effects, sources, layouts, decorations, gradients, and I/O
 
 | Item | Value |
 |------|-------|
-| Format | PNG (quality=95) or GIF |
+| Format | PNG (quality=95), GIF, or MP4 (via FFmpeg) |
 | Size | 1080 × 1080 pixels |
 | Internal | 160 × 160 (nearest-neighbor upscale) |
 | Default dir | `./media/` |

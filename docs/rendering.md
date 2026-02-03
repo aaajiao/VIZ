@@ -132,7 +132,7 @@ def render_frame(self, effect, sprites, time, frame, seed, params) -> Image:
     return img
 ```
 
-### render_video() & save_gif()
+### render_video(), save_gif() & save_mp4()
 
 ```python
 def render_video(self, effect, duration, fps, sprites, seed):
@@ -146,6 +146,12 @@ def render_video(self, effect, duration, fps, sprites, seed):
 def save_gif(self, frames, output_path, fps):
     frames[0].save(output_path, save_all=True, append_images=frames[1:],
                    duration=1000/fps, loop=0, optimize=True)
+
+def save_mp4(self, frames, output_path, fps):
+    """Convert frames to MP4 via FFmpeg subprocess. Returns False if FFmpeg unavailable."""
+    # 1. Save frames as temp GIF
+    # 2. Run: ffmpeg -y -i temp.gif -movflags faststart -pix_fmt yuv420p output.mp4
+    # 3. Gracefully degrades to GIF-only if FFmpeg not installed
 ```
 
 ---
