@@ -189,6 +189,9 @@ def cmd_generate(args):
         content_data["fps"] = args.fps
     if args.variants != 1:
         content_data["variants"] = args.variants
+    if args.mp4:
+        content_data["mp4"] = True
+        content_data["video"] = True  # MP4 implies video mode
 
     content = make_content(content_data)
 
@@ -299,6 +302,7 @@ def cmd_generate(args):
 
     variant_count = cast(int, content.get("variants") or 1)
     is_video = bool(content.get("video"))
+    want_mp4 = bool(content.get("mp4"))
     duration = cast(float, content.get("duration") or 3.0)
     fps = cast(int, content.get("fps") or 15)
 
@@ -327,15 +331,23 @@ def cmd_generate(args):
                 overrides=overrides or None,
             )
 
-            results.append(
-                {
-                    "path": os.path.abspath(output_path),
-                    "seed": variant_seed,
-                    "format": "gif",
-                    "duration": duration,
-                    "fps": fps,
-                }
-            )
+            result_entry = {
+                "path": os.path.abspath(output_path),
+                "seed": variant_seed,
+                "format": "gif",
+                "duration": duration,
+                "fps": fps,
+            }
+
+            if want_mp4:
+                from procedural.engine import Engine
+
+                mp4_path = output_path.replace(".gif", ".mp4")
+                frames = pipe.last_frames
+                if frames and Engine.save_mp4(frames, mp4_path, fps=fps):
+                    result_entry["mp4_path"] = os.path.abspath(mp4_path)
+
+            results.append(result_entry)
 
         else:
             suffix = f"_v{variant_idx}" if variant_count > 1 else ""
@@ -628,6 +640,7 @@ def build_parser():
     gen.add_argument("--decoration", help="装饰风格")
     gen.add_argument("--gradient", help="ASCII 梯度")
     gen.add_argument("--output-dir", help="输出目录")
+    gen.add_argument("--mp4", action="store_true", help="同时输出 MP4 (需要 FFmpeg)")
 
     # === convert ===
     conv = subparsers.add_parser("convert", help="图像转 ASCII Convert image to ASCII")

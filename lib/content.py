@@ -82,6 +82,7 @@ def make_content(data=None):
         "gradient": data.get("gradient", None),
         "overlay": data.get("overlay", None),
         "video": data.get("video", False),
+        "mp4": data.get("mp4", False),
         "duration": duration,
         "fps": fps,
         "variants": variants,
@@ -95,4 +96,6 @@ def content_has_data(content):
 
     Returns True if headline, metrics, or body is present.
     """
-    return bool(content.get("headline") or content.get("metrics") or content.get("body"))
+    return bool(
+        content.get("headline") or content.get("metrics") or content.get("body")
+    )
