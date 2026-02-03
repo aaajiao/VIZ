@@ -2,6 +2,14 @@
 
 ASCII art visualization toolkit producing 1080x1080 PNG/GIF images with kaomoji, procedural effects, and emotion-driven visual styles. Pure Python 3 + Pillow, no build system.
 
+## ⚠️ Development Workflow
+
+**IMPORTANT: Always develop new features on the `dev` branch.**
+
+```bash
+git checkout dev    # Always start here for new features
+```
+
 ## Quick Commands
 
 ```bash
