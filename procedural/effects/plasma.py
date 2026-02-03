@@ -35,6 +35,8 @@ Plasma 等离子体效果 - Plasma Effect
 """
 
 import math
+from typing import Any
+
 from procedural.types import Context, Cell, Buffer
 from procedural.core.vec import Vec2, dot, length, sub
 from procedural.core.mathx import clamp, map_range
@@ -70,7 +72,7 @@ class PlasmaEffect(BaseEffect):
         }
     """
 
-    def pre(self, ctx: Context, buffer: Buffer) -> dict:
+    def pre(self, ctx: Context, buffer: Buffer) -> dict[str, Any]:
         """
         预处理 - 提取参数并预计算常量
 
@@ -109,7 +111,7 @@ class PlasmaEffect(BaseEffect):
             "saturation": saturation,
         }
 
-    def main(self, x: int, y: int, ctx: Context, state: dict) -> Cell:
+    def main(self, x: int, y: int, ctx: Context, state: dict[str, Any]) -> Cell:
         """
         主渲染 - 为每个像素生成 plasma 值
 
@@ -200,7 +202,7 @@ class PlasmaEffect(BaseEffect):
             bg=None,  # 透明背景
         )
 
-    def post(self, ctx: Context, buffer: Buffer, state: dict) -> None:
+    def post(self, ctx: Context, buffer: Buffer, state: dict[str, Any]) -> None:
         """
         后处理 - Plasma 不需要后处理
 

@@ -99,7 +99,7 @@ def image_to_ascii_art(
     ascii_string = ""
     for i in range(height):
         for j in range(width):
-            r, g, b = pix[j, i]
+            r, g, b = pix[j, i]  # type: ignore[index]
 
             # 限制 RGB
             r = min(r, max_r)

@@ -10,7 +10,7 @@ from PIL import ImageDraw
 try:
     from lib.kaomoji import draw_kaomoji
 except ImportError:
-    from viz.lib.kaomoji import draw_kaomoji
+    from viz.lib.kaomoji import draw_kaomoji  # type: ignore[import-not-found]
 
 ASCII_GRADIENT = " .:-=+*#%@"
 ASCII_GRADIENT_FINE = " .':;!>+*%@#█"

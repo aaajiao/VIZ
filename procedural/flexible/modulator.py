@@ -32,6 +32,7 @@ from __future__ import annotations
 
 import math
 import random
+from typing import Any
 
 from procedural.core.noise import ValueNoise
 from procedural.core.mathx import clamp
@@ -216,11 +217,11 @@ class ModulatedParams:
 
 
 def modulate_visual_params(
-    params: dict,
+    params: dict[str, Any],
     t: float,
     drift_amount: float = 0.3,
     seed: int = 42,
-) -> dict:
+) -> dict[str, Any]:
     """
     对视觉参数字典进行噪声调制
 

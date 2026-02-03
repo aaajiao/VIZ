@@ -38,7 +38,7 @@ Sprite Layer Animation System - 精灵层动画系统
 import colorsys
 import math
 from dataclasses import dataclass, field
-from typing import List, Tuple, Optional
+from typing import Any, List, Tuple, Optional
 
 from PIL import Image, ImageDraw
 
@@ -204,7 +204,7 @@ class Sprite:
     color: object = (255, 255, 255)  # hex str or RGB tuple
     rotation: float = 0.0
     visible: bool = True
-    animations: list = field(default_factory=list)
+    animations: list[dict[str, Any]] = field(default_factory=list)
 
     @property
     def position(self):

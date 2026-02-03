@@ -39,6 +39,7 @@ Box-Drawing & Semigraphic Character Library
 from __future__ import annotations
 
 import random
+from typing import Any
 
 __all__ = [
     "CHARSETS",
@@ -324,7 +325,7 @@ def get_chars_for_mood(
     structure: float = 0.5,
     warmth: float = 0.5,
     rng: random.Random | None = None,
-) -> dict:
+) -> dict[str, Any]:
     """
     根据情绪参数选择字符调色板
 

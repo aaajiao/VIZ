@@ -39,6 +39,8 @@ from __future__ import annotations
 
 import math
 import random
+from collections.abc import Callable
+from typing import Any
 
 from procedural.types import Context, Cell, Buffer
 from procedural.effects.base import BaseEffect
@@ -123,7 +125,7 @@ class CPPNEffect(BaseEffect):
         # 输入维度: x, y, [radius], bias, [time_sin, time_cos]
         in_size = 2 + int(self.use_radial) + 1 + 2 * int(self.use_time)
 
-        self.layers: list[tuple[list[list[float]], callable]] = []
+        self.layers: list[tuple[list[list[float]], Callable[[float], float]]] = []
 
         for _ in range(self.num_hidden):
             out_size = self.layer_size
@@ -160,14 +162,14 @@ class CPPNEffect(BaseEffect):
         ]
         return out
 
-    def pre(self, ctx: Context, buffer: Buffer) -> dict:
+    def pre(self, ctx: Context, buffer: Buffer) -> dict[str, Any]:
         """预处理: 提取色温/饱和度参数"""
         return {
             "warmth": ctx.params.get("warmth", 0.5),
             "saturation": ctx.params.get("saturation", 1.0),
         }
 
-    def main(self, x: int, y: int, ctx: Context, state: dict) -> Cell:
+    def main(self, x: int, y: int, ctx: Context, state: dict[str, Any]) -> Cell:
         """
         主渲染: 对每个像素执行 CPPN 前向传播
         """
@@ -226,7 +228,7 @@ class CPPNEffect(BaseEffect):
 
         return Cell(char_idx=char_idx, fg=color, bg=None)
 
-    def post(self, ctx: Context, buffer: Buffer, state: dict) -> None:
+    def post(self, ctx: Context, buffer: Buffer, state: dict[str, Any]) -> None:
         """CPPN 不需要后处理"""
         pass
 
