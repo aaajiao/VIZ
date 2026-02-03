@@ -10,6 +10,14 @@ ASCII art visualization toolkit producing 1080x1080 PNG/GIF images with kaomoji,
 git checkout dev    # Always start here for new features
 ```
 
+## Dev Environment Setup (Docker)
+
+If `ffmpeg` or `pyright` commands are not found, run:
+
+```bash
+bash .devcontainer/setup.sh   # Installs FFmpeg (MP4 output) + Pyright (type checking)
+```
+
 ## Quick Commands
 
 ```bash
