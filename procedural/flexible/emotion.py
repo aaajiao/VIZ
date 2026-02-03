@@ -183,6 +183,7 @@ VAD_ANCHORS: dict[str, EmotionVector] = {
     "joy":          EmotionVector(+0.76, +0.48, +0.35),
     "excitement":   EmotionVector(+0.62, +0.75, +0.38),
     "euphoria":     EmotionVector(+0.90, +0.85, +0.60),
+    "love":         EmotionVector(+0.85, +0.35, +0.25),
     "calm":         EmotionVector(+0.30, -0.60, +0.20),
     "serenity":     EmotionVector(+0.50, -0.40, +0.30),
     "surprise":     EmotionVector(+0.40, +0.67, -0.13),

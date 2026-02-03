@@ -96,7 +96,7 @@ def buffer_to_image(
         font = ImageFont.truetype(
             "/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf", char_size
         )
-    except:
+    except (IOError, OSError):
         font = ImageFont.load_default()
 
     # 逐字符渲染

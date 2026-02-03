@@ -820,6 +820,7 @@ class FlexiblePipeline:
                 # 从节点延伸线路 (水平或垂直)
                 trace_len = rng.randint(2, 6)
                 direction = rng.choice(["h", "v"])
+                sign = 1
                 for t in range(1, trace_len + 1):
                     if direction == "h":
                         sign = rng.choice([-1, 1])
