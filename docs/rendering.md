@@ -23,7 +23,7 @@
 6. upscale_image(img, 1080×1080) — NEAREST 插值
         │
         ▼
-7. 精灵层渲染 (Kaomoji, Text, Decoration, Particle)
+7. 精灵层渲染 (Kaomoji, Text, Decoration[frame/grid/circuit], Particle)
         │
         ▼
 8. 后处理 (Sharpen + Contrast)
@@ -163,7 +163,9 @@ def save_gif(self, frames, output_path, fps):
    - 绘制背景矩形（如果 `bg` 不为 None）
    - `char_idx / 9.0` 归一化 → `palette.char_at_value()` 获取字符
    - 用前景色渲染字符
-3. 字体：DejaVuSansMono（等宽）
+3. 字体：DejaVuSansMono（等宽，覆盖 Box Drawing / Block Elements / Braille 等 Unicode 区块）
+
+**ASCII 梯度选择：** 系统提供 20 种梯度（含 box-drawing、braille、geometric 等），由 grammar 的 `_choose_gradient()` 选择。详见 [box_chars.md](box_chars.md#2-密度梯度gradients)。
 
 ### upscale_image()
 

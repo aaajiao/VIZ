@@ -86,7 +86,22 @@ def apply_glitch(img, intensity=150):
     return img
 
 
-def create_data_particles(draw, width, height, color, density=50):
+_PARTICLE_CHAR_SETS = {
+    "data":     "0123456789.,:;-+*",
+    "hex":      "0123456789ABCDEF.:;",
+    "binary":   "01 01 01·",
+    "box":      "─│┼┄┆━┃╋",
+    "blocks":   "░▒▓█▀▄▌▐",
+    "dots":     "·∙•◦○◎◉",
+    "braille":  "⠁⠂⠃⠄⠅⠆⠇⡀⣀⣿",
+    "geometric": "▪▫□■◆◇△▽",
+    "cross":    "┼╋╬╳+×",
+    "mixed":    "·░▒01┼╳○□",
+}
+
+
+def create_data_particles(draw, width, height, color, density=50,
+                          charset=None):
     """
     创建数据粒子背景（动态感）
     Create data particle background for dynamic effect
@@ -97,14 +112,25 @@ def create_data_particles(draw, width, height, color, density=50):
         height: Canvas height
         color: Particle color (hex or RGB tuple)
         density: Number of particles (default 50)
+        charset: 字符集名称或自定义字符串
+            可选: "data", "hex", "binary", "box", "blocks", "dots",
+                  "braille", "geometric", "cross", "mixed"
+            或直接传入自定义字符串如 "░▒▓█"
 
     Returns:
         None (modifies draw object in-place)
 
     Example:
         create_data_particles(draw, 1080, 1080, "#00ff00", density=100)
+        create_data_particles(draw, 1080, 1080, "#00ff00", charset="box")
     """
-    chars = "0123456789.,:;-+*"
+    if charset is None:
+        chars = _PARTICLE_CHAR_SETS["data"]
+    elif charset in _PARTICLE_CHAR_SETS:
+        chars = _PARTICLE_CHAR_SETS[charset]
+    else:
+        chars = charset  # 直接使用自定义字符串
+
     for _ in range(density):
         x = random.randint(0, width)
         y = random.randint(0, height)

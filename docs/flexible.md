@@ -205,8 +205,8 @@ class SceneSpec:
     # 装饰
     text_elements: list         # 氛围文字列表
     particle_chars: str         # 粒子字符集
-    decoration_style: str       # corners/edges/scattered/minimal/none
-    decoration_chars: str       # 装饰字符
+    decoration_style: str       # corners/edges/scattered/minimal/none/frame/grid_lines/circuit
+    decoration_chars: str       # 装饰字符 (含 box-drawing)
 
     # 动画
     animations: list            # 动画模板
@@ -234,14 +234,18 @@ class SceneSpec:
 | `_choose_layout()` | random_scatter, grid_jitter, spiral, force_directed, preset | structure 偏向 |
 | `_choose_kaomoji_count()` | 2-12 | base=4 + energy*4 |
 | `_choose_animations()` | floating, breathing, color_cycle | energy/arousal |
-| `_choose_decoration_style()` | corners, edges, scattered, minimal, none | structure |
-| `_choose_particle_chars()` | 9 组字符集 | 均匀随机 |
-| `_choose_text_elements()` | 8 组情绪词池（中英） | valence × arousal |
+| `_choose_decoration_style()` | corners, edges, scattered, minimal, none, **frame, grid_lines, circuit** | structure |
+| `_choose_decoration_chars()` | **60+ 组** (box 角/线/交叉/方块/点/经典) | **energy + warmth** |
+| `_choose_gradient()` | **20 种** (classic, blocks, box_density, braille_density, circuit, ...) | **energy + structure** |
+| `_choose_particle_chars()` | **25+ 组** (经典/几何/box 线段/方块/盲文) | **energy + warmth** |
+| `_choose_text_elements()` | 8 组情绪词池（中英 + **semigraphic 符号**） | valence × arousal |
 | `_choose_kaomoji_mood()` | 6 象限情绪 | valence × arousal |
+
+详见 [box_chars.md](box_chars.md) 获取完整的字符集和梯度参考。
 
 ### 组合空间
 
-理论离散组合：7 bg × 5 overlay × 4 blend × 5 layout × 5 count × 3 text × 8 gradient × 4 post ≈ **235,200+** 种。加上连续参数（warmth, saturation, ...）→ 无限变体。
+理论离散组合：7 bg × 5 overlay × 4 blend × 5 layout × 5 count × 3 text × 20 gradient × 8 deco_style × 60 deco_chars × 4 post ≈ **3,000,000+** 种。加上连续参数（warmth, saturation, ...）→ 无限变体。
 
 ---
 
@@ -325,7 +329,7 @@ imgs = pipe.generate_variants(text="neutral", count=5)
 1. **位置生成**：根据 `layout_type` 选择布局算法
 2. **颜文字精灵**：遍历位置，按 `_mood_from_valence_arousal()` 分配情绪，添加动画
 3. **中心颜文字**：可选大尺寸中心角色
-4. **装饰精灵**：按 `decoration_style` 分布（corners/edges/scattered/minimal）
+4. **装饰精灵**：按 `decoration_style` 分布（corners/edges/scattered/minimal/**frame/grid_lines/circuit**），新增 box-drawing 边框、网格和电路板风格，详见 [box_chars.md](box_chars.md)
 5. **粒子精灵**：随机散布字符，浮动动画
 6. **氛围文字**：grammar 生成的 `text_elements` 渲染
 7. **标题**：居中大字 + 光晕

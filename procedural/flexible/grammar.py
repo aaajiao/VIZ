@@ -303,21 +303,26 @@ class VisualGrammar:
         return anims
 
     def _choose_decoration_style(self, structure: float) -> str:
-        """选择装饰风格"""
+        """选择装饰风格 (含 box-drawing 边框/网格/电路风格)"""
         weights = {
-            "corners":    0.3 + structure * 0.3,
-            "edges":      0.2 + structure * 0.2,
-            "scattered":  0.3 + (1 - structure) * 0.2,
-            "minimal":    0.2,
-            "none":       0.1,
+            "corners":      0.20 + structure * 0.15,
+            "edges":        0.12 + structure * 0.12,
+            "scattered":    0.20 + (1 - structure) * 0.15,
+            "minimal":      0.12,
+            "none":         0.06,
+            # 新增 box-drawing 装饰风格
+            "frame":        0.10 + structure * 0.20,
+            "grid_lines":   0.06 + structure * 0.15,
+            "circuit":      0.08 + (1 - structure) * 0.08,
         }
         return self._weighted_choice(weights)
 
     def _choose_decoration_chars(
         self, energy: float, warmth: float
     ) -> list[str]:
-        """选择装饰字符"""
-        char_sets = [
+        """选择装饰字符 (含 box-drawing 和 semigraphic 字符)"""
+        # 经典 ASCII 装饰
+        classic_sets = [
             ["+", "+", "+", "+"],
             [".", ".", ".", "."],
             ["x", "x", "x", "x"],
@@ -331,33 +336,160 @@ class VisualGrammar:
             [">>", "<<", ">>", "<<"],
             [":::", ":::", ":::", ":::"],
         ]
-        return self.rng.choice(char_sets)
+
+        # Box-drawing 角落装饰
+        box_corner_sets = [
+            ["┌", "┐", "└", "┘"],
+            ["╭", "╮", "╰", "╯"],
+            ["┏", "┓", "┗", "┛"],
+            ["╔", "╗", "╚", "╝"],
+            ["┌─", "─┐", "└─", "─┘"],
+            ["╔═", "═╗", "╚═", "═╝"],
+            ["┏━", "━┓", "┗━", "━┛"],
+            ["╭─", "─╮", "╰─", "─╯"],
+        ]
+
+        # Box-drawing 线条装饰
+        box_line_sets = [
+            ["─", "─", "│", "│"],
+            ["━", "━", "┃", "┃"],
+            ["═", "═", "║", "║"],
+            ["┄", "┄", "┆", "┆"],
+            ["┈", "┈", "┊", "┊"],
+            ["├", "┤", "┬", "┴"],
+            ["┣", "┫", "┳", "┻"],
+            ["╠", "╣", "╦", "╩"],
+        ]
+
+        # 交叉/节点装饰
+        cross_sets = [
+            ["┼", "┼", "┼", "┼"],
+            ["╋", "╋", "╋", "╋"],
+            ["╬", "╬", "╬", "╬"],
+            ["╳", "╳", "╳", "╳"],
+        ]
+
+        # 方块/几何装饰
+        block_sets = [
+            ["░", "░", "░", "░"],
+            ["▪", "▫", "▪", "▫"],
+            ["■", "□", "■", "□"],
+            ["▛", "▜", "▙", "▟"],
+            ["▀", "▄", "▌", "▐"],
+            ["●", "○", "●", "○"],
+            ["◆", "◇", "◆", "◇"],
+            ["◉", "◎", "◉", "◎"],
+        ]
+
+        # 点阵装饰
+        dot_sets = [
+            ["·", "·", "·", "·"],
+            ["∙", "∙", "∙", "∙"],
+            ["•", "◦", "•", "◦"],
+            ["○", "◎", "○", "◎"],
+        ]
+
+        # 根据 energy/warmth 权重选择类别
+        if energy > 0.7:
+            # 高能量: 偏向粗重和几何
+            pool = box_corner_sets + cross_sets + block_sets
+        elif energy > 0.4:
+            # 中等能量: 混合
+            pool = classic_sets + box_corner_sets + box_line_sets
+        elif warmth > 0.6:
+            # 暖色低能量: 圆润
+            pool = dot_sets + [["╭", "╮", "╰", "╯"]] + classic_sets[:4]
+        else:
+            # 冷色低能量: 细线
+            pool = dot_sets + box_line_sets[:3] + classic_sets[:4]
+
+        return self.rng.choice(pool)
 
     def _choose_gradient(self, energy: float, structure: float) -> str:
-        """选择 ASCII 梯度"""
+        """选择 ASCII 梯度 (含 box-drawing 和几何梯度)"""
         weights = {
-            "classic": 0.3,
-            "blocks":  0.15 + structure * 0.2,
-            "smooth":  0.2,
-            "matrix":  0.15 + energy * 0.15,
-            "plasma":  0.2 + energy * 0.2,
+            # 经典
+            "classic":          0.20,
+            "smooth":           0.12,
+            "matrix":           0.10 + energy * 0.10,
+            "plasma":           0.10 + energy * 0.15,
+            # 方块
+            "blocks":           0.10 + structure * 0.15,
+            "blocks_fine":      0.08 + structure * 0.10,
+            "glitch":           0.05 + energy * 0.15,
+            # Box-drawing
+            "box_density":      0.06 + structure * 0.12,
+            "box_cross":        0.04 + structure * 0.08 + energy * 0.08,
+            "circuit":          0.04 + structure * 0.10 + energy * 0.06,
+            # 几何/点阵
+            "dots_density":     0.06 + (1 - energy) * 0.08,
+            "geometric":        0.05 + structure * 0.08,
+            "braille_density":  0.04 + (1 - structure) * 0.06,
+            # 混合
+            "tech":             0.06 + energy * 0.06,
+            "cyber":            0.04 + energy * 0.08,
+            "organic":          0.05 + (1 - structure) * 0.08,
         }
         return self._weighted_choice(weights)
 
     def _choose_particle_chars(self, warmth: float, energy: float) -> str:
-        """选择粒子字符"""
-        options = [
+        """选择粒子字符 (含 box-drawing 和 semigraphic 字符)"""
+        # 经典
+        classic = [
             "01·",
             "0123456789",
             "*o.:-",
-            "·•○◦",
             "$#@!",
             "+-×÷",
-            "▪▫□■",
-            "░▒▓",
             "~≈≋",
         ]
-        return self.rng.choice(options)
+
+        # 几何/圆点
+        geometric = [
+            "·•○◦",
+            "·∙•◦○◎",
+            "◦○◎◉●",
+            "▪▫□■▮",
+            "◆◇◈◉◎",
+            "△▽○□◇",
+        ]
+
+        # Box-drawing 线段
+        box_lines = [
+            "─│┼┄┆",
+            "━┃╋┅┇",
+            "═║╬",
+            "├┤┬┴┼",
+            "┣┫┳┻╋",
+            "╠╣╦╩╬",
+            "╱╲╳",
+        ]
+
+        # 方块
+        blocks = [
+            "░▒▓",
+            "░▒▓█",
+            "▀▄▌▐█",
+            "▖▗▘▙▚▛▜▝",
+        ]
+
+        # 盲文点阵
+        braille = [
+            "⠁⠂⠃⠄⠅⠆⠇",
+            "⣀⣁⣂⣃⣄⣅⣆⣇",
+        ]
+
+        # 根据 energy/warmth 倾向选择
+        if energy > 0.7:
+            pool = box_lines + blocks + classic[:3]
+        elif energy > 0.4:
+            pool = classic + geometric + box_lines[:3]
+        elif warmth > 0.6:
+            pool = geometric + braille + classic[:2]
+        else:
+            pool = classic + geometric[:3] + braille
+
+        return self.rng.choice(pool)
 
     def _generate_effect_params(
         self, effect_name: str, energy: float, structure: float
@@ -441,31 +573,38 @@ class VisualGrammar:
         if count == 0:
             return []
 
-        # 根据情绪选择词池
+        # 根据情绪选择词池 (含 box-drawing/semigraphic 装饰符号)
         if valence > 0.5:
             if arousal > 0.3:
                 pool = ["RISE", "UP", "BULL", "GO", "YES", "MAX", "TOP",
-                        "涨", "牛", "冲", "↑", "▲"]
+                        "涨", "牛", "冲", "↑", "▲",
+                        "━━▶", "╱╲╱", "◉", "█▀█", "⣿"]
             else:
                 pool = ["calm", "flow", "ease", "zen", "~",
-                        "静", "和", "润", "◎", "○"]
+                        "静", "和", "润", "◎", "○",
+                        "╭─╮", "≈≈", "◌", "⠿", "·∙·"]
         elif valence > 0.0:
             pool = ["...", "---", "===", "~", "○", "△",
-                    "等", "观", "守", "…"]
+                    "等", "观", "守", "…",
+                    "─┄─", "┈┈┈", "╌╌╌", "◦◦◦"]
         elif valence > -0.5:
             if arousal > 0.3:
                 pool = ["?!", "WARN", "ALERT", "!!",
-                        "慌", "急", "!", "⚠", "△"]
+                        "慌", "急", "!", "⚠", "△",
+                        "╳╳╳", "┃┃┃", "▓▓▓", "╋╋╋"]
             else:
                 pool = ["...", "fade", "dim", "gray",
-                        "淡", "沉", "暗", "—"]
+                        "淡", "沉", "暗", "—",
+                        "┄┄┄", "░░░", "┆┆┆", "⠁⠂⠄"]
         else:
             if arousal > 0.3:
                 pool = ["SELL", "DOWN", "BEAR", "RUN", "NO", "STOP",
-                        "跌", "崩", "逃", "↓", "▼"]
+                        "跌", "崩", "逃", "↓", "▼",
+                        "█▄█", "━━╋", "▓█▓", "╬╬╬"]
             else:
                 pool = ["...", "___", "void", "null",
-                        "空", "无", "寂", "—"]
+                        "空", "无", "寂", "—",
+                        "░░░", "┈┈┈", "⠀⠀⠀", "···"]
 
         elements = []
         for _ in range(count):
