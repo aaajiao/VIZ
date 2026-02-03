@@ -34,6 +34,8 @@ Moiré 干涉图案效果 - Moiré Pattern Effect
 """
 
 import math
+from typing import Any
+
 from procedural.types import Context, Cell, Buffer
 from procedural.core.mathx import clamp
 from procedural.palette import value_to_color, value_to_color_continuous
@@ -75,7 +77,7 @@ class MoireEffect(BaseEffect):
         }
     """
 
-    def pre(self, ctx: Context, buffer: Buffer) -> dict:
+    def pre(self, ctx: Context, buffer: Buffer) -> dict[str, Any]:
         """
         预处理 - 提取参数并预计算中心点
 
@@ -125,7 +127,7 @@ class MoireEffect(BaseEffect):
             "saturation": saturation,
         }
 
-    def main(self, x: int, y: int, ctx: Context, state: dict) -> Cell:
+    def main(self, x: int, y: int, ctx: Context, state: dict[str, Any]) -> Cell:
         """
         主渲染 - 为每个像素生成莫尔纹值
 
@@ -208,7 +210,7 @@ class MoireEffect(BaseEffect):
             bg=None,  # 透明背景
         )
 
-    def post(self, ctx: Context, buffer: Buffer, state: dict) -> None:
+    def post(self, ctx: Context, buffer: Buffer, state: dict[str, Any]) -> None:
         """
         后处理 - Moiré 不需要后处理
 

@@ -38,6 +38,7 @@ from __future__ import annotations
 
 import random
 from dataclasses import dataclass, field
+from typing import Any
 
 
 @dataclass
@@ -49,39 +50,39 @@ class SceneSpec:
     """
     # 背景效果
     bg_effect: str = "plasma"
-    bg_params: dict = field(default_factory=dict)
+    bg_params: dict[str, Any] = field(default_factory=dict)
 
     # 叠加效果 (可选)
     overlay_effect: str | None = None
-    overlay_params: dict = field(default_factory=dict)
+    overlay_params: dict[str, Any] = field(default_factory=dict)
     overlay_blend: str = "ADD"
     overlay_mix: float = 0.3
 
     # 布局
     layout_type: str = "random_scatter"
     layout_count: int = 6
-    layout_params: dict = field(default_factory=dict)
+    layout_params: dict[str, Any] = field(default_factory=dict)
 
     # 颜文字配置
     kaomoji_count: int = 6
     kaomoji_mood: str = "neutral"
-    kaomoji_size_range: tuple = (80, 150)
+    kaomoji_size_range: tuple[int, int] = (80, 150)
 
     # 中心颜文字
     has_central_kaomoji: bool = True
     central_size: int = 200
 
     # 文字元素
-    text_elements: list = field(default_factory=list)
+    text_elements: list[dict[str, Any]] = field(default_factory=list)
 
     # 动画
-    animations: list = field(default_factory=list)
+    animations: list[dict[str, Any]] = field(default_factory=list)
     float_amp: float = 3.0
     breath_amp: float = 0.08
 
     # 装饰
     decoration_style: str = "corners"
-    decoration_chars: list = field(default_factory=lambda: ["+", "+", "+", "+"])
+    decoration_chars: list[str] = field(default_factory=lambda: ["+", "+", "+", "+"])
 
     # 后处理
     sharpen: bool = True
@@ -98,7 +99,7 @@ class SceneSpec:
 
     # Content placement (from AI input)
     content_headline: str | None = None
-    content_metrics: list = field(default_factory=list)
+    content_metrics: list[str] = field(default_factory=list)
     content_timestamp: str | None = None
     content_body: str | None = None
     content_source: str | None = None
@@ -275,7 +276,7 @@ class VisualGrammar:
         variation = self.rng.randint(-2, 2)
         return max(2, min(12, base + variation))
 
-    def _choose_animations(self, energy: float, arousal: float) -> list:
+    def _choose_animations(self, energy: float, arousal: float) -> list[dict[str, Any]]:
         """
         选择动画组合
 
@@ -516,7 +517,7 @@ class VisualGrammar:
 
     def _generate_effect_params(
         self, effect_name: str, energy: float, structure: float
-    ) -> dict:
+    ) -> dict[str, Any]:
         """
         为效果生成连续参数
 
@@ -582,7 +583,7 @@ class VisualGrammar:
 
     def _choose_text_elements(
         self, valence: float, arousal: float, energy: float
-    ) -> list[dict]:
+    ) -> list[dict[str, Any]]:
         """
         生成氛围文字元素
 

@@ -29,6 +29,7 @@ from __future__ import annotations
 
 import colorsys
 import math
+from typing import Any
 
 from procedural.core.mathx import clamp, mix
 
@@ -216,10 +217,10 @@ class ContinuousColorSpace:
 
 
 def interpolate_palettes(
-    palette_a: dict,
-    palette_b: dict,
+    palette_a: dict[str, Any],
+    palette_b: dict[str, Any],
     t: float,
-) -> dict:
+) -> dict[str, Any]:
     """
     在两个调色板之间插值
 

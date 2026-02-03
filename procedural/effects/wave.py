@@ -31,6 +31,8 @@ Wave 波纹效果 - Wave Effect
 """
 
 import math
+from typing import Any
+
 from procedural.types import Context, Cell, Buffer
 from procedural.core.mathx import clamp
 from procedural.palette import value_to_color, value_to_color_continuous
@@ -69,7 +71,7 @@ class WaveEffect(BaseEffect):
         }
     """
 
-    def pre(self, ctx: Context, buffer: Buffer) -> dict:
+    def pre(self, ctx: Context, buffer: Buffer) -> dict[str, Any]:
         """
         预处理 - 提取参数并预计算波的频率和速度
 
@@ -122,7 +124,7 @@ class WaveEffect(BaseEffect):
             "saturation": saturation,
         }
 
-    def main(self, x: int, y: int, ctx: Context, state: dict) -> Cell:
+    def main(self, x: int, y: int, ctx: Context, state: dict[str, Any]) -> Cell:
         """
         主渲染 - 为每个像素生成波纹值
 
@@ -185,7 +187,7 @@ class WaveEffect(BaseEffect):
             bg=None,  # 透明背景
         )
 
-    def post(self, ctx: Context, buffer: Buffer, state: dict) -> None:
+    def post(self, ctx: Context, buffer: Buffer, state: dict[str, Any]) -> None:
         """
         后处理 - Wave 不需要后处理
 

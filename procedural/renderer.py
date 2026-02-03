@@ -148,4 +148,4 @@ def upscale_image(image: Image.Image, target_size: tuple[int, int]) -> Image.Ima
         - 使用 NEAREST 插值保持像素化/ASCII 艺术风格
         - 不使用 LANCZOS/BILINEAR 以避免模糊
     """
-    return image.resize(target_size, Image.NEAREST)
+    return image.resize(target_size, Image.Resampling.NEAREST)

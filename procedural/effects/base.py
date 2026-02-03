@@ -13,6 +13,8 @@
             return Cell(...)
 """
 
+from typing import Any
+
 from procedural.types import Context, Cell, Buffer
 
 __all__ = [
@@ -37,7 +39,7 @@ class BaseEffect:
                 return Cell(char_idx=char_idx, fg=(255, 255, 255), bg=None)
     """
 
-    def pre(self, ctx: Context, buffer: Buffer) -> dict:
+    def pre(self, ctx: Context, buffer: Buffer) -> dict[str, Any]:
         """
         默认预处理 - 返回空状态字典
 
@@ -52,7 +54,7 @@ class BaseEffect:
         """
         return {}
 
-    def main(self, x: int, y: int, ctx: Context, state: dict) -> Cell:
+    def main(self, x: int, y: int, ctx: Context, state: dict[str, Any]) -> Cell:
         """
         主渲染方法 - 必须由子类实现
 
@@ -70,7 +72,7 @@ class BaseEffect:
         """
         raise NotImplementedError("Subclass must implement main() method")
 
-    def post(self, ctx: Context, buffer: Buffer, state: dict) -> None:
+    def post(self, ctx: Context, buffer: Buffer, state: dict[str, Any]) -> None:
         """
         默认后处理 - 无操作
 

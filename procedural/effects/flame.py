@@ -41,6 +41,8 @@ Doom Flame 火焰效果 - Doom Flame Effect
 """
 
 import math
+from typing import Any
+
 from procedural.types import Context, Cell, Buffer
 from procedural.core.noise import ValueNoise
 from procedural.core.mathx import clamp, map_range
@@ -79,12 +81,12 @@ class DoomFlameEffect(BaseEffect):
 
         注意: 不预先指定尺寸，在 pre() 中动态初始化
         """
-        self.heat_map = None
+        self.heat_map: list[float] | None = None
         self.width = 0
         self.height = 0
-        self.noise = None
+        self.noise: ValueNoise | None = None
 
-    def pre(self, ctx: Context, buffer: Buffer) -> dict:
+    def pre(self, ctx: Context, buffer: Buffer) -> dict[str, Any]:
         """
         预处理 - 更新热量图状态
 
@@ -117,6 +119,7 @@ class DoomFlameEffect(BaseEffect):
         last_row = self.width * (self.height - 1)
         t = ctx.time * 0.5  # 时间缩放
 
+        assert self.noise is not None and self.heat_map is not None
         for x in range(self.width):
             # 使用 ValueNoise 生成平滑的热量分布
             noise_val = self.noise(x * 0.05, t)
@@ -127,7 +130,7 @@ class DoomFlameEffect(BaseEffect):
         for y in range(self.height - 2, -1, -1):
             for x in range(self.width):
                 # 从下方取样 (带随机水平偏移)
-                src_x = clamp(x + ctx.rng.randint(-1, 1), 0, self.width - 1)
+                src_x = int(clamp(x + ctx.rng.randint(-1, 1), 0, self.width - 1))
                 src_y = y + 1
 
                 src_heat = self.heat_map[src_x + src_y * self.width]
@@ -142,7 +145,7 @@ class DoomFlameEffect(BaseEffect):
             "saturation": saturation,
         }
 
-    def main(self, x: int, y: int, ctx: Context, state: dict) -> Cell:
+    def main(self, x: int, y: int, ctx: Context, state: dict[str, Any]) -> Cell:
         """
         主渲染 - 为每个像素生成火焰 Cell
 
@@ -193,7 +196,7 @@ class DoomFlameEffect(BaseEffect):
             bg=None,
         )
 
-    def post(self, ctx: Context, buffer: Buffer, state: dict) -> None:
+    def post(self, ctx: Context, buffer: Buffer, state: dict[str, Any]) -> None:
         """
         后处理 - Flame 不需要后处理
 

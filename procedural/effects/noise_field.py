@@ -41,6 +41,8 @@
 """
 
 import math
+from typing import Any
+
 from procedural.types import Context, Cell, Buffer
 from procedural.core.noise import ValueNoise
 from procedural.core.mathx import clamp
@@ -99,7 +101,7 @@ class NoiseFieldEffect(BaseEffect):
         }
     """
 
-    def pre(self, ctx: Context, buffer: Buffer) -> dict:
+    def pre(self, ctx: Context, buffer: Buffer) -> dict[str, Any]:
         """
         预处理 - 初始化噪声生成器
 
@@ -147,7 +149,7 @@ class NoiseFieldEffect(BaseEffect):
             "saturation": saturation,
         }
 
-    def main(self, x: int, y: int, ctx: Context, state: dict) -> Cell:
+    def main(self, x: int, y: int, ctx: Context, state: dict[str, Any]) -> Cell:
         """
         主渲染 - 采样噪声值并映射到字符和颜色
 
@@ -208,8 +210,7 @@ class NoiseFieldEffect(BaseEffect):
 
         # === 映射到字符 ===
         # 使用 10 级字符梯度 (0-9)
-        char_idx = int(value * 9)
-        char_idx = clamp(char_idx, 0, 9)
+        char_idx = int(clamp(value * 9, 0, 9))
 
         # === 映射到颜色 ===
         color_value = (value + t * 0.05) % 1.0
@@ -231,7 +232,7 @@ class NoiseFieldEffect(BaseEffect):
             bg=None,  # 透明背景
         )
 
-    def post(self, ctx: Context, buffer: Buffer, state: dict) -> None:
+    def post(self, ctx: Context, buffer: Buffer, state: dict[str, Any]) -> None:
         """
         后处理 - 噪声场不需要后处理
 

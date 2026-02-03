@@ -348,7 +348,7 @@ def cmd_convert(args):
     try:
         from lib.ascii_convert import image_to_ascii_art, add_market_overlay
     except ImportError:
-        from viz.lib.ascii_convert import image_to_ascii_art, add_market_overlay
+        from viz.lib.ascii_convert import image_to_ascii_art, add_market_overlay  # type: ignore[import-not-found]
 
     if not os.path.exists(args.image):
         result = {"status": "error", "message": f"Image not found: {args.image}"}

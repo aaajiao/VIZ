@@ -33,6 +33,7 @@ from __future__ import annotations
 import math
 import re
 from dataclasses import dataclass
+from typing import Any
 
 from procedural.core.mathx import clamp, mix, smoothstep
 
@@ -57,7 +58,7 @@ class EmotionVector:
         self.arousal = clamp(self.arousal, -1.0, 1.0)
         self.dominance = clamp(self.dominance, -1.0, 1.0)
 
-    def as_tuple(self) -> tuple:
+    def as_tuple(self) -> tuple[float, float, float]:
         return (self.valence, self.arousal, self.dominance)
 
     def magnitude(self) -> float:
@@ -115,7 +116,7 @@ class EmotionVector:
             + (self.dominance - other.dominance) ** 2
         )
 
-    def to_visual_params(self) -> dict:
+    def to_visual_params(self) -> dict[str, Any]:
         """
         将情感向量映射到连续视觉参数空间
 

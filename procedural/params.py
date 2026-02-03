@@ -32,6 +32,7 @@
 from dataclasses import dataclass
 import random
 import math
+from typing import Any
 
 __all__ = [
     "ParamSpec",
@@ -95,7 +96,7 @@ class ParamSpec:
             )
 
 
-def resolve_params(specs: list[ParamSpec], seed: int) -> dict:
+def resolve_params(specs: list[ParamSpec], seed: int) -> dict[str, Any]:
     """
     从参数规格列表生成参数字典 - Resolve Parameters from Specs
 
@@ -186,7 +187,7 @@ def create_rng(seed: int) -> random.Random:
     用法 (在 Effect 中)::
 
         class MyEffect:
-            def pre(self, ctx: Context, buffer: Buffer) -> dict:
+            def pre(self, ctx: Context, buffer: Buffer) -> dict[str, Any]:
                 # 使用 ctx.rng 进行可复现的随机操作
                 offset_x = ctx.rng.uniform(-10, 10)
                 offset_y = ctx.rng.uniform(-10, 10)
@@ -211,7 +212,7 @@ def _validate_seed(seed: int) -> None:
         raise ValueError(f"Seed must be non-negative, got {seed}")
 
 
-def generate_random_params(effect_name: str, rng: random.Random) -> dict:
+def generate_random_params(effect_name: str, rng: random.Random) -> dict[str, Any]:
     """
     为指定效果生成随机参数 - Generate Random Parameters for Effect
 

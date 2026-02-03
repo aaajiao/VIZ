@@ -49,7 +49,7 @@
 """
 
 from dataclasses import dataclass
-from typing import Protocol
+from typing import Any, Protocol
 import random
 
 __all__ = [
@@ -95,7 +95,7 @@ class Context:
     frame: int
     seed: int
     rng: random.Random
-    params: dict
+    params: dict[str, Any]
 
 
 @dataclass
@@ -120,8 +120,8 @@ class Cell:
     """
 
     char_idx: int
-    fg: tuple  # (r, g, b)
-    bg: tuple | None  # (r, g, b) or None
+    fg: tuple[int, int, int]  # (r, g, b)
+    bg: tuple[int, int, int] | None  # (r, g, b) or None
 
 
 # 类型别名
@@ -219,7 +219,7 @@ class Effect(Protocol):
                 pass
     """
 
-    def pre(self, ctx: Context, buffer: Buffer) -> dict:
+    def pre(self, ctx: Context, buffer: Buffer) -> dict[str, Any]:
         """
         预处理阶段 - Preprocessing Phase
 
@@ -238,7 +238,7 @@ class Effect(Protocol):
         """
         ...
 
-    def main(self, x: int, y: int, ctx: Context, state: dict) -> Cell:
+    def main(self, x: int, y: int, ctx: Context, state: dict[str, Any]) -> Cell:
         """
         主渲染阶段 - Main Rendering Phase
 
@@ -255,7 +255,7 @@ class Effect(Protocol):
         """
         ...
 
-    def post(self, ctx: Context, buffer: Buffer, state: dict) -> None:
+    def post(self, ctx: Context, buffer: Buffer, state: dict[str, Any]) -> None:
         """
         后处理阶段 - Postprocessing Phase
 
