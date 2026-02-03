@@ -1,5 +1,7 @@
 # viz - ASCII Art Visualization Toolkit
 
+[![Tests](https://github.com/aaajiao/VIZ/actions/workflows/test.yml/badge.svg)](https://github.com/aaajiao/VIZ/actions/workflows/test.yml)
+
 ASCII 艺术可视化工具集，生成 1080x1080 PNG/GIF 图像，支持颜文字、程序化效果和情绪驱动的视觉风格。纯 Python 3 + Pillow，无构建系统。
 
 灵感来源：[play.ertdfgcvb.xyz](https://play.ertdfgcvb.xyz) - 基于文本的实时代码环境
@@ -216,6 +218,18 @@ Pillow>=9.0.0
 ```
 
 所有数学运算纯 Python stdlib，禁止 NumPy。唯一外部依赖是 Pillow。
+
+## 测试
+
+```bash
+# 运行所有测试
+pytest tests/ -v
+
+# 运行特定模块
+pytest tests/test_emotion.py -v
+```
+
+307 个测试覆盖所有核心模块，CI 通过 GitHub Actions 自动运行。
 
 ## 参考
 

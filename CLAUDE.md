@@ -21,7 +21,19 @@ python3 viz.py convert image.png --charset blocks --emotion bull
 python3 viz.py capabilities --format json
 ```
 
-**No build, lint, test, or CI/CD system exists.** `viz.py` is the single CLI entry point. There are no unit tests.
+**No build system.** `viz.py` is the single CLI entry point.
+
+## Testing
+
+```bash
+# Run all tests
+pytest tests/ -v
+
+# Run specific module tests
+pytest tests/test_emotion.py -v
+```
+
+**307 tests** covering all core modules. CI runs automatically on push/PR via GitHub Actions.
 
 ## Architecture
 
