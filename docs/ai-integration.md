@@ -321,6 +321,39 @@ python3 viz.py generate --emotion panic --source market --headline "CRASH" --vid
 
 ---
 
+## AgentSkills 集成
+
+VIZ 提供 [AgentSkills](https://agentskills.io) 兼容的 skill，让 AI 助手自动学会使用 VIZ。
+
+### 安装 Skill
+
+**OpenClaw / OpenCode:**
+```bash
+# 全局安装
+cp -r skills/viz-ascii-art ~/.openclaw/skills/
+
+# 或在 VIZ 项目目录工作时自动发现
+```
+
+**Claude Code / Claude.ai:**
+上传 `skills/viz-ascii-art/` 文件夹。
+
+### Skill 结构
+
+```
+skills/viz-ascii-art/
+├── SKILL.md              # 主指令（AI 激活时加载）
+├── README.md             # 安装说明
+└── references/           # 详细参考（按需加载）
+    ├── EMOTIONS.md       # 25 种情绪的 VAD 值
+    ├── EFFECTS.md        # 7 种效果及参数
+    └── EXAMPLES.md       # 完整使用示例
+```
+
+安装后，AI 在用户提及 "visualization"、"ASCII art"、"kaomoji"、"emotion image" 等关键词时会自动激活此 skill。
+
+---
+
 ## 设计原则
 
 1. **AI 是大脑，VIZ 是画笔** — 数据获取、内容组织、情感判断由 AI 完成

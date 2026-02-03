@@ -115,6 +115,11 @@ VIZ/
 │   ├── kaomoji.md                # Kaomoji system
 │   └── usage.md                  # CLI entry points guide
 │
+├── skills/                       # AgentSkills for AI assistants
+│   └── viz-ascii-art/            # VIZ skill (OpenClaw/Claude compatible)
+│       ├── SKILL.md              # Main instructions
+│       └── references/           # Detailed docs (emotions, effects, examples)
+│
 └── AGENTS.md                     # Project conventions (also see procedural/AGENTS.md)
 ```
 
