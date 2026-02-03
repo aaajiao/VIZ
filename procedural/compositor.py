@@ -2,7 +2,7 @@
 效果合成器 - Effect Compositor
 
 用于混合两个效果的合成模块。支持多种混合模式（Add, Multiply, Screen, Overlay）。
-限制：最多混合两个效果，不支持嵌套。
+支持嵌套组合，可构建多层效果叠加树。
 
 用法::
 
@@ -14,6 +14,10 @@
 
     # 创建合成效果 (50% 混合，叠加模式)
     composite = CompositeEffect(effect_a, effect_b, BlendMode.OVERLAY, mix=0.5)
+
+    # 支持嵌套: 三层效果叠加
+    effect_c = get_effect('noise_field')
+    triple = CompositeEffect(composite, effect_c, BlendMode.SCREEN, mix=0.3)
 """
 
 from enum import Enum, auto
@@ -101,16 +105,7 @@ class CompositeEffect:
             effect_b: 混合效果 (顶层)
             mode: 混合模式
             mix: 混合强度 (0.0 - 1.0)，控制 effect_b 的不透明度
-
-        Raises:
-            ValueError: 如果尝试嵌套 CompositeEffect
         """
-        if isinstance(effect_a, CompositeEffect) or isinstance(
-            effect_b, CompositeEffect
-        ):
-            raise ValueError(
-                "Nesting of CompositeEffect is not allowed. Maximum 2 effects."
-            )
 
         self.effect_a = effect_a
         self.effect_b = effect_b

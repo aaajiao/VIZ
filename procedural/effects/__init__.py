@@ -112,3 +112,10 @@ try:
     EFFECT_REGISTRY["moire"] = MoireEffect
 except ImportError:
     pass
+
+try:
+    from procedural.flexible.cppn import CPPNEffect
+
+    EFFECT_REGISTRY["cppn"] = CPPNEffect
+except ImportError:
+    pass
