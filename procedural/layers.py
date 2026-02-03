@@ -603,19 +603,36 @@ def _draw_kaomoji_fallback(image, x, y, mood, color, outline_color, scale):
         outline_color: 轮廓颜色 (RGB 元组)
         scale: 缩放大小
     """
-    # 简单颜文字映射
+    # 简单颜文字映射 — 每个情绪分类一个代表性 fallback
     FALLBACK_KAOMOJI = {
+        # 正面
         "bull": "(^o^)",
-        "bear": "(;_;)",
-        "neutral": "(._.) ",
-        "euphoria": "\\(^o^)/",
+        "happy": "(◠‿◠)",
+        "euphoria": "\\(≧▽≦)/",
         "excitement": "(*^_^*)",
-        "anxiety": "(o_o)",
-        "fear": "(>_<)",
-        "panic": "(x_x)",
+        "love": "(♡˙︶˙♡)",
+        "proud": "(•̀ᴗ•́)و",
+        "relaxed": "(´ー`)",
+        # 负面
+        "bear": "(;_;)",
+        "sad": "(ಥ_ಥ)",
+        "angry": "(╬ Ò﹏Ó)",
+        "anxiety": "(´；ω；`)",
+        "fear": "Σ(°△°|||)",
+        "panic": "(×_×;）",
+        "disappointed": "(ー_ー)!!",
+        "lonely": "(◞‸◟)",
+        # 中性
+        "neutral": "(._.) ",
+        "confused": "(？_？)",
+        "surprised": "Σ(ﾟДﾟ)",
+        "sleepy": "(=_=) zzZ",
+        "thinking": "(˘_˘ )",
+        "embarrassed": "(〃▽〃)",
+        "bored": "(￢_￢)",
     }
 
-    text = FALLBACK_KAOMOJI.get(mood, "(._.) ")
+    text = FALLBACK_KAOMOJI.get(mood, FALLBACK_KAOMOJI.get("neutral", "(._.) "))
     draw = ImageDraw.Draw(image)
 
     # 轮廓

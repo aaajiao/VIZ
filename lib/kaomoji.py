@@ -3,70 +3,49 @@ Kaomoji Rendering Module
 颜文字渲染模块
 
 提供 ASCII 颜文字绘制和分类功能。
+数据统一从 kaomoji_data.py 导入，不再硬编码。
+
+渲染策略::
+
+    1. 精确匹配: mood 在 KAOMOJI_SINGLE 中有直接 key → 用单行渲染
+    2. 多行匹配: mood 在 KAOMOJI_MULTILINE 中有直接 key → 用多行渲染
+    3. 父类兜底: 通过 MOOD_CATEGORIES 解析到 bull/bear/neutral
 """
 
 from PIL import ImageDraw, ImageFont
 import random
 
-# ========== ASCII 颜文字数据 ==========
-ASCII_KAOMOJI = {
-    "bull": [
-        # 开心表情
-        ["  ^___^  ", " (◠‿◠) ", "  \\___/  "],
-        ["  *___*  ", " (^o^) ", "  <___>  "],
-        ["  O___O  ", " (≧▽≦)", "  |___|  "],
-        # 庆祝
-        ["  \\o/   ", "   |    ", "  / \\   "],
-        ["  ^_^   ", " <(^_^)>", "  (_)   "],
-    ],
-    "bear": [
-        # 难过表情
-        ["  T_T   ", " (;_;)  ", "  |_|   "],
-        ["  -_-   ", " (x_x)  ", "  |_|   "],
-        ["  >_<   ", " (╥﹏╥)", "  |_|   "],
-    ],
-    "neutral": [
-        # 平静表情
-        ["  -_-   ", " (._.)  ", "  |_|   "],
-        ["  o_o   ", " (o.o)  ", "  |_|   "],
-    ],
-}
+from lib.kaomoji_data import (
+    KAOMOJI_SINGLE,
+    KAOMOJI_MULTILINE,
+    MOOD_CATEGORIES,
+)
 
-# ========== 情绪分类 ==========
-MOOD_CATEGORIES = {
-    "bull": ["bull", "happy", "excited", "euphoria", "excitement"],
-    "bear": ["bear", "sad", "anxious", "fear", "panic"],
-    "neutral": ["neutral", "calm", "uncertain", "anxiety"],
-}
+# ========== ASCII 颜文字数据（向后兼容引用）==========
+# 保留 ASCII_KAOMOJI 名称以兼容外部引用
+ASCII_KAOMOJI = KAOMOJI_MULTILINE
 
 
 def draw_kaomoji(draw, x, y, mood, color, outline_color, size=1, rng=None):
     """
-    绘制 ASCII 颜文字
+    绘制颜文字（支持单行和多行格式）
+
+    渲染策略:
+        - 优先从 KAOMOJI_SINGLE 精确匹配 mood，用单行渲染（品种最丰富）
+        - 如果 mood 不在 KAOMOJI_SINGLE 中，尝试 KAOMOJI_MULTILINE
+        - 最终 fallback 到父类
 
     参数:
         draw: PIL ImageDraw 对象
         x: 左上角 X 坐标
         y: 左上角 Y 坐标
-        mood: 情绪类型 ('bull', 'bear', 'neutral')
+        mood: 情绪类型 ('happy', 'love', 'sad', 'angry', 'bull', 'bear', ...)
         color: 主颜色 (RGB 元组或十六进制字符串)
         outline_color: 轮廓颜色 (RGB 元组或十六进制字符串)
         size: 缩放大小 (默认 1)
         rng: random.Random 对象 (可选，用于可复现性)
     """
-    # 规范化 mood 到标准类别
-    normalized_mood = _normalize_mood(mood)
-
-    # 获取颜文字列表
-    if normalized_mood not in ASCII_KAOMOJI:
-        normalized_mood = "neutral"
-
-    kaomoji_list = ASCII_KAOMOJI[normalized_mood]
-
-    if rng:
-        kaomoji = rng.choice(kaomoji_list)
-    else:
-        kaomoji = random.choice(kaomoji_list)
+    _rng = rng or random
 
     # 转换颜色格式（如果是十六进制字符串）
     if isinstance(color, str):
@@ -74,24 +53,68 @@ def draw_kaomoji(draw, x, y, mood, color, outline_color, size=1, rng=None):
     if isinstance(outline_color, str):
         outline_color = _hex_to_rgb(outline_color)
 
-    # 加载字体 - Load font with fallback
+    # 加载字体
     font = None
     try:
         font_size = min(200, max(1, 10 * size))
         font = ImageFont.truetype(
             "/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf", font_size
         )
-    except:
+    except Exception:
         font = ImageFont.load_default()
 
-    # 绘制颜文字（每行）
+    # === 选择颜文字 ===
+    mood_lower = str(mood).lower()
+
+    # 策略 1: 精确匹配 KAOMOJI_SINGLE（最丰富）
+    if mood_lower in KAOMOJI_SINGLE:
+        face_text = _rng.choice(KAOMOJI_SINGLE[mood_lower])
+        _draw_single_line(draw, x, y, face_text, color, outline_color, font, size)
+        return
+
+    # 策略 2: 精确匹配 KAOMOJI_MULTILINE
+    if mood_lower in KAOMOJI_MULTILINE:
+        kaomoji = _rng.choice(KAOMOJI_MULTILINE[mood_lower])
+        _draw_multiline(draw, x, y, kaomoji, color, outline_color, font, size)
+        return
+
+    # 策略 3: 父类兜底
+    parent = _normalize_mood(mood_lower)
+    if parent in KAOMOJI_SINGLE:
+        face_text = _rng.choice(KAOMOJI_SINGLE[parent])
+        _draw_single_line(draw, x, y, face_text, color, outline_color, font, size)
+    elif parent in KAOMOJI_MULTILINE:
+        kaomoji = _rng.choice(KAOMOJI_MULTILINE[parent])
+        _draw_multiline(draw, x, y, kaomoji, color, outline_color, font, size)
+
+
+def _draw_single_line(draw, x, y, text, color, outline_color, font, size):
+    """渲染单行颜文字"""
+    outline_offset = max(1, min(4, 2 * size))
+    for offset_x in range(-outline_offset, outline_offset + 1):
+        for offset_y in range(-outline_offset, outline_offset + 1):
+            if offset_x != 0 or offset_y != 0:
+                draw.text(
+                    (x + offset_x, y + offset_y),
+                    text,
+                    fill=outline_color,
+                    font=font,
+                )
+
+    bold_range = min(size, 4)
+    for dx in range(bold_range):
+        for dy in range(bold_range):
+            draw.text((x + dx, y + dy), text, fill=color, font=font)
+
+
+def _draw_multiline(draw, x, y, kaomoji_lines, color, outline_color, font, size):
+    """渲染多行颜文字"""
     line_height = max(12, int(10 * size * 1.2))
-    for line_idx, line_text in enumerate(kaomoji):
+    outline_offset = max(1, min(4, 2 * size))
+
+    for line_idx, line_text in enumerate(kaomoji_lines):
         current_y = y + line_idx * line_height
 
-        # 绘制轮廓（2D网格偏移）- Outline with 2D grid offset
-        # Cap offset to avoid O(n^2) explosion for large sizes (font handles visual size)
-        outline_offset = max(1, min(4, 2 * size))
         for offset_x in range(-outline_offset, outline_offset + 1):
             for offset_y in range(-outline_offset, outline_offset + 1):
                 if offset_x != 0 or offset_y != 0:
@@ -102,12 +125,12 @@ def draw_kaomoji(draw, x, y, mood, color, outline_color, size=1, rng=None):
                         font=font,
                     )
 
-        # 绘制主文字（2D网格）- Main text with 2D grid
-        # Cap boldness iterations - font size already handles visual scaling
         bold_range = min(size, 4)
         for dx in range(bold_range):
             for dy in range(bold_range):
-                draw.text((x + dx, current_y + dy), line_text, fill=color, font=font)
+                draw.text(
+                    (x + dx, current_y + dy), line_text, fill=color, font=font
+                )
 
 
 def get_moods_by_category(category):
@@ -127,16 +150,24 @@ def get_moods_by_category(category):
 
 def _normalize_mood(mood):
     """
-    将任意情绪名称规范化为标准类别
+    将任意情绪名称规范化为标准父类
+
+    精确匹配优先：如果 mood 本身就是 KAOMOJI_SINGLE 的 key，
+    直接返回该 mood（不压缩到父类）。
 
     参数:
         mood: 情绪名称
 
     返回:
-        标准情绪类别 ('bull', 'bear', 'neutral')
+        标准情绪类别 ('bull', 'bear', 'neutral') 或精确 mood 名
     """
     mood_lower = str(mood).lower()
 
+    # 精确匹配：mood 自身就是数据 key
+    if mood_lower in KAOMOJI_SINGLE:
+        return mood_lower
+
+    # 父类映射
     for category, moods in MOOD_CATEGORIES.items():
         if mood_lower in moods:
             return category
