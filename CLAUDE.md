@@ -49,7 +49,7 @@ VIZ/
 │   ├── vocabulary.py             # Visual vocabularies (market, art, news, mood)
 │   ├── glow.py                   # Glow text effect
 │   ├── ascii_texture.py          # ASCII texture utilities
-│   ├── kaomoji.py                # Kaomoji rendering (20 categories, 300+ faces)
+│   ├── kaomoji.py                # Kaomoji rendering (22 categories, 300+ faces)
 │   ├── kaomoji_data.py           # Kaomoji data (single-line + multi-line)
 │   ├── box_chars.py              # Box-drawing characters (37 charsets)
 │   └── effects.py                # Glitch effects, particles
@@ -63,7 +63,7 @@ VIZ/
 │   ├── layouts.py                # Layout algorithms (scatter, grid, spiral, force)
 │   ├── params.py                 # ParamSpec, reproducible RNG
 │   ├── palette.py                # 20 ASCII gradients, 5 color schemes
-│   ├── effects/                  # Pluggable effects (6 built-in)
+│   ├── effects/                  # Pluggable effects (7 built-in, incl. cppn)
 │   │   ├── __init__.py           # EFFECT_REGISTRY, get_effect()
 │   │   ├── base.py               # BaseEffect (default pre/post)
 │   │   ├── plasma.py             # 4-layer sine interference
@@ -78,7 +78,7 @@ VIZ/
 │   │   ├── noise.py              # ValueNoise, fbm, turbulence
 │   │   └── mathx.py              # clamp, mix, smoothstep, fract, pulse
 │   └── flexible/                 # Flexible Output System (infinite variations)
-│       ├── emotion.py            # VAD continuous emotion space (24 anchors)
+│       ├── emotion.py            # VAD continuous emotion space (25 anchors)
 │       ├── color_space.py        # Continuous warmth/saturation/brightness
 │       ├── modulator.py          # Noise drifting + domain warping
 │       ├── grammar.py            # Probabilistic visual grammar rules
@@ -152,15 +152,15 @@ def generate_viz(market_data, output_path):
 ### Type Annotations
 - **Do NOT add type hints** to existing code - the codebase intentionally avoids them
 - **Exception**: `procedural/types.py` uses dataclasses + Protocol for core types
+- **Exception**: `procedural/flexible/` modules use type annotations throughout (emotion.py, pipeline.py, grammar.py, etc.)
 
 ## Forbidden Patterns
 
 - **NumPy** - all math must be pure Python
 - **MP4 output** - GIF only, no FFmpeg dependency
 - **High-res compute** - always 160x160 internally, upscale to 1080x1080
-- **Relative output paths** - always use `/workspace/media/...` with timestamps
-- **Empty catch blocks** - only acceptable for pixel manipulation glitch effects
-- **Type hints** - not used except in `procedural/types.py`
+- **Empty catch blocks** - only acceptable for pixel manipulation glitch effects and font loading fallbacks
+- **Type hints** - not used except in `procedural/types.py` and `procedural/flexible/`
 
 ## Key Patterns
 
@@ -171,9 +171,9 @@ img = Image.new('RGB', (WIDTH, HEIGHT), colors['bg'])
 draw = ImageDraw.Draw(img)
 ```
 
-### Output Paths (always absolute + timestamped)
+### Output Paths (timestamped, default `./media/`)
 ```python
-output_path = f'/workspace/media/{type}_viz_{datetime.now().strftime("%Y%m%d_%H%M%S")}.png'
+output_path = os.path.join(output_dir, f'viz_{time.strftime("%Y%m%d_%H%M%S")}.png')
 ```
 
 ### Post-Processing (required for final images)
@@ -187,7 +187,7 @@ img.save(output_path, 'PNG', quality=95)
 ```python
 try:
     font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf", size)
-except:
+except (IOError, OSError):
     font = ImageFont.load_default()
 ```
 
@@ -342,9 +342,9 @@ bear_words = ['down', 'fall', 'drop', 'decline', 'crash', 'bear', 'negative']
 
 ## Emotion System
 
-The Flexible Output System uses a VAD (Valence-Arousal-Dominance) continuous space with 24 predefined emotion anchors (joy, euphoria, calm, love, fear, panic, sadness, etc.). Each axis ranges from -1 to +1. Text input maps to a VAD vector which drives all visual parameters continuously.
+The Flexible Output System uses a VAD (Valence-Arousal-Dominance) continuous space with 25 predefined emotion anchors (joy, euphoria, calm, love, fear, panic, sadness, etc.). Each axis ranges from -1 to +1. Text input maps to a VAD vector which drives all visual parameters continuously.
 
-The kaomoji system has 20 emotion categories with 300+ faces. Selection: exact match -> multi-line match -> parent category fallback (bull/bear/neutral).
+The kaomoji system has 22 emotion categories with 300+ faces. Selection: exact match -> multi-line match -> parent category fallback (bull/bear/neutral).
 
 ## Additional Documentation
 

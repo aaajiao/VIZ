@@ -89,7 +89,7 @@ def image_to_ascii_art(
             font = ImageFont.truetype(custom_font, font_size)
         else:
             font = ImageFont.load_default()
-    except:
+    except (IOError, OSError):
         font = ImageFont.load_default()
 
     # RGB 限制
@@ -160,7 +160,7 @@ def add_market_overlay(ascii_image, market_data, font_size=48):
         font_small = ImageFont.truetype(
             "/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf", font_size // 2
         )
-    except:
+    except (IOError, OSError):
         font_large = ImageFont.load_default()
         font_small = ImageFont.load_default()
 

@@ -47,7 +47,7 @@ stdin JSON 字段全部可选，CLI 参数会覆盖 stdin 中的同名值。
 ### stdout 输出
 
 ```json
-{"status": "ok", "path": "/home/user/VIZ/media/viz_20260203_120000.png", "seed": 42, "format": "png", "emotion": "euphoria", "source": "market"}
+{"status": "ok", "results": [{"path": "/home/user/VIZ/media/viz_20260203_120000.png", "seed": 42, "format": "png"}], "emotion": "euphoria", "source": "market"}
 ```
 
 ### 完整参数
@@ -144,15 +144,14 @@ python3 viz.py capabilities --format json  # 默认 JSON
 
 ```json
 {
-  "emotions": ["joy", "euphoria", "calm", "love", "fear", "panic", ...],
-  "effects": ["plasma", "flame", "wave", "moire", "sdf_shapes", "noise_field", "cppn"],
-  "sources": ["market", "art", "news", "mood"],
+  "emotions": {"joy": {"valence": 0.76, "arousal": 0.48, "dominance": 0.35}, "...": "..."},
+  "effects": ["cppn", "flame", "moire", "noise_field", "plasma", "sdf_shapes", "wave"],
+  "sources": ["art", "market", "mood", "news"],
   "layouts": ["random_scatter", "grid_jitter", "spiral", "force_directed", "preset"],
   "decorations": ["corners", "edges", "scattered", "minimal", "none", "frame", "grid_lines", "circuit"],
-  "gradients": ["classic", "blocks", "smooth", ...],
-  "vad_range": [-1.0, 1.0],
-  "output_size": [1080, 1080],
-  "formats": ["png", "gif"]
+  "gradients": ["classic", "smooth", "matrix", "plasma", "default", "blocks", "..."],
+  "input_schema": {"emotion": "string", "source": "string", "...": "..."},
+  "output_schema": {"status": "string", "results": "list[{path, seed, format}]", "...": "..."}
 }
 ```
 
@@ -186,7 +185,7 @@ echo '...' | python3 viz.py generate
 VIZ 渲染（FlexiblePipeline）
     │
     ▼
-stdout JSON（路径 + seed + 格式）
+stdout JSON（results 数组 + emotion + source）
 ```
 
 VIZ 是纯渲染后端。数据获取、情感分析、内容组织由 AI 负责。

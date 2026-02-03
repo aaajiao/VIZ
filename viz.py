@@ -224,8 +224,10 @@ def cmd_generate(args):
 
     # === 4. Determine seed ===
     import random
-    seed = content.get("seed")
-    if seed is None:
+    raw_seed = content.get("seed")
+    if raw_seed is not None:
+        seed = int(raw_seed)
+    else:
         seed = random.randint(0, 999999)
 
     # === 5. Generate ===
@@ -262,15 +264,15 @@ def cmd_generate(args):
 
     results = []
 
-    variant_count = content.get("variants", 1)
-    is_video = content.get("video", False)
+    variant_count = int(content.get("variants", 1))
+    is_video = bool(content.get("video", False))
+    duration = float(content.get("duration", 3.0))
+    fps = int(content.get("fps", 15))
 
     for variant_idx in range(variant_count):
         variant_seed = seed + variant_idx
 
         if is_video:
-            duration = content.get("duration", 3.0)
-            fps = content.get("fps", 15)
             suffix = f"_v{variant_idx}" if variant_count > 1 else ""
             output_path = os.path.join(
                 output_dir, f"viz_{timestamp_str}{suffix}.gif"
@@ -451,9 +453,11 @@ def cmd_capabilities(args):
         "layouts": ["random_scatter", "grid_jitter", "spiral", "force_directed", "preset"],
         "decorations": ["corners", "edges", "scattered", "minimal", "none", "frame", "grid_lines", "circuit"],
         "gradients": [
-            "classic", "smooth", "matrix", "plasma", "blocks", "blocks_fine",
-            "glitch", "box_density", "box_cross", "circuit", "dots_density",
-            "geometric", "braille_density", "tech", "cyber", "organic",
+            "classic", "smooth", "matrix", "plasma", "default",
+            "blocks", "blocks_fine", "blocks_ultra", "glitch",
+            "box_density", "box_vertical", "box_cross", "circuit",
+            "dots_density", "geometric", "braille_density",
+            "tech", "cyber", "organic", "noise",
         ],
         "charsets_convert": ["classic", "simple", "blocks", "bull", "bear", "numbers", "money"],
         "input_schema": {
