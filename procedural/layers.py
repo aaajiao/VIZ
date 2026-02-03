@@ -22,7 +22,7 @@ Sprite Layer Animation System - 精灵层动画系统
     from procedural.layers import TextSprite, KaomojiSprite
 
     # 文字精灵
-    text = TextSprite('MARKET', x=100, y=100, color='#00ff00')
+    text = TextSprite('MARKET', x=100, y=100, color=(0, 255, 0))
     text.render(image, time=1.5)
 
     # 颜文字精灵
@@ -306,7 +306,7 @@ class TextSprite(Sprite):
 
     示例::
 
-        sprite = TextSprite('BULL MARKET', x=100, y=100, color='#00ff00')
+        sprite = TextSprite('BULL MARKET', x=100, y=100, color=(0, 255, 0))
         sprite.animations = [
             {'type': 'breathing', 'amp': 0.08, 'speed': 3.0},
             {'type': 'floating', 'amp': 10, 'speed': 1.2},
@@ -319,7 +319,7 @@ class TextSprite(Sprite):
         text,
         x=0.0,
         y=0.0,
-        color="#ffffff",
+        color=(255, 255, 255),
         glow_color=None,
         glow_size=1,
         scale=1.0,
@@ -414,7 +414,7 @@ class KaomojiSprite(Sprite):
 
     示例::
 
-        sprite = KaomojiSprite('bull', x=200, y=200, color='#00ff00')
+        sprite = KaomojiSprite('bull', x=200, y=200, color=(0, 255, 0))
         sprite.animations = [
             {'type': 'floating', 'amp': 15, 'speed': 0.8},
             {'type': 'color_cycle', 'base_hue': 0.3, 'speed': 0.2},
@@ -427,7 +427,7 @@ class KaomojiSprite(Sprite):
         mood="neutral",
         x=0.0,
         y=0.0,
-        color="#ffffff",
+        color=(255, 255, 255),
         outline_color=None,
         scale=1.0,
         rotation=0.0,
