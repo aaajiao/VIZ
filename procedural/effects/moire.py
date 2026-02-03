@@ -36,7 +36,7 @@ Moiré 干涉图案效果 - Moiré Pattern Effect
 import math
 from procedural.types import Context, Cell, Buffer
 from procedural.core.mathx import clamp
-from procedural.palette import value_to_color
+from procedural.palette import value_to_color, value_to_color_continuous
 from .base import BaseEffect
 
 __all__ = ["MoireEffect"]
@@ -109,6 +109,10 @@ class MoireEffect(BaseEffect):
         center_b_x = 0.5 + offset_b
         center_b_y = 0.5
 
+        # 连续颜色参数
+        warmth = ctx.params.get("warmth", None)
+        saturation = ctx.params.get("saturation", None)
+
         return {
             "freq_a": freq_a,
             "freq_b": freq_b,
@@ -117,6 +121,8 @@ class MoireEffect(BaseEffect):
             "center_a": (center_a_x, center_a_y),
             "center_b": (center_b_x, center_b_y),
             "color_scheme": color_scheme,
+            "warmth": warmth,
+            "saturation": saturation,
         }
 
     def main(self, x: int, y: int, ctx: Context, state: dict) -> Cell:
@@ -186,8 +192,14 @@ class MoireEffect(BaseEffect):
         char_idx = int(clamp(char_idx, 0, 9))
 
         # === 映射到颜色 ===
-        # 使用指定颜色方案
-        color = value_to_color(value, color_scheme)
+        if state.get("warmth") is not None:
+            color = value_to_color_continuous(
+                value,
+                warmth=state["warmth"],
+                saturation=state.get("saturation", 1.0),
+            )
+        else:
+            color = value_to_color(value, color_scheme)
 
         # 返回 Cell
         return Cell(

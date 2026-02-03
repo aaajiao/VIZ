@@ -484,7 +484,7 @@ class KaomojiSprite(Sprite):
 
         # === 尝试使用 lib.kaomoji ===
         try:
-            from viz.lib.kaomoji import draw_kaomoji
+            from lib.kaomoji import draw_kaomoji
 
             draw = ImageDraw.Draw(image)
             draw_kaomoji(
@@ -567,7 +567,7 @@ def _draw_glow_text(draw, x, y, text, color, glow_color, size=1):
     """
     # 尝试使用 lib.effects 中的实现
     try:
-        from viz.lib.effects import draw_glow_text as _lib_glow
+        from lib.effects import draw_glow_text as _lib_glow
 
         _lib_glow(draw, x, y, text, color, glow_color, size=size)
         return
