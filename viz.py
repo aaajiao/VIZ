@@ -60,7 +60,12 @@ def cmd_generate(args):
             raw = sys.stdin.read()
             if raw.strip():
                 stdin_data = json.loads(raw)
-        except (json.JSONDecodeError, IOError):
+        except json.JSONDecodeError as e:
+            print(json.dumps({
+                "status": "error",
+                "message": f"Invalid stdin JSON: {e}",
+            }), file=sys.stderr)
+        except IOError:
             pass
 
     # Merge CLI args over stdin data
@@ -90,6 +95,14 @@ def cmd_generate(args):
         content_data["decoration"] = args.decoration
     if args.gradient:
         content_data["gradient"] = args.gradient
+    if args.video:
+        content_data["video"] = True
+    if args.duration != 3.0:
+        content_data["duration"] = args.duration
+    if args.fps != 15:
+        content_data["fps"] = args.fps
+    if args.variants != 1:
+        content_data["variants"] = args.variants
 
     content = make_content(content_data)
 
@@ -100,11 +113,28 @@ def cmd_generate(args):
     if content.get("vad"):
         # Direct VAD vector
         vad = content["vad"]
-        if isinstance(vad, str):
-            parts = [float(x) for x in vad.split(",")]
+        try:
+            if isinstance(vad, str):
+                parts = [float(x) for x in vad.split(",")]
+            elif isinstance(vad, (list, tuple)):
+                parts = [float(x) for x in vad]
+            else:
+                raise ValueError(f"vad must be string 'V,A,D' or list [V,A,D], got {type(vad).__name__}")
+
+            if len(parts) != 3:
+                raise ValueError(f"vad requires exactly 3 values (V,A,D), got {len(parts)}")
+
+            for i, v in enumerate(parts):
+                if not (-1.0 <= v <= 1.0):
+                    raise ValueError(f"vad[{i}] = {v} out of range [-1, 1]")
+
             emotion_vector = EmotionVector(*parts)
-        elif isinstance(vad, (list, tuple)):
-            emotion_vector = EmotionVector(*vad)
+        except ValueError as e:
+            print(json.dumps({
+                "status": "error",
+                "message": f"Invalid --vad: {e}",
+            }))
+            return
     elif emotion_name:
         emotion_name = emotion_name  # Will be passed to pipeline
     elif content.get("body"):
@@ -357,12 +387,14 @@ def cmd_capabilities(args):
             "title": "string - title overlay text",
         },
         "output_schema": {
+            "_note": "Single variant returns flat fields; multiple variants returns 'variants' array",
             "status": "string (ok|error)",
-            "path": "string - absolute path to output file",
-            "seed": "int - seed used (for reproducibility)",
-            "format": "string (png|gif)",
+            "path": "string - absolute path (single variant only)",
+            "seed": "int - seed used (single variant only)",
+            "format": "string png|gif (single variant only)",
             "emotion": "string|null - emotion used",
             "source": "string|null - source used",
+            "variants": "list[{path, seed, format, ...}] - present when variants > 1",
         },
     }
 
