@@ -83,6 +83,104 @@ generate_stock_ascii_viz(
 )
 ```
 
+## Flexible Output System (千变万化)
+
+打破刚性的一一对应映射，实现从同一输入生成无限视觉变体。
+
+### 设计理念
+
+```
+旧系统: 文本 → 3 个离散类别 → 固定效果 → 固定配色 → ~3 种输出
+新系统: 文本 → VAD 连续向量 → 文法组合 → 噪声调制 → 无限输出
+```
+
+### 快速使用
+
+```bash
+# 从文本生成（自动推断情绪）
+python3 viz/demo_flexible.py --text "market crash fears rising"
+
+# 从情绪名称生成
+python3 viz/demo_flexible.py --emotion euphoria
+
+# 同一输入，不同种子 = 不同变体
+python3 viz/demo_flexible.py --text "hope" --variants 5
+
+# 生成动画
+python3 viz/demo_flexible.py --emotion joy --video --duration 3
+
+# 指定 VAD 向量 (valence,arousal,dominance)
+python3 viz/demo_flexible.py --vad 0.5,-0.3,0.2
+
+# 分析文本的 VAD 向量（不生成图片）
+python3 viz/demo_flexible.py --analyze --text "暴涨 狂热 突破"
+
+# 列出所有预定义情绪
+python3 viz/demo_flexible.py --list-emotions
+```
+
+### Python API
+
+```python
+from procedural.flexible import FlexiblePipeline, EmotionVector
+
+pipe = FlexiblePipeline(seed=42)
+
+# 方式 1: 从文本
+img = pipe.generate(text="市场暴跌 恐慌蔓延")
+
+# 方式 2: 从情绪名称
+img = pipe.generate(emotion="euphoria")
+
+# 方式 3: 从 VAD 向量（精确控制）
+ev = EmotionVector(valence=-0.5, arousal=0.8, dominance=-0.3)
+img = pipe.generate(emotion_vector=ev)
+
+# 方式 4: 批量变体（同一情绪，不同诠释）
+variants = pipe.generate_variants(text="hope", count=10)
+
+# 方式 5: 动画
+pipe.generate_video(emotion="calm", duration=3.0, output_path="out.gif")
+```
+
+### 核心模块
+
+| 模块 | 作用 | 替代 |
+|------|------|------|
+| `EmotionVector` | VAD 三维连续情感空间 (24 种锚点情绪) | 旧系统 3 个离散类别 |
+| `ContinuousColorSpace` | warmth/saturation/brightness 连续配色 | 旧系统 5 种固定调色板 |
+| `NoiseModulator` | 噪声驱动参数漂移 + Domain Warping | 旧系统静态参数 |
+| `VisualGrammar` | 概率产生式规则组合场景 | 旧系统固定效果映射 |
+| `CPPNEffect` | 神经网络生成唯一图案 (每个种子不同) | 旧系统 6 种效果 |
+| `FlexiblePipeline` | 编排所有模块的统一管线 | 旧系统各脚本独立 |
+
+### VAD 情感模型
+
+每种情绪是三维空间中的一个点，而非离散标签：
+
+| 维度 | 范围 | 含义 |
+|------|------|------|
+| **Valence** (效价) | -1 ↔ +1 | 消极 ↔ 积极 |
+| **Arousal** (唤醒度) | -1 ↔ +1 | 平静 ↔ 激动 |
+| **Dominance** (支配度) | -1 ↔ +1 | 顺从 ↔ 掌控 |
+
+情感向量直接驱动视觉参数——高 Arousal 提升频率和速度，高 Valence 偏向暖色，高 Dominance 增加结构性。中间地带产生旧系统无法表达的微妙情绪（如"淡淡的焦虑"或"冷静的愉悦"）。
+
+### 多样性来源
+
+| 维度 | 变化数量 | 机制 |
+|------|---------|------|
+| 背景效果 | 7 种 (含 CPPN) | 文法概率选择 |
+| 叠加效果 | 0-1 层 × 6 种 | 概率触发 |
+| 混合模式 | 4 种 | ADD/SCREEN/OVERLAY/MULTIPLY |
+| 布局算法 | 5 种 | scatter/grid/spiral/force/preset |
+| ASCII 梯度 | 5 种 | classic/blocks/smooth/matrix/plasma |
+| 装饰风格 | 5 种 × 12 种字符 | 概率选择 |
+| 连续参数 | ∞ | 情绪驱动 + 噪声调制 |
+| **组合总数** | **235,000+ 离散 × ∞ 连续** | |
+
+---
+
 ## 程序化生成引擎
 
 ### 可用效果
@@ -95,6 +193,7 @@ generate_stock_ascii_viz(
 | `moire` | 径向莫尔干涉 | freq_a, freq_b, speed_a, speed_b |
 | `sdf_shapes` | 有符号距离场形状 | shape_count, radius, smoothness |
 | `noise_field` | Perlin 噪声场 | scale, octaves, lacunarity |
+| `cppn` | 神经网络生成图案 | num_hidden, layer_size, seed |
 
 ### 动态布局算法
 
@@ -107,7 +206,7 @@ generate_stock_ascii_viz(
 
 ### 效果混合
 
-支持两个效果的混合，可用模式：
+支持多层效果叠加（可嵌套），可用模式：
 - `ADD` - 加法混合
 - `MULTIPLY` - 乘法混合
 - `SCREEN` - 滤色混合
@@ -120,6 +219,10 @@ from procedural.effects import get_effect
 plasma = get_effect('plasma')
 wave = get_effect('wave')
 composite = CompositeEffect(plasma, wave, BlendMode.SCREEN, mix=0.5)
+
+# 支持嵌套: 三层效果
+noise = get_effect('noise_field')
+triple = CompositeEffect(composite, noise, BlendMode.ADD, mix=0.3)
 ```
 
 ## 精灵动画
@@ -170,25 +273,33 @@ face = get_kaomoji('euphoria', format='single')
 
 ```
 viz/
-├── universal_viz_system.py    # 主入口 - CLI 统一接口
-├── market_viz_complete.py     # 市场专用版
-├── emotional_market_viz.py    # 情绪化设计版
-├── stock_pixel_ascii.py       # 图像转 ASCII
+├── demo_flexible.py               # Flexible Output System 演示脚本
+├── universal_viz_system.py        # 主入口 - CLI 统一接口
+├── market_viz_complete.py         # 市场专用版
+├── emotional_market_viz.py        # 情绪化设计版
+├── stock_pixel_ascii.py           # 图像转 ASCII
 ├── lib/
-│   ├── kaomoji.py             # 颜文字绘制（draw_kaomoji）
-│   ├── kaomoji_data.py        # 颜文字数据（单行格式）
-│   └── effects.py             # 发光文字、故障效果
-├── procedural/                # 程序化生成引擎
-│   ├── engine.py              # 渲染编排器
-│   ├── layers.py              # 精灵动画系统
-│   ├── layouts.py             # 动态布局算法
-│   ├── compositor.py          # 效果混合器
-│   ├── params.py              # 参数随机化
-│   ├── effects/               # 可插拔效果
-│   │   ├── plasma.py, flame.py, wave.py...
-│   └── core/                  # 数学原语
-│       ├── vec.py, sdf.py, noise.py, mathx.py
-└── archive/                   # 已弃用 - 仅供参考
+│   ├── kaomoji.py                 # 颜文字绘制（draw_kaomoji）
+│   ├── kaomoji_data.py            # 颜文字数据（单行格式）
+│   └── effects.py                 # 发光文字、故障效果
+├── procedural/                    # 程序化生成引擎
+│   ├── engine.py                  # 渲染编排器
+│   ├── layers.py                  # 精灵动画系统
+│   ├── layouts.py                 # 动态布局算法
+│   ├── compositor.py              # 效果混合器（支持嵌套）
+│   ├── params.py                  # 参数随机化
+│   ├── effects/                   # 可插拔效果
+│   │   ├── plasma.py, flame.py, wave.py, moire.py...
+│   ├── core/                      # 数学原语
+│   │   ├── vec.py, sdf.py, noise.py, mathx.py
+│   └── flexible/                  # 千变万化输出系统
+│       ├── emotion.py             # VAD 连续情感空间
+│       ├── color_space.py         # 连续颜色空间
+│       ├── modulator.py           # 噪声参数调制器
+│       ├── grammar.py             # 随机视觉文法
+│       ├── cppn.py                # CPPN 神经网络图案
+│       └── pipeline.py            # 柔性管线编排器
+└── archive/                       # 已弃用 - 仅供参考
 ```
 
 ## 依赖
