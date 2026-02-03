@@ -212,6 +212,73 @@ Engine creates Context + Buffer (160x160)
   -> sharpen + contrast -> final PNG/GIF
 ```
 
+### Key Types (procedural/types.py)
+
+| Type | Description |
+|------|-------------|
+| `Context` | width, height, time, frame, seed, rng, params |
+| `Cell` | char_idx (0-9), fg (RGB tuple), bg (RGB or None) |
+| `Buffer` | `list[list[Cell]]` - 2D grid |
+| `Effect` | Protocol: pre/main/post methods |
+
+Context is **immutable by convention** - never modify ctx inside an effect.
+
+### Engine Usage
+```python
+from procedural import Engine
+from procedural.effects import get_effect
+from procedural.layers import TextSprite
+
+engine = Engine(internal_size=(160, 160), output_size=(1080, 1080))
+effect = get_effect('plasma')
+
+# Single frame
+img = engine.render_frame(effect, time=1.5, seed=42)
+
+# GIF
+frames = engine.render_video(effect, duration=3.0, fps=15, seed=42)
+engine.save_gif(frames, 'output.gif', fps=15)
+```
+
+### Available Effects
+
+| Effect | Description |
+|--------|-------------|
+| `plasma` | Animated sine wave interference (4-layer) |
+| `flame` | Doom-style fire (heat propagation + decay) |
+| `wave` | Multi-frequency sine stacking |
+| `moire` | Radial interference patterns |
+| `sdf_shapes` | Smooth distance field circles/boxes |
+| `noise_field` | Perlin-like value noise + FBM |
+
+### Color Schemes
+
+`value_to_color(v, scheme)` where `v` is 0.0-1.0:
+
+| Scheme | Gradient |
+|--------|----------|
+| `heat` | Black -> Red -> Orange -> Yellow -> White |
+| `rainbow` | HSV hue cycle |
+| `cool` | Blue -> Cyan -> White |
+| `matrix` | Dark Green -> Bright Green |
+| `plasma` | Multi-color with brightness pulse |
+
+### Core Math (procedural/core/, no NumPy)
+
+| Module | Key Functions |
+|--------|---------------|
+| `vec.py` | `Vec2`, `length`, `normalize`, `rotate`, `dot` |
+| `sdf.py` | `sd_circle`, `sd_box`, `op_smooth_union` |
+| `noise.py` | `ValueNoise`, `.fbm()`, `.turbulence()` |
+| `mathx.py` | `clamp`, `mix`, `smoothstep`, `map_range` |
+
+### Sentiment Analysis (keyword counting)
+```python
+bull_words = ['up', 'gain', 'rise', 'rally', 'surge', 'bull', 'positive']
+bear_words = ['down', 'fall', 'drop', 'decline', 'crash', 'bear', 'negative']
+# Bull if bull_count > bear_count + 2
+```
+
 ## Where to Make Changes
 
 | Task | Location |
@@ -255,5 +322,3 @@ The kaomoji system has 20 emotion categories with 300+ faces. Selection: exact m
 - `docs/kaomoji.md` - Kaomoji categories and rendering
 - `docs/box_chars.md` - Box-drawing character system (37 charsets)
 - `docs/usage.md` - CLI usage examples
-- `AGENTS.md` - Project-level code conventions
-- `procedural/AGENTS.md` - Rendering engine architecture
