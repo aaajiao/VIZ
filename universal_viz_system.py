@@ -24,6 +24,10 @@ try:
 except ImportError:
     from viz.lib.kaomoji import draw_kaomoji, get_moods_by_category
 
+from procedural.engine import Engine
+from procedural.effects import get_effect
+from procedural.layers import KaomojiSprite, TextSprite
+
 # ========== 内容类型配置 ==========
 CONTENT_TYPES = {
     "market": {
@@ -108,6 +112,235 @@ CONTENT_TYPES = {
     },
 }
 
+ASCII_GRADIENT = " .:-=+*#%@"
+
+
+def _render_procedural_background(effect_name, seed, size, blend_color=None):
+    """渲染 procedural 背景 (静态)"""
+    if not effect_name:
+        return None
+
+    from procedural.engine import Engine
+    from procedural.effects import get_effect
+
+    rng = random.Random(seed)
+    engine = Engine(internal_size=(160, 160), output_size=size, contrast=1.1)
+    effect = get_effect(effect_name)
+    frame = engine.render_frame(effect, time=rng.random() * 6.0, seed=seed)
+
+    if blend_color:
+        overlay = Image.new("RGB", size, blend_color)
+        frame = Image.blend(frame, overlay, 0.35)
+
+    return frame
+
+
+def _select_layout(rng, width, height):
+    """选择布局模板 (位置 + 文本区域)"""
+    layouts = [
+        {
+            "positions": [
+                (120, 100, 120),
+                (680, 80, 130),
+                (180, 420, 110),
+                (720, 480, 115),
+                (320, 750, 140),
+                (width - 280, height - 280, 125),
+            ],
+            "central": (width // 2 - 100, height // 2 - 100),
+            "title_y": 30,
+            "info_y": height - 100,
+            "timestamp_y": height - 50,
+            "decorations": [
+                (40, 40, "{ }"),
+                (width - 100, 40, "[ ]"),
+                (40, height - 70, "< >"),
+                (width - 100, height - 70, "( )"),
+            ],
+        },
+        {
+            "positions": [
+                (80, 140, 120),
+                (width - 360, 120, 130),
+                (120, 520, 110),
+                (width - 420, 560, 115),
+                (240, 780, 140),
+                (width - 260, height - 260, 125),
+            ],
+            "central": (width // 2 - 140, height // 2 - 140),
+            "title_y": 60,
+            "info_y": height - 140,
+            "timestamp_y": height - 80,
+            "decorations": [
+                (60, 60, "//"),
+                (width - 120, 60, "\\\\"),
+                (60, height - 90, "::"),
+                (width - 120, height - 90, "##"),
+            ],
+        },
+        {
+            "positions": [
+                (140, 80, 110),
+                (width - 320, 100, 120),
+                (220, 460, 120),
+                (width - 360, 420, 110),
+                (360, 780, 150),
+                (width - 300, height - 320, 120),
+            ],
+            "central": (width // 2 - 90, height // 2 - 120),
+            "title_y": 80,
+            "info_y": height - 120,
+            "timestamp_y": height - 60,
+            "decorations": [
+                (50, 30, "<>"),
+                (width - 120, 30, "[]"),
+                (50, height - 80, "()"),
+                (width - 120, height - 80, "{}"),
+            ],
+        },
+        # New Layout 1: Asymmetric Corner
+        {
+            "positions": [
+                (80, 80, 100),
+                (200, 180, 110),
+                (350, 300, 120),
+                (width - 200, height - 200, 130),
+                (width - 350, height - 350, 110),
+                (width - 100, height - 100, 100),
+            ],
+            "central": (width // 2, height // 2),
+            "title_y": 40,
+            "info_y": height - 160,
+            "timestamp_y": height - 40,
+            "decorations": [
+                (20, 20, "+"),
+                (width - 40, 20, "+"),
+                (20, height - 40, "+"),
+                (width - 40, height - 40, "+"),
+            ],
+        },
+        # New Layout 2: Sidebar
+        {
+            "positions": [
+                (width - 150, 100, 110),
+                (width - 150, 300, 110),
+                (width - 150, 500, 110),
+                (width - 150, 700, 110),
+                (width - 150, 900, 110),
+                (100, height - 100, 120),
+            ],
+            "central": (width // 2 - 100, height // 2),
+            "title_y": 50,
+            "info_y": height - 100,
+            "timestamp_y": height - 50,
+            "decorations": [
+                (20, 100, "|"),
+                (20, 300, "|"),
+                (20, 500, "|"),
+                (20, 700, "|"),
+            ],
+        },
+        # New Layout 3: Orbit
+        {
+            "positions": [
+                (width // 2, 150, 100),
+                (width // 2 + 200, 250, 100),
+                (width // 2 + 200, height - 250, 100),
+                (width // 2, height - 150, 100),
+                (width // 2 - 200, height - 250, 100),
+                (width // 2 - 200, 250, 100),
+            ],
+            "central": (width // 2 - 120, height // 2 - 120),
+            "title_y": 20,
+            "info_y": height - 80,
+            "timestamp_y": height - 40,
+            "decorations": [
+                (width // 2 - 300, height // 2, "("),
+                (width // 2 + 300, height // 2, ")"),
+                (width // 2, height // 2 - 300, "^"),
+                (width // 2, height // 2 + 300, "v"),
+            ],
+        },
+        # New Layout 4: Diagonal Flow
+        {
+            "positions": [
+                (80, 120, 110),
+                (240, 260, 120),
+                (400, 420, 130),
+                (560, 580, 120),
+                (720, 740, 110),
+                (width - 260, height - 260, 130),
+            ],
+            "central": (width // 2 - 140, height // 2 - 160),
+            "title_y": 40,
+            "info_y": height - 140,
+            "timestamp_y": height - 70,
+            "decorations": [
+                (40, 100, "/"),
+                (width - 80, height - 160, "\\"),
+                (60, height - 120, "//"),
+                (width - 140, 80, "\\\\"),
+            ],
+        },
+        # New Layout 5: Top Banner
+        {
+            "positions": [
+                (100, 220, 120),
+                (320, 240, 110),
+                (540, 260, 120),
+                (760, 280, 110),
+                (120, height - 240, 140),
+                (width - 300, height - 240, 140),
+            ],
+            "central": (width // 2 - 110, height // 2 + 80),
+            "title_y": 20,
+            "info_y": height - 120,
+            "timestamp_y": height - 60,
+            "decorations": [
+                (40, 40, "===="),
+                (width - 140, 40, "===="),
+                (40, 140, "----"),
+                (width - 140, 140, "----"),
+            ],
+        },
+    ]
+
+    return rng.choice(layouts)
+
+
+def _draw_ascii_texture(draw, rng, width, height, colors, density=0.35):
+    """绘制 ASCII 纹理层"""
+    cell = rng.choice([18, 20, 24, 28])
+    text_color = colors.get("dim", colors["secondary"])
+    for y in range(0, height, cell):
+        for x in range(0, width, cell):
+            if rng.random() < density:
+                char = ASCII_GRADIENT[int(rng.random() * (len(ASCII_GRADIENT) - 1))]
+                draw.text((x, y), char, fill=text_color)
+
+
+def _scatter_kaomoji(draw, rng, width, height, moods_list, colors, avoid_center=True):
+    """散布小型颜文字以强化 ASCII 属性"""
+    count = rng.randint(6, 14)
+    for _ in range(count):
+        x = rng.randint(40, width - 200)
+        y = rng.randint(40, height - 200)
+        if avoid_center:
+            if abs(x - width // 2) < 220 and abs(y - height // 2) < 220:
+                continue
+        mood = rng.choice(moods_list)
+        size = rng.randint(2, 5)
+        draw_kaomoji(
+            draw,
+            x,
+            y,
+            mood,
+            color=colors["primary"],
+            outline_color=colors.get("outline", colors["secondary"]),
+            size=size,
+            rng=rng,
+        )
+
 
 def fetch_content(content_type, query=None):
     """获取内容（新闻/数据）"""
@@ -120,13 +353,16 @@ def fetch_content(content_type, query=None):
         keywords = CONTENT_TYPES[content_type].get("search_keywords", [content_type])
         query = " ".join(keywords[:3])
 
-    result = subprocess.run(
-        ["/workspace/scripts/perplexity-search.sh", query],
-        capture_output=True,
-        text=True,
-        timeout=30,
-    )
-    return result.stdout if result.returncode == 0 else None
+    try:
+        result = subprocess.run(
+            ["/workspace/scripts/perplexity-search.sh", query],
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+        return result.stdout if result.returncode == 0 else None
+    except FileNotFoundError:
+        return None
 
 
 def analyze_sentiment(text, content_type):
@@ -247,38 +483,61 @@ def generate_visualization(content_type, content_data, output_path):
     if "custom_moods" in content_data:
         moods_list = content_data["custom_moods"]
 
-    # 创建画布
-    img = Image.new("RGB", (WIDTH, HEIGHT), colors["bg"])
+    seed = content_data.get("seed")
+    if seed is None:
+        seed = random.randint(0, 999999)
+    rng = random.Random(seed)
+
+    layout = _select_layout(rng, WIDTH, HEIGHT)
+    effect_name = content_data.get("effect")
+
+    # 创建画布 (可选 procedural 背景)
+    img = _render_procedural_background(
+        effect_name, seed, (WIDTH, HEIGHT), colors["bg"]
+    )
+    if img is None:
+        img = Image.new("RGB", (WIDTH, HEIGHT), colors["bg"])
+
     draw = ImageDraw.Draw(img)
 
     # === 背景网格 ===
     grid_color = colors.get("glow", colors["secondary"])
-    for y in range(0, HEIGHT, 80):
+    grid_step = rng.choice([60, 80, 100, 120])
+    grid_offset = rng.randint(0, grid_step // 2)
+    for y in range(grid_offset, HEIGHT, grid_step):
         draw.line([(0, y), (WIDTH, y)], fill=grid_color, width=1)
-    for x in range(0, WIDTH, 80):
+    for x in range(grid_offset, WIDTH, grid_step):
         draw.line([(x, 0), (x, HEIGHT)], fill=grid_color, width=1)
 
     # === 数据粒子 ===
-    particle_chars = "01·" if content_type == "mood" else "0123456789$#"
-    for _ in range(80):
-        x = random.randint(0, WIDTH)
-        y = random.randint(0, HEIGHT)
+    if content_type == "mood":
+        particle_chars = "01·"
+    elif content_type == "art":
+        particle_chars = "*o.:-"
+    else:
+        particle_chars = "0123456789$#"
+
+    particle_count = rng.randint(60, 140)
+    for _ in range(particle_count):
+        x = rng.randint(0, WIDTH)
+        y = rng.randint(0, HEIGHT)
         draw.text(
             (x, y),
-            random.choice(particle_chars),
+            rng.choice(particle_chars),
             fill=colors.get("dim", colors["secondary"]),
         )
 
+    # === ASCII 纹理层 ===
+    _draw_ascii_texture(
+        draw, rng, WIDTH, HEIGHT, colors, density=rng.uniform(0.25, 0.45)
+    )
+
+    # === 背景颜文字散布 ===
+    _scatter_kaomoji(draw, rng, WIDTH, HEIGHT, moods_list, colors)
+
     # === 颜文字布局 ===
     # 6个位置 + 1个中央
-    positions = [
-        (120, 100, 120),
-        (680, 80, 130),
-        (180, 420, 110),
-        (720, 480, 115),
-        (320, 750, 140),
-        (WIDTH - 280, HEIGHT - 280, 125),
-    ]
+    positions = layout["positions"]
 
     for idx, (x, y, size) in enumerate(positions):
         mood = moods_list[idx % len(moods_list)]
@@ -290,27 +549,32 @@ def generate_visualization(content_type, content_data, output_path):
             color=colors["primary"],
             outline_color=colors.get("outline", colors["secondary"]),
             size=size,
+            rng=rng,
         )
 
     # 中央大表情
     central_mood = moods_list[0] if moods_list else "happy"
+    center_x, center_y = layout["central"]
+    central_size = rng.randint(180, 220)
     draw_kaomoji(
         draw,
-        WIDTH // 2 - 100,
-        HEIGHT // 2 - 100,
+        center_x,
+        center_y,
         central_mood,
         color=colors["accent"],
         outline_color=colors.get("outline", colors["secondary"]),
-        size=200,
+        size=central_size,
+        rng=rng,
     )
 
     # === 文字信息（顶部和底部，不用大方框）===
     # 顶部标题
     title = content_data.get("title", config["name"])
+    title_y = layout["title_y"]
     for dx in range(6):
         for dy in range(6):
             draw.text(
-                (WIDTH // 2 - len(title) * 10 + dx * 2, 30 + dy * 2),
+                (WIDTH // 2 - len(title) * 10 + dx * 2, title_y + dy * 2),
                 title,
                 fill=colors["primary"],
             )
@@ -319,31 +583,28 @@ def generate_visualization(content_type, content_data, output_path):
     key_info = content_data.get("key_info", [])
     if key_info:
         info_text = " | ".join(key_info[:3])
+        info_y = layout["info_y"]
         for dx in range(4):
             for dy in range(4):
                 draw.text(
-                    (WIDTH // 2 - len(info_text) * 3 + dx, HEIGHT - 100 + dy),
+                    (WIDTH // 2 - len(info_text) * 3 + dx, info_y + dy),
                     info_text,
                     fill=colors["primary"],
                 )
 
     # 时间戳
     timestamp = datetime.now().strftime("%b %d, %Y")
+    timestamp_y = layout["timestamp_y"]
     for dx in range(3):
         for dy in range(3):
             draw.text(
-                (WIDTH // 2 - 100 + dx, HEIGHT - 50 + dy),
+                (WIDTH // 2 - 100 + dx, timestamp_y + dy),
                 timestamp,
                 fill=colors.get("dim", colors["secondary"]),
             )
 
     # === 角落装饰 ===
-    decorations = [
-        (40, 40, "{ }"),
-        (WIDTH - 100, 40, "[ ]"),
-        (40, HEIGHT - 70, "< >"),
-        (WIDTH - 100, HEIGHT - 70, "( )"),
-    ]
+    decorations = layout["decorations"]
     for x, y, symbol in decorations:
         for dx in range(5):
             for dy in range(5):
@@ -358,10 +619,10 @@ def generate_visualization(content_type, content_data, output_path):
         pixels = img.load()
         glitch_count = 100
         for _ in range(glitch_count):
-            x = random.randint(0, WIDTH - 60)
-            y = random.randint(0, HEIGHT - 1)
-            w = random.randint(20, 80)
-            shift = random.randint(-8, 8)
+            x = rng.randint(0, WIDTH - 60)
+            y = rng.randint(0, HEIGHT - 1)
+            w = rng.randint(20, 80)
+            shift = rng.randint(-8, 8)
             for i in range(w):
                 if x + i < WIDTH and 0 <= (y + shift) < HEIGHT:
                     try:
@@ -373,16 +634,162 @@ def generate_visualization(content_type, content_data, output_path):
     return output_path
 
 
-def _generate_video(static_path, args):
-    """使用 procedural engine 生成 GIF 视频"""
-    from procedural.engine import Engine
-    from procedural.effects import get_effect
+def _generate_video(static_path, args, content_type="mood", content_data=None):
+    """
+    使用 procedural engine + sprites 生成 GIF 视频
+    Use procedural Engine with KaomojiSprite/TextSprite for animated GIF
+
+    content_data = {
+        'sentiment', 'key_info', 'title', 'seed', 'effect',
+    }
+    """
+    if content_data is None:
+        content_data = {}
 
     seed = args.seed if args.seed is not None else random.randint(0, 999999)
-    engine = Engine(internal_size=(160, 160), output_size=(1080, 1080))
+    rng = random.Random(seed)
+
+    # === 配置 ===
+    config = CONTENT_TYPES[content_type]
+    sentiment = content_data.get("sentiment", "neutral")
+
+    if content_type == "market":
+        colors = config[f"colors_{sentiment}"]
+        moods_list = config["moods"][sentiment]
+    else:
+        colors = config["colors"]
+        moods_list = config.get("moods", ["o_o", "^_^", "thinking"])
+
+    if "custom_moods" in content_data:
+        moods_list = content_data["custom_moods"]
+
+    # === 坐标缩放 (1080 → 160) ===
+    INTERNAL = 160
+    OUTPUT = 1080
+    scale_factor = INTERNAL / OUTPUT
+
+    # === 布局 (复用 _select_layout 后映射到内部坐标) ===
+    layout = _select_layout(rng, OUTPUT, OUTPUT)
+    positions = layout["positions"]
+
+    # === 创建 KaomojiSprite 列表 ===
+    sprites = []
+
+    # 6 个位置颜文字 (带浮动动画)
+    for idx, (x, y, size) in enumerate(positions):
+        mood = moods_list[idx % len(moods_list)]
+        phase = idx * 0.8  # 错开相位
+        sprite = KaomojiSprite(
+            mood,
+            x=x * scale_factor,
+            y=y * scale_factor,
+            color=colors["primary"],
+            outline_color=colors.get("outline", colors["secondary"]),
+            scale=max(1, int(size * scale_factor)),
+            animations=[
+                {
+                    "type": "floating",
+                    "amp": 3.0,
+                    "speed": 0.8 + idx * 0.1,
+                    "phase": phase,
+                },
+                {"type": "breathing", "amp": 0.08, "speed": 1.5},
+            ],
+        )
+        sprites.append(sprite)
+
+    # 中央大表情 (呼吸动画)
+    central_mood = moods_list[0] if moods_list else "happy"
+    center_x, center_y = layout["central"]
+    central_size = rng.randint(180, 220)
+    sprites.append(
+        KaomojiSprite(
+            central_mood,
+            x=center_x * scale_factor,
+            y=center_y * scale_factor,
+            color=colors["accent"],
+            outline_color=colors.get("outline", colors["secondary"]),
+            scale=max(1, int(central_size * scale_factor)),
+            animations=[
+                {"type": "breathing", "amp": 0.12, "speed": 2.0},
+                {"type": "floating", "amp": 2.0, "speed": 0.6},
+            ],
+        )
+    )
+
+    # === 文字精灵 ===
+    title = content_data.get("title", config["name"])
+    title_y = layout["title_y"]
+    sprites.append(
+        TextSprite(
+            title,
+            x=(OUTPUT // 2 - len(title) * 10) * scale_factor,
+            y=title_y * scale_factor,
+            color=colors["primary"],
+            glow_color=colors.get("glow", colors["secondary"]),
+            glow_size=2,
+            animations=[
+                {"type": "breathing", "amp": 0.05, "speed": 1.0},
+            ],
+        )
+    )
+
+    # 底部信息文字
+    key_info = content_data.get("key_info", [])
+    if key_info:
+        info_text = " | ".join(key_info[:3])
+        info_y = layout["info_y"]
+        sprites.append(
+            TextSprite(
+                info_text,
+                x=(OUTPUT // 2 - len(info_text) * 3) * scale_factor,
+                y=info_y * scale_factor,
+                color=colors["primary"],
+                glow_size=1,
+            )
+        )
+
+    # 时间戳
+    timestamp = datetime.now().strftime("%b %d, %Y")
+    timestamp_y = layout["timestamp_y"]
+    sprites.append(
+        TextSprite(
+            timestamp,
+            x=(OUTPUT // 2 - 100) * scale_factor,
+            y=timestamp_y * scale_factor,
+            color=colors.get("dim", colors["secondary"]),
+            glow_size=1,
+        )
+    )
+
+    # === 散布小颜文字 (背景装饰，轻微浮动) ===
+    scatter_count = rng.randint(4, 8)
+    for i in range(scatter_count):
+        sx = rng.randint(40, OUTPUT - 200)
+        sy = rng.randint(40, OUTPUT - 200)
+        # 避开中心区域
+        if abs(sx - OUTPUT // 2) < 220 and abs(sy - OUTPUT // 2) < 220:
+            continue
+        mood = rng.choice(moods_list)
+        sprites.append(
+            KaomojiSprite(
+                mood,
+                x=sx * scale_factor,
+                y=sy * scale_factor,
+                color=colors["primary"],
+                outline_color=colors.get("outline", colors["secondary"]),
+                scale=max(1, int(rng.randint(2, 5) * scale_factor)),
+                animations=[
+                    {"type": "floating", "amp": 2.0, "speed": 0.5, "phase": i * 1.2},
+                ],
+            )
+        )
+
+    # === 渲染 ===
+    engine = Engine(internal_size=(INTERNAL, INTERNAL), output_size=(OUTPUT, OUTPUT))
     effect = get_effect(args.effect)
     frames = engine.render_video(
-        effect, duration=args.duration, fps=args.fps, seed=seed
+        effect, duration=args.duration, fps=args.fps, sprites=sprites, seed=seed
     )
 
     gif_path = static_path.replace(".png", ".gif")
@@ -458,6 +865,8 @@ def main():
         "sentiment": sentiment,
         "key_info": key_info,
         "title": title,
+        "seed": args.seed,
+        "effect": args.effect,
     }
 
     output_path = (
@@ -468,7 +877,7 @@ def main():
     # 视频模式
     if args.video:
         print("🎬 生成视频...")
-        output_path = _generate_video(output_path, args)
+        output_path = _generate_video(output_path, args, content_type, content_data)
 
     print()
     print("=" * 60)

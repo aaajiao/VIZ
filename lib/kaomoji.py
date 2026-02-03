@@ -90,7 +90,8 @@ def draw_kaomoji(draw, x, y, mood, color, outline_color, size=1, rng=None):
         current_y = y + line_idx * line_height
 
         # 绘制轮廓（2D网格偏移）- Outline with 2D grid offset
-        outline_offset = max(1, 2 * size)
+        # Cap offset to avoid O(n^2) explosion for large sizes (font handles visual size)
+        outline_offset = max(1, min(4, 2 * size))
         for offset_x in range(-outline_offset, outline_offset + 1):
             for offset_y in range(-outline_offset, outline_offset + 1):
                 if offset_x != 0 or offset_y != 0:
@@ -102,8 +103,10 @@ def draw_kaomoji(draw, x, y, mood, color, outline_color, size=1, rng=None):
                     )
 
         # 绘制主文字（2D网格）- Main text with 2D grid
-        for dx in range(size):
-            for dy in range(size):
+        # Cap boldness iterations - font size already handles visual scaling
+        bold_range = min(size, 4)
+        for dx in range(bold_range):
+            for dy in range(bold_range):
                 draw.text((x + dx, current_y + dy), line_text, fill=color, font=font)
 
 

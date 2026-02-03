@@ -73,3 +73,71 @@ All sizes exceed minimum visibility threshold (50 pixels).
 2. **Font Scaling**: Size parameter should scale both font size and offset distances
 3. **Fallback Strategy**: Always provide fallback for system fonts (may not exist on all systems)
 4. **Proportional Outline**: Outline offset must scale with size to maintain visual balance
+
+## Task 1 (Continued): Line Height & Font Size Capping (2026-02-03)
+
+### Problem Discovered
+Initial fix had two issues preventing size=40 from rendering:
+1. **Line height scaling**: `line_height = 12 * size` caused lines 2-3 to render at y=490, y=970 (outside 100px canvas)
+2. **Font size overflow**: `font_size = 10 * size` = 400px for size=40, exceeding reasonable bounds
+
+### Solution Applied
+1. **Line height fix** (line 87):
+   ```python
+   line_height = max(12, int(10 * size * 1.2))
+   ```
+   - Scales proportionally with font size
+   - Minimum 12px ensures readability at size=1
+
+2. **Font size capping** (line 80):
+   ```python
+   font_size = min(200, max(1, 10 * size))
+   ```
+   - Caps maximum at 200px (reasonable for TrueType rendering)
+   - Prevents out-of-memory or rendering failures
+   - Still scales with size parameter for sizes 1-20
+
+### Final Verification Results
+✅ All sizes now render correctly:
+- size=1: 111 green pixels
+- size=5: 2,288 green pixels
+- size=10: 4,575 green pixels
+- size=20: 3,870 green pixels
+- size=40: 4,894 green pixels
+
+All exceed minimum visibility threshold (50 pixels).
+
+### Key Learnings
+1. **Font size limits**: TrueType fonts have practical rendering limits (~200px)
+2. **Line height scaling**: Must scale proportionally with font size, not linearly with size parameter
+3. **Canvas bounds**: Always verify that multi-line text fits within image bounds
+4. **Proportional scaling**: When scaling multiple parameters, ensure they scale together (font + line_height + offset)
+
+### Files Modified
+- `/workspace/viz/lib/kaomoji.py`: Lines 80-81 (font size capping), 87 (line height calculation)
+
+### Commit
+- `78ce4f0 fix(kaomoji): use proper font scaling instead of diagonal offset`
+
+## Task 3: Refactor universal_viz_system.py to Use Procedural Engine (2026-02-03)
+
+### Changes Made
+1. **universal_viz_system.py**: Added imports for `Engine`, `KaomojiSprite`, `TextSprite` from procedural. Refactored `_generate_video()` to create sprites with animations instead of bare effect-only rendering.
+2. **lib/kaomoji.py**: Capped boldness grid iterations to max 4 (performance fix for O(n²) explosion at large sizes).
+
+### Key Design Decisions
+- **Static mode untouched**: All existing static rendering code preserved. Only `_generate_video()` was refactored.
+- **Coordinate scaling**: Sprites render at internal_size (160×160), so all 1080-space positions scaled by factor 160/1080 ≈ 0.148.
+- **Animation assignments**: Layout kaomoji get floating (phase-offset per position) + breathing. Central kaomoji gets stronger breathing. Text sprites get subtle breathing.
+- **Scatter kaomoji**: Background decorative kaomoji also converted to sprites with mild floating.
+
+### Performance Issue Discovered
+- Task 1's kaomoji fix used 2D grid `for dx in range(size): for dy in range(size):` for boldness.
+- At size=120, this is 14,400 draw.text() calls per line. Font is already 200px (capped), so visual scaling is handled.
+- Fix: Cap boldness grid to max 4 iterations. Outline offset also capped to max 4.
+- Result: O(1) instead of O(n²), no visual difference since font size handles scaling.
+
+### Verification Results
+- ✅ Static image: 136KB PNG with seed=42
+- ✅ Video: 7.5MB GIF (20 frames, 2s @ 10fps) with sprites animated
+- ✅ Reproducibility: Identical file sizes (138826 bytes) for two runs with same seed
