@@ -21,7 +21,7 @@ python3 viz.py convert image.png --charset blocks --emotion bull
 python3 viz.py capabilities --format json
 ```
 
-**No build, lint, test, or CI/CD system exists.** `viz.py` is the single CLI entry point. Old scripts moved to `archive/`. There are no unit tests.
+**No build, lint, test, or CI/CD system exists.** `viz.py` is the single CLI entry point. There are no unit tests.
 
 ## Architecture
 
@@ -86,6 +86,7 @@ VIZ/
 │       └── pipeline.py           # Orchestrator combining all modules
 │
 ├── docs/                         # Detailed documentation
+│   ├── ai-integration.md         # AI integration guide (read this first!)
 │   ├── rendering.md              # Rendering pipeline guide
 │   ├── box_chars.md              # Box-drawing character system
 │   ├── flexible.md               # Flexible output system
@@ -93,7 +94,6 @@ VIZ/
 │   ├── kaomoji.md                # Kaomoji system
 │   └── usage.md                  # CLI entry points guide
 │
-├── archive/                      # DEPRECATED - reference only, do not modify
 └── AGENTS.md                     # Project conventions (also see procedural/AGENTS.md)
 ```
 

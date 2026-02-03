@@ -199,15 +199,14 @@ VIZ/
 │       ├── cppn.py               # CPPN 神经网络图案
 │       └── pipeline.py           # 主管线（编排所有模块）
 │
-├── docs/                         # 详细文档
-│   ├── usage.md                  # CLI 使用指南
-│   ├── rendering.md              # 渲染管线
-│   ├── flexible.md               # 柔性输出系统
-│   ├── effects.md                # 效果参考
-│   ├── kaomoji.md                # 颜文字系统
-│   └── box_chars.md              # Box-drawing 字符系统
-│
-└── archive/                      # 已弃用 — 仅供参考，请勿修改
+└── docs/                         # 详细文档
+    ├── ai-integration.md         # AI 集成指南（建议首先阅读）
+    ├── usage.md                  # CLI 使用指南
+    ├── rendering.md              # 渲染管线
+    ├── flexible.md               # 柔性输出系统
+    ├── effects.md                # 效果参考
+    ├── kaomoji.md                # 颜文字系统
+    └── box_chars.md              # Box-drawing 字符系统
 ```
 
 ## 依赖
