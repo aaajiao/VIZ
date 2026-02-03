@@ -664,12 +664,11 @@ def _generate_video(static_path, args, content_type="mood", content_data=None):
     if "custom_moods" in content_data:
         moods_list = content_data["custom_moods"]
 
-    # === 坐标缩放 (1080 → 160) ===
+    # === 精灵坐标直接使用输出分辨率 (引擎先上采样再渲染精灵) ===
     INTERNAL = 160
     OUTPUT = 1080
-    scale_factor = INTERNAL / OUTPUT
 
-    # === 布局 (复用 _select_layout 后映射到内部坐标) ===
+    # === 布局 ===
     layout = _select_layout(rng, OUTPUT, OUTPUT)
     positions = layout["positions"]
 
@@ -682,11 +681,11 @@ def _generate_video(static_path, args, content_type="mood", content_data=None):
         phase = idx * 0.8  # 错开相位
         sprite = KaomojiSprite(
             mood,
-            x=x * scale_factor,
-            y=y * scale_factor,
+            x=x,
+            y=y,
             color=colors["primary"],
             outline_color=colors.get("outline", colors["secondary"]),
-            scale=max(1, int(size * scale_factor)),
+            scale=max(1, size // 100),
             animations=[
                 {
                     "type": "floating",
@@ -706,11 +705,11 @@ def _generate_video(static_path, args, content_type="mood", content_data=None):
     sprites.append(
         KaomojiSprite(
             central_mood,
-            x=center_x * scale_factor,
-            y=center_y * scale_factor,
+            x=center_x,
+            y=center_y,
             color=colors["accent"],
             outline_color=colors.get("outline", colors["secondary"]),
-            scale=max(1, int(central_size * scale_factor)),
+            scale=max(1, central_size // 100),
             animations=[
                 {"type": "breathing", "amp": 0.12, "speed": 2.0},
                 {"type": "floating", "amp": 2.0, "speed": 0.6},
@@ -724,8 +723,8 @@ def _generate_video(static_path, args, content_type="mood", content_data=None):
     sprites.append(
         TextSprite(
             title,
-            x=(OUTPUT // 2 - len(title) * 10) * scale_factor,
-            y=title_y * scale_factor,
+            x=OUTPUT // 2 - len(title) * 10,
+            y=title_y,
             color=colors["primary"],
             glow_color=colors.get("glow", colors["secondary"]),
             glow_size=2,
@@ -743,8 +742,8 @@ def _generate_video(static_path, args, content_type="mood", content_data=None):
         sprites.append(
             TextSprite(
                 info_text,
-                x=(OUTPUT // 2 - len(info_text) * 3) * scale_factor,
-                y=info_y * scale_factor,
+                x=OUTPUT // 2 - len(info_text) * 3,
+                y=info_y,
                 color=colors["primary"],
                 glow_size=1,
             )
@@ -756,8 +755,8 @@ def _generate_video(static_path, args, content_type="mood", content_data=None):
     sprites.append(
         TextSprite(
             timestamp,
-            x=(OUTPUT // 2 - 100) * scale_factor,
-            y=timestamp_y * scale_factor,
+            x=OUTPUT // 2 - 100,
+            y=timestamp_y,
             color=colors.get("dim", colors["secondary"]),
             glow_size=1,
         )
@@ -775,11 +774,11 @@ def _generate_video(static_path, args, content_type="mood", content_data=None):
         sprites.append(
             KaomojiSprite(
                 mood,
-                x=sx * scale_factor,
-                y=sy * scale_factor,
+                x=sx,
+                y=sy,
                 color=colors["primary"],
                 outline_color=colors.get("outline", colors["secondary"]),
-                scale=max(1, int(rng.randint(2, 5) * scale_factor)),
+                scale=max(1, rng.randint(2, 5)),
                 animations=[
                     {"type": "floating", "amp": 2.0, "speed": 0.5, "phase": i * 1.2},
                 ],

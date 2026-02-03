@@ -174,7 +174,11 @@ class FlexiblePipeline:
         )
 
         # 合并效果参数和色温参数
+        # 注意：overlay_params 也合并进来，使复合效果的两个子效果
+        # 都能从 ctx.params 中找到自己的参数
         render_params = {**spec.bg_params}
+        if spec.overlay_params:
+            render_params.update(spec.overlay_params)
         render_params["warmth"] = visual_params.get("warmth", 0.5)
         render_params["saturation"] = visual_params.get("saturation", 0.9)
 
@@ -245,6 +249,8 @@ class FlexiblePipeline:
         )
 
         render_params = {**spec.bg_params}
+        if spec.overlay_params:
+            render_params.update(spec.overlay_params)
         render_params["warmth"] = visual_params.get("warmth", 0.5)
         render_params["saturation"] = visual_params.get("saturation", 0.9)
 

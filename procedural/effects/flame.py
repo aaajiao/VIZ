@@ -172,8 +172,9 @@ class DoomFlameEffect(BaseEffect):
             return Cell(char_idx=0, fg=(0, 0, 0), bg=None)
 
         # === 映射到字符索引 ===
-        char_idx = int(map_range(heat, 0, 50, 0, len(self.DENSITY) - 1))
-        char_idx = int(clamp(char_idx, 0, len(self.DENSITY) - 1))
+        # 统一使用 0-9 范围 (与渲染器 char_idx/9.0 归一化兼容)
+        char_idx = int(map_range(heat, 0, 50, 0, 9))
+        char_idx = int(clamp(char_idx, 0, 9))
 
         # === 映射到颜色 ===
         heat_norm = clamp(heat / 50, 0.0, 1.0)
