@@ -225,12 +225,12 @@ class Engine:
             color_scheme=self.color_scheme,
         )
 
-        # 7. 渲染精灵层到低分辨率图像
+        # 7. 上采样到输出分辨率 (精灵坐标在输出空间，必须先上采样)
+        img = upscale_image(img, self.output_size)
+
+        # 8. 渲染精灵层到输出分辨率图像
         for sprite in sprites:
             sprite.render(img, time=time)
-
-        # 8. 上采样到输出分辨率
-        img = upscale_image(img, self.output_size)
 
         # 9. 后处理 (sharpen + contrast)
         img = self._postprocess(img)

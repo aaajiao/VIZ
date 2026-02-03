@@ -22,6 +22,7 @@ __all__ = [
     "COLOR_SCHEMES",
     "char_at_value",
     "value_to_color",
+    "value_to_color_continuous",
 ]
 
 # ==================== ASCII 梯度定义 ====================
@@ -43,6 +44,8 @@ COLOR_SCHEMES = {
     "cool": "cool",
     "matrix": "matrix",
     "plasma": "plasma",
+    "ocean": "ocean",
+    "fire": "fire",
 }
 
 
@@ -108,8 +111,59 @@ def value_to_color(value, color_scheme="heat"):
         return _matrix_to_color(value)
     elif color_scheme == "plasma":
         return _plasma_to_color(value)
+    elif color_scheme == "ocean":
+        return _ocean_to_color(value)
+    elif color_scheme == "fire":
+        return _fire_to_color(value)
     else:
         return _heat_to_color(value)  # 默认热力图
+
+
+def value_to_color_continuous(value, warmth=0.5, saturation=1.0):
+    """
+    连续颜色映射 - 使用 warmth/saturation 连续参数生成颜色
+
+    当 effects 从 ctx.params 获取 warmth/saturation 时，
+    用此函数替代固定 color_scheme 映射，实现无级色温过渡。
+
+    Args:
+        value: 0.0 到 1.0 的像素值
+        warmth: 色温 (0=冷蓝, 1=暖红)
+        saturation: 饱和度 (0=灰, 1=纯色)
+
+    Returns:
+        tuple: (r, g, b) 元组，0-255
+    """
+    import colorsys
+
+    value = clamp(value, 0.0, 1.0)
+
+    # 色温 → 基础色相 (0=冷蓝 0.6, 1=暖红 0.0)
+    # 使用分段线性映射
+    _WARMTH_HUE = [
+        (0.0, 0.60), (0.15, 0.55), (0.3, 0.50), (0.45, 0.40),
+        (0.55, 0.30), (0.7, 0.15), (0.8, 0.10), (0.9, 0.03), (1.0, 0.00),
+    ]
+
+    w = clamp(warmth, 0.0, 1.0)
+    base_hue = _WARMTH_HUE[-1][1]
+    for i in range(len(_WARMTH_HUE) - 1):
+        w0, h0 = _WARMTH_HUE[i]
+        w1, h1 = _WARMTH_HUE[i + 1]
+        if w <= w1:
+            t = (w - w0) / (w1 - w0) if w1 > w0 else 0.0
+            base_hue = h0 + (h1 - h0) * t
+            break
+
+    # value 越高色相略偏移
+    hue = (base_hue + value * 0.1) % 1.0
+
+    # 饱和度随 value 极端值降低 (纯黑纯白趋无彩)
+    value_sat_factor = 1.0 - (2.0 * value - 1.0) ** 4
+    eff_sat = clamp(saturation * value_sat_factor, 0.0, 1.0)
+
+    r, g, b = colorsys.hsv_to_rgb(hue, eff_sat, value)
+    return (int(r * 255), int(g * 255), int(b * 255))
 
 
 # ==================== 颜色映射实现 ====================
@@ -253,3 +307,66 @@ def _plasma_to_color(t):
         r, g, b = v, p, q
 
     return (int(r * 255), int(g * 255), int(b * 255))
+
+
+def _ocean_to_color(t):
+    """
+    海洋色映射：深海蓝 → 青 → 海面白
+
+    Args:
+        t: 0.0 到 1.0 的值
+
+    Returns:
+        tuple: (r, g, b)
+    """
+    if t < 0.3:
+        # 深海蓝 → 海蓝
+        f = t / 0.3
+        r = int(f * 30)
+        g = int(20 + f * 80)
+        b = int(80 + f * 100)
+        return (r, g, b)
+    elif t < 0.6:
+        # 海蓝 → 青
+        f = (t - 0.3) / 0.3
+        r = int(30 + f * 50)
+        g = int(100 + f * 130)
+        b = int(180 + f * 55)
+        return (r, g, b)
+    else:
+        # 青 → 白
+        f = (t - 0.6) / 0.4
+        r = int(80 + f * 175)
+        g = int(230 + f * 25)
+        b = int(235 + f * 20)
+        return (r, g, b)
+
+
+def _fire_to_color(t):
+    """
+    火焰色映射：黑 → 暗红 → 橙红 → 亮黄 → 白黄
+
+    比 heat 更偏橙红，模拟真实火焰光谱。
+
+    Args:
+        t: 0.0 到 1.0 的值
+
+    Returns:
+        tuple: (r, g, b)
+    """
+    if t < 0.2:
+        # 黑 → 暗红
+        f = t / 0.2
+        return (int(f * 150), 0, 0)
+    elif t < 0.45:
+        # 暗红 → 橙红
+        f = (t - 0.2) / 0.25
+        return (150 + int(f * 105), int(f * 80), 0)
+    elif t < 0.7:
+        # 橙红 → 亮黄
+        f = (t - 0.45) / 0.25
+        return (255, 80 + int(f * 175), int(f * 30))
+    else:
+        # 亮黄 → 白黄
+        f = (t - 0.7) / 0.3
+        return (255, 255, 30 + int(f * 225))

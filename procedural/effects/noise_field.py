@@ -44,7 +44,7 @@ import math
 from procedural.types import Context, Cell, Buffer
 from procedural.core.noise import ValueNoise
 from procedural.core.mathx import clamp
-from procedural.palette import value_to_color
+from procedural.palette import value_to_color, value_to_color_continuous
 from .base import BaseEffect
 
 __all__ = ["NoiseFieldEffect"]
@@ -130,6 +130,10 @@ class NoiseFieldEffect(BaseEffect):
         # 初始化噪声生成器
         noise = ValueNoise(seed=ctx.seed)
 
+        # 连续颜色参数
+        warmth = ctx.params.get("warmth", None)
+        saturation = ctx.params.get("saturation", None)
+
         return {
             "noise": noise,
             "scale": scale,
@@ -139,6 +143,8 @@ class NoiseFieldEffect(BaseEffect):
             "animate": animate,
             "speed": speed,
             "turbulence": turbulence,
+            "warmth": warmth,
+            "saturation": saturation,
         }
 
     def main(self, x: int, y: int, ctx: Context, state: dict) -> Cell:
@@ -206,17 +212,17 @@ class NoiseFieldEffect(BaseEffect):
         char_idx = clamp(char_idx, 0, 9)
 
         # === 映射到颜色 ===
-        # 根据模式选择颜色方案
-        if turbulence:
-            # 湍流模式使用火焰色
-            color_scheme = "fire"
-        else:
-            # 普通模式使用 plasma 色
-            color_scheme = "plasma"
-
-        # 添加时间相位偏移
         color_value = (value + t * 0.05) % 1.0
-        color = value_to_color(color_value, color_scheme)
+        if state.get("warmth") is not None:
+            color = value_to_color_continuous(
+                color_value,
+                warmth=state["warmth"],
+                saturation=state.get("saturation", 1.0),
+            )
+        else:
+            # 根据模式选择颜色方案
+            color_scheme = "fire" if turbulence else "plasma"
+            color = value_to_color(color_value, color_scheme)
 
         # 返回 Cell
         return Cell(

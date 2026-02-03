@@ -38,7 +38,7 @@ import math
 from procedural.types import Context, Cell, Buffer
 from procedural.core.vec import Vec2, dot, length, sub
 from procedural.core.mathx import clamp, map_range
-from procedural.palette import char_at_value, value_to_color
+from procedural.palette import char_at_value, value_to_color, value_to_color_continuous
 from .base import BaseEffect
 
 __all__ = ["PlasmaEffect"]
@@ -95,12 +95,18 @@ class PlasmaEffect(BaseEffect):
         center = Vec2(ctx.width / 2.0, ctx.height / 2.0)
         aspect = ctx.width / ctx.height if ctx.height > 0 else 1.0
 
+        # 连续颜色参数 (来自 flexible pipeline)
+        warmth = ctx.params.get("warmth", None)
+        saturation = ctx.params.get("saturation", None)
+
         return {
             "frequency": frequency,
             "speed": speed,
             "color_phase": color_phase,
             "center": center,
             "aspect": aspect,
+            "warmth": warmth,
+            "saturation": saturation,
         }
 
     def main(self, x: int, y: int, ctx: Context, state: dict) -> Cell:
@@ -176,9 +182,16 @@ class PlasmaEffect(BaseEffect):
         char_idx = int(clamp(char_idx, 0, 9))
 
         # === 映射到颜色 ===
-        # 使用 plasma 颜色方案 + 时间相位偏移
+        # 使用连续颜色空间 (当 warmth/saturation 可用时) 或 plasma 方案
         color_value = (value + t * 0.05 + color_phase) % 1.0
-        color = value_to_color(color_value, "plasma")
+        if state["warmth"] is not None:
+            color = value_to_color_continuous(
+                color_value,
+                warmth=state["warmth"],
+                saturation=state.get("saturation", 1.0),
+            )
+        else:
+            color = value_to_color(color_value, "plasma")
 
         # 返回 Cell
         return Cell(

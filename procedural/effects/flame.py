@@ -44,7 +44,7 @@ import math
 from procedural.types import Context, Cell, Buffer
 from procedural.core.noise import ValueNoise
 from procedural.core.mathx import clamp, map_range
-from procedural.palette import value_to_color
+from procedural.palette import value_to_color, value_to_color_continuous
 from .base import BaseEffect
 
 __all__ = ["DoomFlameEffect"]
@@ -110,6 +110,8 @@ class DoomFlameEffect(BaseEffect):
 
         # 提取参数
         intensity = ctx.params.get("intensity", 1.0)
+        warmth = ctx.params.get("warmth", None)
+        saturation = ctx.params.get("saturation", None)
 
         # === 底部生成热量 ===
         last_row = self.width * (self.height - 1)
@@ -136,6 +138,8 @@ class DoomFlameEffect(BaseEffect):
         return {
             "intensity": intensity,
             "heat_map": self.heat_map,
+            "warmth": warmth,
+            "saturation": saturation,
         }
 
     def main(self, x: int, y: int, ctx: Context, state: dict) -> Cell:
@@ -168,13 +172,20 @@ class DoomFlameEffect(BaseEffect):
             return Cell(char_idx=0, fg=(0, 0, 0), bg=None)
 
         # === 映射到字符索引 ===
-        char_idx = int(map_range(heat, 0, 50, 0, len(self.DENSITY) - 1))
-        char_idx = int(clamp(char_idx, 0, len(self.DENSITY) - 1))
+        # 统一使用 0-9 范围 (与渲染器 char_idx/9.0 归一化兼容)
+        char_idx = int(map_range(heat, 0, 50, 0, 9))
+        char_idx = int(clamp(char_idx, 0, 9))
 
-        # === 映射到颜色 (热力图) ===
-        # 归一化热量到 0-1
+        # === 映射到颜色 ===
         heat_norm = clamp(heat / 50, 0.0, 1.0)
-        color = value_to_color(heat_norm, "heat")
+        if state.get("warmth") is not None:
+            color = value_to_color_continuous(
+                heat_norm,
+                warmth=state["warmth"],
+                saturation=state.get("saturation", 1.0),
+            )
+        else:
+            color = value_to_color(heat_norm, "heat")
 
         return Cell(
             char_idx=char_idx,

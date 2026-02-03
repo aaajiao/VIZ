@@ -174,7 +174,11 @@ class FlexiblePipeline:
         )
 
         # 合并效果参数和色温参数
+        # 注意：overlay_params 也合并进来，使复合效果的两个子效果
+        # 都能从 ctx.params 中找到自己的参数
         render_params = {**spec.bg_params}
+        if spec.overlay_params:
+            render_params.update(spec.overlay_params)
         render_params["warmth"] = visual_params.get("warmth", 0.5)
         render_params["saturation"] = visual_params.get("saturation", 0.9)
 
@@ -245,6 +249,8 @@ class FlexiblePipeline:
         )
 
         render_params = {**spec.bg_params}
+        if spec.overlay_params:
+            render_params.update(spec.overlay_params)
         render_params["warmth"] = visual_params.get("warmth", 0.5)
         render_params["saturation"] = visual_params.get("saturation", 0.9)
 
@@ -410,8 +416,17 @@ class FlexiblePipeline:
             spec.layout_type, spec.layout_count, w, h, rng
         )
 
+        # === 从 grammar 动画配置构建动画模板 ===
+        anim_templates = spec.animations if spec.animations else [
+            {"type": "floating", "amp": spec.float_amp, "speed": 1.0},
+            {"type": "breathing", "amp": spec.breath_amp, "speed": 2.0},
+        ]
+
         # === 颜文字精灵 ===
-        mood_options = self._mood_from_valence(visual_params.get("valence", 0.0))
+        mood_options = self._mood_from_valence_arousal(
+            visual_params.get("valence", 0.0),
+            visual_params.get("arousal", 0.0),
+        )
         for i, pos in enumerate(positions[:spec.kaomoji_count]):
             if len(pos) == 3:
                 px, py, size = pos
@@ -422,25 +437,24 @@ class FlexiblePipeline:
             mood = rng.choice(mood_options)
             phase = i * 0.5  # 错开相位
 
+            # 从文法动画配置构建精灵动画 (注入每个精灵的相位)
+            sprite_anims = []
+            for tmpl in anim_templates:
+                anim = dict(tmpl)
+                if anim["type"] == "floating":
+                    anim["phase"] = phase
+                    anim["speed"] = anim.get("speed", 1.0) + rng.random() * 0.5
+                elif anim["type"] == "breathing":
+                    anim["speed"] = anim.get("speed", 2.0) + rng.random()
+                sprite_anims.append(anim)
+
             sprite = KaomojiSprite(
                 mood=mood,
                 x=px, y=py,
                 color=palette["primary"],
                 outline_color=palette["outline"],
                 scale=max(1, size // 100),
-                animations=[
-                    {
-                        "type": "floating",
-                        "amp": spec.float_amp,
-                        "speed": 0.5 + rng.random() * 1.5,
-                        "phase": phase,
-                    },
-                    {
-                        "type": "breathing",
-                        "amp": spec.breath_amp,
-                        "speed": 1.0 + rng.random() * 2.0,
-                    },
-                ],
+                animations=sprite_anims,
             )
             sprites.append(sprite)
 
@@ -460,6 +474,48 @@ class FlexiblePipeline:
             )
             sprites.append(sprite)
 
+        # === 装饰 ===
+        if spec.decoration_style != "none":
+            deco_sprites = self._build_decoration_sprites(
+                spec, palette, w, h, rng
+            )
+            sprites.extend(deco_sprites)
+
+        # === 粒子文字 ===
+        if spec.particle_chars:
+            particle_sprites = self._build_particle_sprites(
+                spec, palette, w, h, rng
+            )
+            sprites.extend(particle_sprites)
+
+        # === 氛围文字 ===
+        for elem in spec.text_elements:
+            ex, ey = elem["position"]
+            px = int(ex * w)
+            py = int(ey * h)
+            opacity = elem.get("opacity", 0.6)
+            # 通过降低颜色亮度模拟透明度
+            dim_factor = max(0.2, opacity)
+            text_color = tuple(
+                int(c * dim_factor) for c in palette["secondary"]
+            )
+            sprites.append(TextSprite(
+                text=elem["text"],
+                x=px,
+                y=py,
+                color=text_color,
+                glow_color=palette.get("glow", text_color),
+                glow_size=1,
+                animations=[
+                    {
+                        "type": "floating",
+                        "amp": 2.0,
+                        "speed": 0.3,
+                        "phase": rng.uniform(0, 6.28),
+                    },
+                ],
+            ))
+
         # === 标题文字 ===
         if title:
             sprites.append(TextSprite(
@@ -475,6 +531,109 @@ class FlexiblePipeline:
             ))
 
         return sprites
+
+    def _build_decoration_sprites(
+        self,
+        spec: SceneSpec,
+        palette: dict,
+        w: int,
+        h: int,
+        rng: random.Random,
+    ) -> list:
+        """根据装饰风格生成装饰精灵"""
+        decos = []
+        chars = spec.decoration_chars
+        color = palette.get("dim", palette.get("outline", (80, 80, 80)))
+        margin = 40
+
+        if spec.decoration_style == "corners":
+            positions = [
+                (margin, margin),
+                (w - margin, margin),
+                (margin, h - margin),
+                (w - margin, h - margin),
+            ]
+            for i, (x, y) in enumerate(positions):
+                ch = chars[i % len(chars)]
+                decos.append(TextSprite(
+                    text=ch, x=x, y=y, color=color, scale=1.0,
+                    animations=[{"type": "breathing", "amp": 0.02, "speed": 0.5}],
+                ))
+
+        elif spec.decoration_style == "edges":
+            # 四条边各放一些字符
+            for i in range(4):
+                ch = chars[i % len(chars)]
+                for j in range(3):
+                    t = (j + 1) / 4
+                    if i == 0:  # top
+                        x, y = int(t * w), margin
+                    elif i == 1:  # bottom
+                        x, y = int(t * w), h - margin
+                    elif i == 2:  # left
+                        x, y = margin, int(t * h)
+                    else:  # right
+                        x, y = w - margin, int(t * h)
+                    decos.append(TextSprite(
+                        text=ch, x=x, y=y, color=color, scale=1.0,
+                    ))
+
+        elif spec.decoration_style == "scattered":
+            count = rng.randint(8, 16)
+            for _ in range(count):
+                ch = rng.choice(chars)
+                x = rng.randint(margin, w - margin)
+                y = rng.randint(margin, h - margin)
+                decos.append(TextSprite(
+                    text=ch, x=x, y=y, color=color, scale=1.0,
+                    animations=[{
+                        "type": "floating",
+                        "amp": rng.uniform(1, 4),
+                        "speed": rng.uniform(0.3, 1.0),
+                        "phase": rng.uniform(0, 6.28),
+                    }],
+                ))
+
+        elif spec.decoration_style == "minimal":
+            # 只在两个对角放装饰
+            decos.append(TextSprite(
+                text=chars[0], x=margin, y=margin, color=color, scale=1.0,
+            ))
+            decos.append(TextSprite(
+                text=chars[-1], x=w - margin, y=h - margin, color=color, scale=1.0,
+            ))
+
+        return decos
+
+    def _build_particle_sprites(
+        self,
+        spec: SceneSpec,
+        palette: dict,
+        w: int,
+        h: int,
+        rng: random.Random,
+    ) -> list:
+        """生成粒子字符精灵"""
+        particles = []
+        chars = spec.particle_chars
+        color = palette.get("dim", (60, 60, 60))
+        count = rng.randint(10, 25)
+
+        for _ in range(count):
+            ch = rng.choice(chars)
+            x = rng.randint(20, w - 20)
+            y = rng.randint(20, h - 20)
+            particles.append(TextSprite(
+                text=ch, x=x, y=y, color=color, scale=1.0,
+                animations=[{
+                    "type": "floating",
+                    "amp": rng.uniform(2, 6),
+                    "speed": rng.uniform(0.2, 0.8),
+                    "phase": rng.uniform(0, 6.28),
+                }],
+            ))
+
+        return particles
 
     def _generate_positions(
         self,
@@ -499,22 +658,49 @@ class FlexiblePipeline:
         else:
             return random_scatter(width, height, count, rng)
 
-    def _mood_from_valence(self, valence: float) -> list[str]:
+    def _mood_from_valence_arousal(
+        self, valence: float, arousal: float = 0.0
+    ) -> list[str]:
         """
-        从效价值推导颜文字情绪列表
+        从效价+唤醒推导颜文字情绪列表
 
-        6 档梯度，每档使用细分情绪分类而非粗粒度的 bull/bear，
-        使颜文字选择更加丰富和精确。
+        使用 valence 确定正/负方向，arousal 确定能量级别，
+        避免 panic(高唤醒)和 sadness(低唤醒) 使用相同颜文字。
         """
+        high_arousal = arousal > 0.3
+        low_arousal = arousal < -0.3
+
         if valence > 0.7:
-            return ["euphoria", "love", "proud", "excitement"]
+            if high_arousal:
+                return ["euphoria", "excitement", "proud"]
+            else:
+                return ["love", "relaxed", "happy", "proud"]
         elif valence > 0.3:
-            return ["happy", "excitement", "relaxed", "love"]
+            if high_arousal:
+                return ["excitement", "happy", "euphoria"]
+            else:
+                return ["relaxed", "love", "happy"]
         elif valence > 0.0:
-            return ["relaxed", "neutral", "thinking", "happy"]
+            if high_arousal:
+                return ["surprised", "excited", "happy"]
+            elif low_arousal:
+                return ["sleepy", "relaxed", "bored"]
+            else:
+                return ["neutral", "thinking", "relaxed"]
         elif valence > -0.3:
-            return ["confused", "bored", "disappointed", "thinking"]
+            if high_arousal:
+                return ["confused", "surprised", "anxiety"]
+            elif low_arousal:
+                return ["bored", "sleepy", "disappointed"]
+            else:
+                return ["confused", "thinking", "disappointed"]
         elif valence > -0.6:
-            return ["sad", "anxiety", "lonely", "disappointed"]
+            if high_arousal:
+                return ["anxiety", "fear", "angry"]
+            else:
+                return ["sad", "lonely", "disappointed"]
         else:
-            return ["panic", "fear", "angry", "sad"]
+            if high_arousal:
+                return ["panic", "fear", "angry"]
+            else:
+                return ["sad", "lonely", "disappointed", "fear"]

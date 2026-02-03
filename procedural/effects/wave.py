@@ -33,7 +33,7 @@ Wave 波纹效果 - Wave Effect
 import math
 from procedural.types import Context, Cell, Buffer
 from procedural.core.mathx import clamp
-from procedural.palette import value_to_color
+from procedural.palette import value_to_color, value_to_color_continuous
 from .base import BaseEffect
 
 __all__ = ["WaveEffect"]
@@ -106,6 +106,10 @@ class WaveEffect(BaseEffect):
             speed_mult = 1.0 - (i % 2) * 0.3 + (i % 3) * 0.2
             speeds.append(base_speed * speed_mult)
 
+        # 连续颜色参数
+        warmth = ctx.params.get("warmth", None)
+        saturation = ctx.params.get("saturation", None)
+
         return {
             "wave_count": wave_count,
             "base_frequency": base_frequency,
@@ -114,6 +118,8 @@ class WaveEffect(BaseEffect):
             "frequencies": frequencies,
             "speeds": speeds,
             "color_scheme": color_scheme,
+            "warmth": warmth,
+            "saturation": saturation,
         }
 
     def main(self, x: int, y: int, ctx: Context, state: dict) -> Cell:
@@ -163,8 +169,14 @@ class WaveEffect(BaseEffect):
         char_idx = int(clamp(char_idx, 0, 9))
 
         # === 映射到颜色 ===
-        # 使用指定颜色方案
-        color = value_to_color(value, color_scheme)
+        if state.get("warmth") is not None:
+            color = value_to_color_continuous(
+                value,
+                warmth=state["warmth"],
+                saturation=state.get("saturation", 1.0),
+            )
+        else:
+            color = value_to_color(value, color_scheme)
 
         # 返回 Cell
         return Cell(
