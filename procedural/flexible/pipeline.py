@@ -381,7 +381,8 @@ class FlexiblePipeline:
                 if ov.get("blend"):
                     spec.overlay_blend = ov["blend"]
                 if ov.get("mix") is not None:
-                    spec.overlay_mix = float(ov["mix"])
+                    mix = max(0.0, min(1.0, float(ov["mix"])))
+                    spec.overlay_mix = mix
         if overrides.get("params"):
             spec.bg_params.update(overrides["params"])
 

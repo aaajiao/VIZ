@@ -21,6 +21,27 @@ def make_content(data=None):
     if data is None:
         data = {}
 
+    # Truncate text fields to safe lengths for rendering
+    _MAX_HEADLINE = 120
+    _MAX_TITLE = 80
+    _MAX_BODY = 500
+    _MAX_METRIC_LEN = 60
+    _MAX_METRICS = 10
+
+    if data.get("headline") and len(data["headline"]) > _MAX_HEADLINE:
+        data["headline"] = data["headline"][:_MAX_HEADLINE] + "..."
+    if data.get("title") and len(data["title"]) > _MAX_TITLE:
+        data["title"] = data["title"][:_MAX_TITLE] + "..."
+    if data.get("body") and len(data["body"]) > _MAX_BODY:
+        data["body"] = data["body"][:_MAX_BODY] + "..."
+    if data.get("metrics"):
+        metrics = data["metrics"][:_MAX_METRICS]
+        data["metrics"] = [
+            m[:_MAX_METRIC_LEN] + "..." if len(m) > _MAX_METRIC_LEN else m
+            for m in metrics
+            if isinstance(m, str)
+        ]
+
     # Clamp numeric params to safe ranges
     duration = data.get("duration", 3.0)
     try:
