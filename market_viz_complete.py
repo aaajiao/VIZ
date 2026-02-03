@@ -15,6 +15,7 @@ Complete Market Visualization System
 import argparse
 import json
 import math
+import os
 import random
 import re
 import subprocess
@@ -22,6 +23,13 @@ import sys
 from datetime import datetime
 
 from PIL import Image, ImageDraw, ImageEnhance, ImageFilter
+
+try:
+    from lib.kaomoji import draw_kaomoji
+except ImportError:
+    from viz.lib.kaomoji import draw_kaomoji
+
+ASCII_GRADIENT = " .:-=+*#%@"
 
 # ========== ASCII 颜文字（只用基础字符，保证可辨识）==========
 ASCII_KAOMOJI = {
@@ -131,12 +139,15 @@ COLOR_PALETTES = {
 
 def fetch_market_news(query="US stock market today"):
     """获取市场新闻（使用 Perplexity）"""
-    result = subprocess.run(
-        ["/workspace/scripts/perplexity-search.sh", query],
-        capture_output=True,
-        text=True,
-    )
-    return result.stdout
+    try:
+        result = subprocess.run(
+            ["/workspace/scripts/perplexity-search.sh", query],
+            capture_output=True,
+            text=True,
+        )
+        return result.stdout
+    except FileNotFoundError:
+        return None
 
 
 def analyze_sentiment(news_text):
@@ -234,7 +245,63 @@ def draw_glow_text_large(draw, x, y, text, color, glow_color, scale=15):
             draw.text((x + dx, y + dy), text, fill=color)
 
 
-def create_complete_visualization(news_text, output_path):
+def _draw_ascii_texture(draw, rng, width, height, colors, density=0.35):
+    """绘制 ASCII 纹理层"""
+    cell = rng.choice([18, 22, 26, 30])
+    text_color = colors.get("secondary", colors["primary"])
+    for y in range(0, height, cell):
+        for x in range(0, width, cell):
+            if rng.random() < density:
+                char = ASCII_GRADIENT[int(rng.random() * (len(ASCII_GRADIENT) - 1))]
+                draw.text((x, y), char, fill=text_color)
+
+
+def _scatter_kaomoji(draw, rng, width, height, colors, mood, exclude_box=None):
+    """散布小型颜文字以强化 ASCII 属性"""
+    count = rng.randint(6, 14)
+    for _ in range(count):
+        x = rng.randint(40, width - 200)
+        y = rng.randint(40, height - 200)
+        if exclude_box:
+            box_x, box_y, box_w, box_h = exclude_box
+            if (
+                box_x - 60 <= x <= box_x + box_w + 60
+                and box_y - 60 <= y <= box_y + box_h + 60
+            ):
+                continue
+        size = rng.randint(2, 5)
+        draw_kaomoji(
+            draw,
+            x,
+            y,
+            mood,
+            color=colors["secondary"],
+            outline_color=colors.get("glow", colors["primary"]),
+            size=size,
+            rng=rng,
+        )
+
+
+def _render_procedural_background(effect_name, seed, size, blend_color):
+    """渲染 procedural 背景 (静态)"""
+    if not effect_name:
+        return None
+
+    from procedural.engine import Engine
+    from procedural.effects import get_effect
+
+    rng = random.Random(seed)
+    engine = Engine(internal_size=(160, 160), output_size=size, contrast=1.1)
+    effect = get_effect(effect_name)
+    frame = engine.render_frame(effect, time=rng.random() * 6.0, seed=seed)
+
+    overlay = Image.new("RGB", size, blend_color)
+    frame = Image.blend(frame, overlay, 0.35)
+
+    return frame
+
+
+def create_complete_visualization(news_text, output_path, seed=None, effect=None):
     """
     创建完整的市场可视化
     """
@@ -244,29 +311,174 @@ def create_complete_visualization(news_text, output_path):
     sentiment = analyze_sentiment(news_text)
     colors = COLOR_PALETTES[sentiment]
 
+    if seed is None:
+        seed = random.randint(0, 999999)
+    rng = random.Random(seed)
+
+    effect_map = {
+        "bull": "plasma",
+        "bear": "flame",
+        "neutral": "wave",
+    }
+    effect_name = effect or effect_map.get(sentiment, "plasma")
+
+    layouts = [
+        {
+            "box_w": 800,
+            "box_h": 450,
+            "box_x": (WIDTH - 800) // 2,
+            "box_y": (HEIGHT - 450) // 2,
+            "left": (50, 150),
+            "right": (WIDTH - 500, HEIGHT - 400),
+            "kao": [
+                (150, 50),
+                (WIDTH - 300, 50),
+                (100, HEIGHT - 250),
+                (WIDTH - 350, HEIGHT - 250),
+            ],
+        },
+        {
+            "box_w": 740,
+            "box_h": 460,
+            "box_x": 120,
+            "box_y": 220,
+            "left": (WIDTH - 420, 140),
+            "right": (80, HEIGHT - 420),
+            "kao": [
+                (120, 80),
+                (WIDTH - 320, 120),
+                (140, HEIGHT - 260),
+                (WIDTH - 360, HEIGHT - 260),
+            ],
+        },
+        {
+            "box_w": 780,
+            "box_h": 500,
+            "box_x": (WIDTH - 780) // 2,
+            "box_y": 160,
+            "left": (60, 140),
+            "right": (WIDTH - 520, HEIGHT - 320),
+            "kao": [
+                (180, 80),
+                (WIDTH - 360, 100),
+                (140, HEIGHT - 260),
+                (WIDTH - 320, HEIGHT - 260),
+            ],
+        },
+        # New Layout 1: Vertical Split
+        {
+            "box_w": 500,
+            "box_h": 800,
+            "box_x": 50,
+            "box_y": (HEIGHT - 800) // 2,
+            "left": (WIDTH - 400, 100),
+            "right": (WIDTH - 400, HEIGHT - 300),
+            "kao": [
+                (WIDTH - 300, 300),
+                (WIDTH - 300, 500),
+                (WIDTH - 300, 700),
+                (WIDTH - 300, 900),
+            ],
+        },
+        # New Layout 2: Horizontal Split
+        {
+            "box_w": 900,
+            "box_h": 400,
+            "box_x": (WIDTH - 900) // 2,
+            "box_y": 50,
+            "left": (100, HEIGHT - 300),
+            "right": (WIDTH - 500, HEIGHT - 300),
+            "kao": [
+                (100, 500),
+                (300, 500),
+                (WIDTH - 300, 500),
+                (WIDTH - 100, 500),
+            ],
+        },
+        # New Layout 3: Corner Focus
+        {
+            "box_w": 600,
+            "box_h": 600,
+            "box_x": (WIDTH - 600) // 2,
+            "box_y": (HEIGHT - 600) // 2,
+            "left": (50, 50),
+            "right": (WIDTH - 450, HEIGHT - 250),
+            "kao": [
+                (WIDTH - 200, 50),
+                (50, HEIGHT - 200),
+                (WIDTH // 2 - 100, 100),
+                (WIDTH // 2 - 100, HEIGHT - 150),
+            ],
+        },
+        # New Layout 4: Edge Frame
+        {
+            "box_w": 700,
+            "box_h": 500,
+            "box_x": (WIDTH - 700) // 2,
+            "box_y": (HEIGHT - 500) // 2,
+            "left": (60, 100),
+            "right": (WIDTH - 520, HEIGHT - 340),
+            "kao": [
+                (60, 60),
+                (WIDTH - 260, 60),
+                (60, HEIGHT - 220),
+                (WIDTH - 260, HEIGHT - 220),
+            ],
+        },
+        # New Layout 5: Diagonal Strip
+        {
+            "box_w": 820,
+            "box_h": 420,
+            "box_x": 140,
+            "box_y": 120,
+            "left": (80, HEIGHT - 300),
+            "right": (WIDTH - 520, HEIGHT - 360),
+            "kao": [
+                (120, 80),
+                (WIDTH - 320, 140),
+                (220, HEIGHT - 220),
+                (WIDTH - 420, HEIGHT - 160),
+            ],
+        },
+    ]
+    layout = rng.choice(layouts)
+
     # 2. 提取指标
     metrics = extract_metrics(news_text)
 
-    # 3. 创建画布
-    img = Image.new("RGB", (WIDTH, HEIGHT), colors["bg"])
+    # 3. 创建画布 (procedural 背景 + 叠色)
+    img = _render_procedural_background(
+        effect_name, seed, (WIDTH, HEIGHT), colors["bg"]
+    )
+    if img is None:
+        img = Image.new("RGB", (WIDTH, HEIGHT), colors["bg"])
     draw = ImageDraw.Draw(img)
 
     # === 背景层：网格 + 粒子 ===
     # 网格
-    for y in range(0, HEIGHT, 50):
+    grid_step = rng.choice([40, 50, 60, 80])
+    grid_offset = rng.randint(0, grid_step // 2)
+    for y in range(grid_offset, HEIGHT, grid_step):
         draw.line([(0, y), (WIDTH, y)], fill=colors["glow"], width=1)
-    for x in range(0, WIDTH, 50):
+    for x in range(grid_offset, WIDTH, grid_step):
         draw.line([(x, 0), (x, HEIGHT)], fill=colors["glow"], width=1)
 
     # 数据粒子
-    for _ in range(100):
-        x = random.randint(0, WIDTH)
-        y = random.randint(0, HEIGHT)
-        char = random.choice("0123456789$#@")
-        size = random.randint(2, 4)
+    particle_count = rng.randint(80, 150)
+    particle_chars = rng.choice(["0123456789$#@", "%*+=", "<>/\\", "[]{}"])
+    for _ in range(particle_count):
+        x = rng.randint(0, WIDTH)
+        y = rng.randint(0, HEIGHT)
+        char = rng.choice(particle_chars)
+        size = rng.randint(2, 4)
         for dx in range(size):
             for dy in range(size):
                 draw.text((x + dx, y + dy), char, fill=colors["secondary"])
+
+    # ASCII 纹理层
+    _draw_ascii_texture(
+        draw, rng, WIDTH, HEIGHT, colors, density=rng.uniform(0.25, 0.45)
+    )
 
     # === 装饰层：大型 ASCII 艺术 ===
     # 左侧装饰
@@ -278,15 +490,20 @@ def create_complete_visualization(news_text, output_path):
         decoration = "chart_up"
 
     draw_ascii_block(
-        draw, 50, 150, ASCII_DECORATIONS[decoration], colors["primary"], char_scale=3
+        draw,
+        layout["left"][0],
+        layout["left"][1],
+        ASCII_DECORATIONS[decoration],
+        colors["primary"],
+        char_scale=3,
     )
 
     # 右侧图表
     chart = "chart_up" if sentiment == "bull" else "chart_down"
     draw_ascii_block(
         draw,
-        WIDTH - 500,
-        HEIGHT - 400,
+        layout["right"][0],
+        layout["right"][1],
         ASCII_DECORATIONS[chart],
         colors["accent"],
         char_scale=4,
@@ -295,16 +512,34 @@ def create_complete_visualization(news_text, output_path):
     # === 颜文字层：清晰可辨识 ===
     kaomoji_set = ASCII_KAOMOJI[sentiment]
 
-    # 四个位置放置颜文字
-    positions = [
-        (150, 50, "top-left"),
-        (WIDTH - 300, 50, "top-right"),
-        (100, HEIGHT - 250, "bottom-left"),
-        (WIDTH - 350, HEIGHT - 250, "bottom-right"),
-    ]
+    # Background Kaomoji Texture (New)
+    bg_kao_count = rng.randint(5, 10)
+    for _ in range(bg_kao_count):
+        bx = rng.randint(0, WIDTH)
+        by = rng.randint(0, HEIGHT)
+        # Avoid center box roughly
+        if (
+            layout["box_x"] - 50 < bx < layout["box_x"] + layout["box_w"] + 50
+            and layout["box_y"] - 50 < by < layout["box_y"] + layout["box_h"] + 50
+        ):
+            continue
 
-    for idx, (x, y, pos) in enumerate(positions[:3]):
-        kao = random.choice(kaomoji_set)
+        draw_kaomoji(
+            draw,
+            bx,
+            by,
+            sentiment,
+            color=colors["secondary"],
+            outline_color=colors["bg"],
+            size=rng.randint(1, 2),
+            rng=rng,
+        )
+
+    # 四个位置放置颜文字
+    positions = layout["kao"]
+
+    for idx, (x, y) in enumerate(positions[:3]):
+        kao = rng.choice(kaomoji_set)
         draw_ascii_block(
             draw,
             x,
@@ -315,9 +550,19 @@ def create_complete_visualization(news_text, output_path):
         )
 
     # === 中央信息框 ===
-    box_w, box_h = 800, 450
-    box_x = (WIDTH - box_w) // 2
-    box_y = (HEIGHT - box_h) // 2
+    box_w, box_h = layout["box_w"], layout["box_h"]
+    box_x, box_y = layout["box_x"], layout["box_y"]
+
+    # 背景颜文字散布
+    _scatter_kaomoji(
+        draw,
+        rng,
+        WIDTH,
+        HEIGHT,
+        colors,
+        sentiment,
+        exclude_box=(box_x, box_y, box_w, box_h),
+    )
 
     # 黑色背景 + 多层边框
     draw.rectangle([box_x, box_y, box_x + box_w, box_y + box_h], fill="#000000")
@@ -333,6 +578,14 @@ def create_complete_visualization(news_text, output_path):
             outline=colors["primary"] if i < 3 else colors["glow"],
             width=2,
         )
+
+    # ASCII 边框增强
+    for x in range(box_x + 10, box_x + box_w - 10, 20):
+        draw.text((x, box_y - 18), "-", fill=colors["secondary"])
+        draw.text((x, box_y + box_h + 4), "-", fill=colors["secondary"])
+    for y in range(box_y + 10, box_y + box_h - 10, 20):
+        draw.text((box_x - 18, y), "|", fill=colors["secondary"])
+        draw.text((box_x + box_w + 6, y), "|", fill=colors["secondary"])
 
     # === 文字信息 ===
     text_x = box_x + 50
@@ -401,10 +654,10 @@ def create_complete_visualization(news_text, output_path):
         glitch_count = 80 if sentiment == "bull" else 120
 
         for _ in range(glitch_count):
-            x = random.randint(0, WIDTH - 60)
-            y = random.randint(0, HEIGHT - 1)
-            w = random.randint(20, 80)
-            shift = random.randint(-8, 8)
+            x = rng.randint(0, WIDTH - 60)
+            y = rng.randint(0, HEIGHT - 1)
+            w = rng.randint(20, 80)
+            shift = rng.randint(-8, 8)
 
             for i in range(w):
                 if x + i < WIDTH and 0 <= (y + shift) < HEIGHT:
@@ -488,10 +741,14 @@ def main():
 
     print("🎨 生成可视化...")
 
-    output_path = (
-        f"media/market_complete_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png"
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    output_path = os.path.join(
+        script_dir,
+        f"media/market_complete_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png",
     )
-    result = create_complete_visualization(news, output_path)
+    result = create_complete_visualization(
+        news, output_path, seed=args.seed, effect=args.effect
+    )
 
     if args.video:
         print("🎬 生成视频...")

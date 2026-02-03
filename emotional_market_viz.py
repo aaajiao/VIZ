@@ -15,6 +15,7 @@ Emotional Market Visualization
 
 import argparse
 import math
+import os
 import random
 import sys
 from datetime import datetime
@@ -906,8 +907,10 @@ if __name__ == "__main__":
         "effect": args.effect,
     }
 
-    output = (
-        f"media/emotional_viz_{emotion}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png"
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    output = os.path.join(
+        script_dir,
+        f"media/emotional_viz_{emotion}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png",
     )
     generate_emotional_viz(market_data, output)
 

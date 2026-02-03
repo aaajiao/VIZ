@@ -11,6 +11,7 @@ Universal Visualization System
 """
 
 import argparse
+import os
 import random
 import re
 import subprocess
@@ -869,8 +870,10 @@ def main():
         "effect": args.effect,
     }
 
-    output_path = (
-        f"media/{content_type}_viz_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png"
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    output_path = os.path.join(
+        script_dir,
+        f"media/{content_type}_viz_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png",
     )
     generate_visualization(content_type, content_data, output_path)
 

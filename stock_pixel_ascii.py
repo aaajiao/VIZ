@@ -12,6 +12,7 @@ Stock Market Pixel-to-ASCII Converter
 
 import argparse
 import math
+import os
 import sys
 from datetime import datetime
 from io import BytesIO
@@ -331,7 +332,11 @@ if __name__ == "__main__":
         "timestamp": datetime.now().strftime("%H:%M:%S"),
     }
 
-    output = f"media/stock_pixel_ascii_{emotion}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png"
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    output = os.path.join(
+        script_dir,
+        f"media/stock_pixel_ascii_{emotion}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png",
+    )
     generate_stock_ascii_viz(test_img, market_data, output, emotion=emotion)
 
     if args.video:
