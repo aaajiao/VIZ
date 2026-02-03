@@ -27,7 +27,7 @@ python3 viz.py capabilities --format json
 
 **viz.py** is the unified CLI with 3 commands:
 - `generate` - Generates 1080x1080 PNG/GIF visualizations. Accepts emotion/VAD + optional content data (headline, metrics, timestamp). AI passes data via stdin JSON or CLI args.
-- `convert` - Converts images to ASCII art (wraps `stock_pixel_ascii.py`).
+- `convert` - Converts images to ASCII art (wraps `lib/ascii_convert.py`).
 - `capabilities` - Outputs JSON schema for AI discovery (emotions, effects, sources, etc.).
 
 **FlexiblePipeline** (in `procedural/flexible/pipeline.py`) now accepts optional `content` dict with:
@@ -42,9 +42,9 @@ python3 viz.py capabilities --format json
 ```
 VIZ/
 ├── viz.py                        # Single CLI entry point (generate, convert, capabilities)
-├── stock_pixel_ascii.py          # Image-to-ASCII converter (called by viz.py convert)
 │
 ├── lib/                          # Shared utilities
+│   ├── ascii_convert.py          # Image-to-ASCII converter (called by viz.py convert)
 │   ├── content.py                # Content data structure maker
 │   ├── vocabulary.py             # Visual vocabularies (market, art, news, mood)
 │   ├── glow.py                   # Glow text effect
@@ -99,9 +99,8 @@ VIZ/
 
 ## Dependencies
 
-Only two external dependencies (no requirements.txt file):
+Only one external dependency (no requirements.txt file):
 - **Pillow>=9.0.0** - Image generation (required)
-- **requests** - HTTP fetching (optional, only for stock_pixel_ascii.py)
 
 All math is pure Python stdlib. NumPy is forbidden.
 
