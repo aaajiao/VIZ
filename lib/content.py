@@ -21,6 +21,28 @@ def make_content(data=None):
     if data is None:
         data = {}
 
+    # Clamp numeric params to safe ranges
+    duration = data.get("duration", 3.0)
+    try:
+        duration = float(duration)
+    except (TypeError, ValueError):
+        duration = 3.0
+    duration = max(0.1, min(duration, 30.0))
+
+    fps = data.get("fps", 15)
+    try:
+        fps = int(fps)
+    except (TypeError, ValueError):
+        fps = 15
+    fps = max(1, min(fps, 60))
+
+    variants = data.get("variants", 1)
+    try:
+        variants = int(variants)
+    except (TypeError, ValueError):
+        variants = 1
+    variants = max(1, min(variants, 20))
+
     return {
         "source": data.get("source", None),
         "headline": data.get("headline", None),
@@ -39,9 +61,9 @@ def make_content(data=None):
         "gradient": data.get("gradient", None),
         "overlay": data.get("overlay", None),
         "video": data.get("video", False),
-        "duration": data.get("duration", 3.0),
-        "fps": data.get("fps", 15),
-        "variants": data.get("variants", 1),
+        "duration": duration,
+        "fps": fps,
+        "variants": variants,
         "title": data.get("title", None),
     }
 
