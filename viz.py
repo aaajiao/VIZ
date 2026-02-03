@@ -36,6 +36,72 @@ sys.path.insert(0, _script_dir)
 from datetime import datetime
 
 
+_VALID_LAYOUTS = {"random_scatter", "grid_jitter", "spiral", "force_directed", "preset"}
+_VALID_DECORATIONS = {"corners", "edges", "scattered", "minimal", "none", "frame", "grid_lines", "circuit"}
+_VALID_BLEND_MODES = {"ADD", "SCREEN", "OVERLAY", "MULTIPLY"}
+
+
+def _validate_overrides(overrides):
+    """
+    覆盖参数白名单校验 - Validate override values against known whitelists
+
+    Returns list of error strings (empty = valid).
+    """
+    errors = []
+
+    if "effect" in overrides:
+        from procedural.effects import EFFECT_REGISTRY
+        valid_effects = set(EFFECT_REGISTRY.keys()) | {"cppn"}
+        if overrides["effect"] not in valid_effects:
+            errors.append(
+                f"Unknown effect '{overrides['effect']}', valid: {sorted(valid_effects)}"
+            )
+
+    if "layout" in overrides:
+        if overrides["layout"] not in _VALID_LAYOUTS:
+            errors.append(
+                f"Unknown layout '{overrides['layout']}', valid: {sorted(_VALID_LAYOUTS)}"
+            )
+
+    if "decoration" in overrides:
+        if overrides["decoration"] not in _VALID_DECORATIONS:
+            errors.append(
+                f"Unknown decoration '{overrides['decoration']}', valid: {sorted(_VALID_DECORATIONS)}"
+            )
+
+    if "gradient" in overrides:
+        from procedural.palette import ASCII_GRADIENTS
+        if overrides["gradient"] not in ASCII_GRADIENTS:
+            errors.append(
+                f"Unknown gradient '{overrides['gradient']}', valid: {sorted(ASCII_GRADIENTS.keys())}"
+            )
+
+    if "overlay" in overrides:
+        ov = overrides["overlay"]
+        if isinstance(ov, dict):
+            if ov.get("effect"):
+                from procedural.effects import EFFECT_REGISTRY
+                valid_effects = set(EFFECT_REGISTRY.keys()) | {"cppn"}
+                if ov["effect"] not in valid_effects:
+                    errors.append(
+                        f"Unknown overlay effect '{ov['effect']}', valid: {sorted(valid_effects)}"
+                    )
+            if ov.get("blend"):
+                if ov["blend"] not in _VALID_BLEND_MODES:
+                    errors.append(
+                        f"Unknown blend mode '{ov['blend']}', valid: {sorted(_VALID_BLEND_MODES)}"
+                    )
+            if ov.get("mix") is not None:
+                try:
+                    mix = float(ov["mix"])
+                    if not (0.0 <= mix <= 1.0):
+                        errors.append(f"overlay.mix = {mix} out of range [0, 1]")
+                except (TypeError, ValueError):
+                    errors.append(f"overlay.mix must be a number, got '{ov['mix']}'")
+
+    return errors
+
+
 def cmd_generate(args):
     """
     生成可视化 - Generate visualization
@@ -184,6 +250,16 @@ def cmd_generate(args):
     if content.get("params"):
         overrides["params"] = content["params"]
 
+    # Validate overrides against known values
+    errors = _validate_overrides(overrides)
+    if errors:
+        print(json.dumps({
+            "status": "error",
+            "message": "Invalid override values",
+            "errors": errors,
+        }))
+        return
+
     results = []
 
     variant_count = content.get("variants", 1)
@@ -245,20 +321,12 @@ def cmd_generate(args):
             })
 
     # === 6. Output JSON ===
-    if len(results) == 1:
-        output = {
-            "status": "ok",
-            **results[0],
-            "emotion": emotion_name,
-            "source": source,
-        }
-    else:
-        output = {
-            "status": "ok",
-            "variants": results,
-            "emotion": emotion_name,
-            "source": source,
-        }
+    output = {
+        "status": "ok",
+        "results": results,
+        "emotion": emotion_name,
+        "source": source,
+    }
 
     print(json.dumps(output, ensure_ascii=False))
 
@@ -301,15 +369,20 @@ def cmd_convert(args):
         brightness = 1.0
         bg_color = "#0a0a0a"
 
-    ascii_image, ascii_text = image_to_ascii_art(
-        args.image,
-        char_set=charset,
-        scale=scale,
-        rgb_limit=rgb_limit,
-        saturation=saturation,
-        brightness=brightness,
-        bg_color=bg_color,
-    )
+    try:
+        ascii_image, ascii_text = image_to_ascii_art(
+            args.image,
+            char_set=charset,
+            scale=scale,
+            rgb_limit=rgb_limit,
+            saturation=saturation,
+            brightness=brightness,
+            bg_color=bg_color,
+        )
+    except Exception as e:
+        result = {"status": "error", "message": f"Failed to process image: {e}"}
+        print(json.dumps(result))
+        return
 
     # Optional overlay from stdin
     overlay_data = {}
@@ -406,14 +479,10 @@ def cmd_capabilities(args):
             "title": "string - title overlay text",
         },
         "output_schema": {
-            "_note": "Single variant returns flat fields; multiple variants returns 'variants' array",
             "status": "string (ok|error)",
-            "path": "string - absolute path (single variant only)",
-            "seed": "int - seed used (single variant only)",
-            "format": "string png|gif (single variant only)",
+            "results": "list[{path, seed, format, ...}] - always an array, even for single result",
             "emotion": "string|null - emotion used",
             "source": "string|null - source used",
-            "variants": "list[{path, seed, format, ...}] - present when variants > 1",
         },
     }
 
