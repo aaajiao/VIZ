@@ -108,6 +108,7 @@ class FlexiblePipeline:
         title: str | None = None,
         output_path: str | None = None,
         content: dict | None = None,
+        overrides: dict | None = None,
     ) -> Image.Image:
         """
         生成单帧可视化
@@ -155,6 +156,10 @@ class FlexiblePipeline:
         # === 4b. Place content data ===
         if content:
             grammar.place_content(spec, content, visual_params)
+
+        # === 4c. Apply user overrides ===
+        if overrides:
+            self._apply_overrides(spec, overrides)
 
         # === 5. 构建效果 ===
         effect = self._build_effect(spec, visual_params, seed)
@@ -221,6 +226,7 @@ class FlexiblePipeline:
         fps: int = 15,
         output_path: str | None = None,
         content: dict | None = None,
+        overrides: dict | None = None,
     ) -> list[Image.Image]:
         """
         生成动画序列
@@ -252,6 +258,10 @@ class FlexiblePipeline:
         # Place content data
         if content:
             grammar.place_content(spec, content, visual_params)
+
+        # Apply user overrides
+        if overrides:
+            self._apply_overrides(spec, overrides)
 
         effect = self._build_effect(spec, visual_params, seed)
         sprites = self._build_sprites(spec, visual_params, seed, title)
@@ -348,6 +358,32 @@ class FlexiblePipeline:
         return variants
 
     # === 内部方法 ===
+
+    def _apply_overrides(self, spec, overrides):
+        """
+        用户覆盖应用 - Apply user overrides to SceneSpec
+
+        Supported keys: effect, layout, decoration, gradient, overlay.
+        """
+        if overrides.get("effect"):
+            spec.bg_effect = overrides["effect"]
+        if overrides.get("layout"):
+            spec.layout_type = overrides["layout"]
+        if overrides.get("decoration"):
+            spec.decoration_style = overrides["decoration"]
+        if overrides.get("gradient"):
+            spec.gradient_name = overrides["gradient"]
+        if overrides.get("overlay"):
+            ov = overrides["overlay"]
+            if isinstance(ov, dict):
+                if ov.get("effect"):
+                    spec.overlay_effect = ov["effect"]
+                if ov.get("blend"):
+                    spec.overlay_blend = ov["blend"]
+                if ov.get("mix") is not None:
+                    spec.overlay_mix = float(ov["mix"])
+        if overrides.get("params"):
+            spec.bg_params.update(overrides["params"])
 
     def _resolve_emotion(
         self,

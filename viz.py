@@ -169,13 +169,25 @@ def cmd_generate(args):
 
     pipe = FlexiblePipeline(seed=seed)
 
-    # Apply fine-grained params if provided
-    extra_params = content.get("params", {})
+    # Build overrides for pipeline (CLI/stdin params that override grammar choices)
+    overrides = {}
+    if content.get("effect"):
+        overrides["effect"] = content["effect"]
+    if content.get("layout"):
+        overrides["layout"] = content["layout"]
+    if content.get("decoration"):
+        overrides["decoration"] = content["decoration"]
+    if content.get("gradient"):
+        overrides["gradient"] = content["gradient"]
+    if content.get("overlay"):
+        overrides["overlay"] = content["overlay"]
+    if content.get("params"):
+        overrides["params"] = content["params"]
 
     results = []
 
     variant_count = content.get("variants", 1)
-    is_video = content.get("video") or args.video
+    is_video = content.get("video", False)
 
     for variant_idx in range(variant_count):
         variant_seed = seed + variant_idx
@@ -198,6 +210,7 @@ def cmd_generate(args):
                 duration=duration,
                 fps=fps,
                 output_path=output_path,
+                overrides=overrides or None,
             )
 
             results.append({
@@ -222,6 +235,7 @@ def cmd_generate(args):
                 title=content.get("title"),
                 content=pipeline_content if content_has_data(pipeline_content) else None,
                 output_path=output_path,
+                overrides=overrides or None,
             )
 
             results.append({
@@ -304,7 +318,12 @@ def cmd_convert(args):
             raw = sys.stdin.read()
             if raw.strip():
                 overlay_data = json.loads(raw)
-        except (json.JSONDecodeError, IOError):
+        except json.JSONDecodeError as e:
+            print(json.dumps({
+                "status": "error",
+                "message": f"Invalid stdin JSON: {e}",
+            }), file=sys.stderr)
+        except IOError:
             pass
 
     if overlay_data:
