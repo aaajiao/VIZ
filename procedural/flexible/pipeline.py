@@ -503,16 +503,18 @@ class FlexiblePipeline:
         """
         从效价值推导颜文字情绪列表
 
-        不再是 bull/bear/neutral 三选一，而是根据连续效价
-        混合多种情绪面孔。
+        6 档梯度，每档使用细分情绪分类而非粗粒度的 bull/bear，
+        使颜文字选择更加丰富和精确。
         """
-        if valence > 0.5:
-            return ["bull", "happy", "excited", "euphoria", "love"]
-        elif valence > 0.1:
-            return ["bull", "happy", "calm", "excited"]
-        elif valence > -0.1:
-            return ["neutral", "calm", "thinking", "o_o"]
-        elif valence > -0.5:
-            return ["bear", "sad", "anxious", "thinking"]
+        if valence > 0.7:
+            return ["euphoria", "love", "proud", "excitement"]
+        elif valence > 0.3:
+            return ["happy", "excitement", "relaxed", "love"]
+        elif valence > 0.0:
+            return ["relaxed", "neutral", "thinking", "happy"]
+        elif valence > -0.3:
+            return ["confused", "bored", "disappointed", "thinking"]
+        elif valence > -0.6:
+            return ["sad", "anxiety", "lonely", "disappointed"]
         else:
-            return ["bear", "sad", "panic", "fear", "cry"]
+            return ["panic", "fear", "angry", "sad"]
