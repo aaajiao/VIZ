@@ -1,15 +1,17 @@
-# viz - Market & Art ASCII Visualization Toolkit
+# viz - ASCII Art Visualization Toolkit
 
-**Generated:** 2026-02-02 | **Commit:** 332ef40 | **Branch:** main
+ASCII art visualization for market data, art news, and mood tracking. Produces 1080×1080 PNG/GIF images with kaomoji, glitch effects, and emotional color schemes.
 
-ASCII art visualization system for market data, art news, and mood tracking. Produces Instagram-ready 1080x1080 PNG/GIF images with kaomoji, glitch effects, and emotional color schemes.
+## Quick Reference
 
-## Tech Stack
+| Command | Description |
+|---------|-------------|
+| `python3 viz/universal_viz_system.py market` | Market visualization |
+| `python3 viz/universal_viz_system.py art "query"` | Art news visualization |
+| `python3 viz/universal_viz_system.py mood --video` | Mood viz as GIF |
+| `python3 viz/emotional_market_viz.py euphoria` | Test specific emotion |
 
-- **Language**: Python 3 (no type hints)
-- **Core**: Pillow (PIL) for image generation
-- **Internal**: `procedural/` engine for dynamic backgrounds
-- **External**: `/workspace/scripts/perplexity-search.sh` (optional, news fetching)
+**No build/lint/test system.** Scripts are standalone executables.
 
 ## Structure
 
@@ -19,63 +21,23 @@ viz/
 ├── market_viz_complete.py     # Market-specific with sentiment analysis
 ├── emotional_market_viz.py    # Emotion-driven (5 moods)
 ├── stock_pixel_ascii.py       # Image-to-ASCII converter
-├── procedural/                # Procedural generation engine (see procedural/AGENTS.md)
-│   ├── engine.py              # Core orchestrator
-│   ├── layers.py              # Sprite animation system
-│   ├── effects/               # Effect implementations (plasma, flame, wave, etc.)
-│   └── core/                  # Math primitives (Vec2, noise, SDF)
-├── lib/                       # Local utilities
-│   ├── kaomoji.py             # ASCII face rendering
-│   └── effects.py             # Glow, glitch, particles
+├── procedural/                # Rendering engine (see procedural/AGENTS.md)
+├── lib/                       # Utilities (kaomoji.py, effects.py)
 └── archive/                   # Deprecated (reference only)
 ```
 
-## Commands
-
-```bash
-# Recommended entry point
-python3 viz/universal_viz_system.py <type> [query]
-# Types: market, art, mood, news
-
-# Examples
-python3 viz/universal_viz_system.py market
-python3 viz/universal_viz_system.py art "Venice Biennale"
-python3 viz/universal_viz_system.py mood --video --effect flame
-
-# Market-specific
-python3 viz/market_viz_complete.py "US stock market today"
-
-# Emotional market (test moods)
-python3 viz/emotional_market_viz.py euphoria
-python3 viz/emotional_market_viz.py panic --video
-```
-
-## CLI Standard
-
-All scripts use `argparse`:
+## CLI Arguments (all scripts use argparse)
 
 | Arg | Type | Default | Description |
 |-----|------|---------|-------------|
-| `type`/`query` | positional | required | Visualization type or search query |
+| `type`/`query` | positional | required | Viz type or search query |
 | `--video` | flag | false | Output GIF instead of PNG |
 | `--effect` | string | plasma | Background effect |
 | `--duration` | float | 5.0 | Video duration (seconds) |
 | `--fps` | int | 30 | Frames per second |
 | `--seed` | int | random | Reproducibility seed |
 
-## WHERE TO LOOK
-
-| Task | Location | Notes |
-|------|----------|-------|
-| Add new viz type | `universal_viz_system.py` | Add to `CONTENT_TYPES` dict |
-| New background effect | `procedural/effects/` | Implement Effect protocol |
-| Change color scheme | Module-level `COLOR_SCHEMES` dict | Per-file config |
-| Sentiment logic | `analyze_sentiment()` | Keyword counting |
-| Kaomoji faces | `lib/kaomoji.py` | `ASCII_KAOMOJI` dict |
-| Video rendering | `procedural/engine.py` | `Engine.render_video()` |
-| Post-processing | `lib/effects.py` | `draw_glow_text`, `apply_glitch` |
-
-## CONVENTIONS
+## Code Style
 
 ### Imports (strict order)
 ```python
@@ -84,7 +46,7 @@ from datetime import datetime
 
 from PIL import Image, ImageDraw, ImageEnhance, ImageFilter
 
-from lib.kaomoji import draw_kaomoji  # local
+from lib.kaomoji import draw_kaomoji  # local imports last
 ```
 
 ### Naming
@@ -92,9 +54,10 @@ from lib.kaomoji import draw_kaomoji  # local
 |---------|-------|---------|
 | Constants | SCREAMING_SNAKE | `COLOR_SCHEMES`, `ASCII_GRADIENT` |
 | Functions | snake_case | `draw_glow_text`, `analyze_sentiment` |
+| Classes | PascalCase | `Engine`, `BaseEffect` |
 | Dict keys | snake_case strings | `'colors_bull'`, `'key_info'` |
 
-### Docstrings (bilingual)
+### Docstrings (bilingual Chinese/English)
 ```python
 def generate_viz(market_data, output_path):
     """
@@ -108,58 +71,52 @@ def generate_viz(market_data, output_path):
     """
 ```
 
-### Output Paths
-**ALWAYS** absolute + timestamp:
+### Output Paths (ALWAYS absolute + timestamp)
 ```python
 output_path = f'/workspace/media/{type}_viz_{datetime.now().strftime("%Y%m%d_%H%M%S")}.png'
 ```
 
-### Post-Processing (REQUIRED)
+### Post-Processing (REQUIRED for all final images)
 ```python
 img = img.filter(ImageFilter.SHARPEN)
 img = ImageEnhance.Contrast(img).enhance(1.4)
 img.save(output_path, 'PNG', quality=95)
 ```
 
-## ANTI-PATTERNS
+## Error Handling
 
-### FORBIDDEN
-- ❌ Type hints (not used in this codebase)
-- ❌ MP4 output (GIF only, no FFmpeg dependency)
-- ❌ NumPy dependency (pure Python math)
-- ❌ High-res internal compute (use 160×160 → upscale to 1080×1080)
-- ❌ Relative output paths
-
-### ALLOWED ONLY FOR PIXELS
+### Subprocess calls - ALWAYS check return code
 ```python
-# Bare except ONLY for pixel manipulation
-try:
-    pixels[x + i, y] = pixels[x + i, (y + shift) % HEIGHT]
-except:
-    pass  # Out-of-bounds ok here
-```
-
-### SUBPROCESS
-```python
-# ALWAYS check return code
 result = subprocess.run([...], capture_output=True, text=True, timeout=30)
 return result.stdout if result.returncode == 0 else None
 ```
 
+### Pixel manipulation - bare except ONLY here
+```python
+try:
+    pixels[x + i, y] = pixels[x + i, (y + shift) % HEIGHT]
+except:
+    pass  # Out-of-bounds ok for glitch effects
+```
+
+### Optional imports - handle gracefully
+```python
+try:
+    from lib.kaomoji import draw_kaomoji
+except ImportError:
+    from viz.lib.kaomoji import draw_kaomoji
+```
+
+## FORBIDDEN (Anti-Patterns)
+
+- ❌ **Type hints** - not used in this codebase
+- ❌ **NumPy** - pure Python math only
+- ❌ **MP4 output** - GIF only, no FFmpeg dependency
+- ❌ **High-res compute** - use 160×160 internally, upscale to 1080×1080
+- ❌ **Relative output paths** - always absolute `/workspace/media/...`
+- ❌ **Empty catch blocks** - except for pixel manipulation (see above)
+
 ## Key Patterns
-
-### Sentiment Analysis (keyword counting)
-```python
-bull_words = ['up', 'gain', 'rise', 'rally', 'surge', 'bull', 'positive']
-bear_words = ['down', 'fall', 'drop', 'decline', 'crash', 'bear', 'negative']
-# Bull if bull_count > bear_count + 2, else similar for bear, else neutral
-```
-
-### Glitch Effect (extreme emotions only)
-```python
-if emotion in ['euphoria', 'panic']:
-    apply_glitch(img, intensity=150)  # Only for these moods
-```
 
 ### Canvas Setup
 ```python
@@ -167,6 +124,34 @@ WIDTH, HEIGHT = 1080, 1080  # Instagram square
 img = Image.new('RGB', (WIDTH, HEIGHT), colors['bg'])
 draw = ImageDraw.Draw(img)
 ```
+
+### Sentiment Analysis (keyword counting)
+```python
+bull_words = ['up', 'gain', 'rise', 'rally', 'surge', 'bull', 'positive']
+bear_words = ['down', 'fall', 'drop', 'decline', 'crash', 'bear', 'negative']
+# Bull if bull_count > bear_count + 2, else similar logic for bear, else neutral
+```
+
+### Glitch Effect (extreme emotions only)
+```python
+if emotion in ['euphoria', 'panic']:
+    apply_glitch(img, intensity=150)  # Only for extreme moods
+```
+
+## WHERE TO LOOK
+
+| Task | Location |
+|------|----------|
+| Add new viz type | `universal_viz_system.py` → `CONTENT_TYPES` dict |
+| New background effect | `procedural/effects/` → implement Effect protocol |
+| Change color scheme | Module-level `COLOR_SCHEMES` dict |
+| Sentiment logic | `analyze_sentiment()` function |
+| Kaomoji faces | `lib/kaomoji.py` → `ASCII_KAOMOJI` dict |
+| Kaomoji data (single-line) | `lib/kaomoji_data.py` → `KAOMOJI_DATA` dict |
+| Video rendering | `procedural/engine.py` → `Engine.render_video()` |
+| Post-processing | `lib/effects.py` → `draw_glow_text`, `apply_glitch` |
+| Dynamic layouts | `procedural/layouts.py` → layout algorithms |
+| Effect blending | `procedural/compositor.py` → composite effects |
 
 ## Dependencies
 
@@ -183,7 +168,7 @@ requests  # Only for stock_pixel_ascii.py
 
 ## Notes
 
-- No build system, linter, or test suite (script-based project)
 - Each `.py` file is standalone executable
 - `archive/poc_playcore.py` is DEPRECATED - use `procedural/` instead
-- External `/workspace/scripts/perplexity-search.sh` is optional for news fetching
+- External `/workspace/scripts/perplexity-search.sh` is optional for news
+- See `procedural/AGENTS.md` for rendering engine details

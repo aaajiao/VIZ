@@ -52,6 +52,8 @@ procedural/
 | New ASCII gradient | `palette.py` | Add to `ASCII_GRADIENTS` |
 | Animation function | `layers.py` | `breathing`, `floating`, `color_cycle` |
 | Math primitives | `core/` | Pure Python, no NumPy |
+| Dynamic layouts | `layouts.py` | Layout algorithms for sprite positioning |
+| Effect blending | `compositor.py` | Composite effects and layer blending |
 
 ## Effect Protocol
 
