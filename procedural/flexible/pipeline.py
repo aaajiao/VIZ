@@ -106,6 +106,7 @@ class FlexiblePipeline:
 
         self._rng = random.Random(seed)
         self._color_space = ContinuousColorSpace()
+        self.last_frames: list[Image.Image] | None = None
 
     def generate(
         self,
@@ -328,6 +329,7 @@ class FlexiblePipeline:
             os.makedirs(os.path.dirname(output_path), exist_ok=True)
             Engine.save_gif(frames, output_path, fps=fps)
 
+        self.last_frames = frames
         return frames
 
     def generate_variants(

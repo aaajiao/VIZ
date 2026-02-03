@@ -1,7 +1,7 @@
 """
 程序化生成引擎 - Procedural Generation Engine
 
-核心编排器，协调效果层、精灵层和渲染管线，生成动画帧序列并输出 GIF。
+核心编排器，协调效果层、精灵层和渲染管线，生成动画帧序列并输出 GIF/MP4。
 
 渲染流程::
 
@@ -41,6 +41,9 @@
     # 渲染动画并保存 GIF
     frames = engine.render_video(effect, duration=3.0, fps=15, sprites=sprites, seed=42)
     engine.save_gif(frames, '/workspace/media/output.gif', fps=15)
+
+    # 保存 MP4 (需要系统安装 FFmpeg)
+    engine.save_mp4(frames, '/workspace/media/output.mp4', fps=15)
 """
 
 import random
@@ -347,3 +350,70 @@ class Engine:
             )
 
         print(f"GIF 保存完成: {output_path}")
+
+    @staticmethod
+    def save_mp4(frames, output_path, fps=15):
+        """
+        保存为 MP4 - Save Frames as MP4 via FFmpeg subprocess
+
+        先将帧保存为临时 GIF，再用 FFmpeg 转换为 MP4。
+        如果 FFmpeg 未安装，静默返回 False（优雅降级）。
+
+        Args:
+            frames: PIL Image 列表 (至少 1 帧)
+            output_path: 输出文件路径 (如 '/workspace/media/output.mp4')
+            fps: 视频帧率 (默认 15)
+
+        Returns:
+            bool: True 如果成功, False 如果 FFmpeg 不可用或转换失败
+
+        示例::
+
+            success = Engine.save_mp4(frames, '/workspace/media/animation.mp4', fps=15)
+            if not success:
+                print("FFmpeg not available, MP4 skipped")
+        """
+        import os
+        import subprocess
+        import tempfile
+
+        if not frames:
+            return False
+
+        gif_path = None
+        try:
+            with tempfile.NamedTemporaryFile(suffix=".gif", delete=False) as tmp:
+                gif_path = tmp.name
+
+            Engine.save_gif(frames, gif_path, fps=fps)
+
+            print(f"转换 MP4: {output_path}")
+            subprocess.run(
+                [
+                    "ffmpeg",
+                    "-y",
+                    "-i",
+                    gif_path,
+                    "-movflags",
+                    "faststart",
+                    "-pix_fmt",
+                    "yuv420p",
+                    "-vf",
+                    f"fps={fps},scale=1080:1080:flags=neighbor",
+                    output_path,
+                ],
+                check=True,
+                capture_output=True,
+            )
+            print(f"MP4 保存完成: {output_path}")
+            return True
+
+        except FileNotFoundError:
+            print("FFmpeg 未安装，跳过 MP4 输出")
+            return False
+        except subprocess.CalledProcessError as e:
+            print(f"FFmpeg 转换失败: {e.stderr.decode() if e.stderr else str(e)}")
+            return False
+        finally:
+            if gif_path and os.path.exists(gif_path):
+                os.remove(gif_path)
