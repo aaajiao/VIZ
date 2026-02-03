@@ -48,6 +48,7 @@ class SceneSpec:
 
     描述一个可视化输出的所有组成部分，供 Pipeline 执行。
     """
+
     # 背景效果
     bg_effect: str = "plasma"
     bg_params: dict[str, Any] = field(default_factory=dict)
@@ -66,11 +67,11 @@ class SceneSpec:
     # 颜文字配置
     kaomoji_count: int = 6
     kaomoji_mood: str = "neutral"
-    kaomoji_size_range: tuple[int, int] = (80, 150)
+    kaomoji_size_range: tuple[int, int] = (100, 200)
 
     # 中心颜文字
     has_central_kaomoji: bool = True
-    central_size: int = 200
+    central_size: int = 250
 
     # 文字元素
     text_elements: list[dict[str, Any]] = field(default_factory=list)
@@ -148,16 +149,12 @@ class VisualGrammar:
 
         # === 背景效果 ===
         spec.bg_effect = self._choose_bg_effect(energy, structure)
-        spec.bg_params = self._generate_effect_params(
-            spec.bg_effect, energy, structure
-        )
+        spec.bg_params = self._generate_effect_params(spec.bg_effect, energy, structure)
 
         # === 叠加效果 (概率性) ===
         overlay_chance = 0.2 + energy * 0.4  # 高能量更可能叠加
         if self.rng.random() < overlay_chance:
-            spec.overlay_effect = self._choose_overlay_effect(
-                spec.bg_effect, energy
-            )
+            spec.overlay_effect = self._choose_overlay_effect(spec.bg_effect, energy)
             spec.overlay_params = self._generate_effect_params(
                 spec.overlay_effect, energy * 0.7, structure
             )
@@ -170,16 +167,16 @@ class VisualGrammar:
         spec.kaomoji_count = spec.layout_count
 
         # === 颜文字大小范围 ===
-        base_size = int(80 + intensity * 40)
-        size_var = int(30 + energy * 40)
+        base_size = int(100 + intensity * 50)
+        size_var = int(30 + energy * 50)
         spec.kaomoji_size_range = (
-            max(60, base_size - size_var),
-            min(200, base_size + size_var),
+            max(90, base_size - size_var),
+            min(250, base_size + size_var),
         )
 
         # === 中心颜文字 ===
         spec.has_central_kaomoji = self.rng.random() < (0.5 + structure * 0.3)
-        spec.central_size = int(160 + intensity * 80)
+        spec.central_size = int(200 + intensity * 100)
 
         # === 动画 ===
         spec.float_amp = 1.0 + energy * 7.0
@@ -201,9 +198,7 @@ class VisualGrammar:
         spec.particle_chars = self._choose_particle_chars(warmth, energy)
 
         # === 文字元素 ===
-        spec.text_elements = self._choose_text_elements(
-            valence, arousal, energy
-        )
+        spec.text_elements = self._choose_text_elements(valence, arousal, energy)
 
         # === 颜文字情绪 ===
         spec.kaomoji_mood = self._choose_kaomoji_mood(valence, arousal)
@@ -220,13 +215,13 @@ class VisualGrammar:
         低能量偏向 noise_field/wave。
         """
         weights = {
-            "plasma":      0.5 + energy * 0.3,
-            "wave":        0.5 + (1 - energy) * 0.3,
-            "flame":       0.2 + energy * 0.6,
-            "moire":       0.3 + structure * 0.4,
+            "plasma": 0.5 + energy * 0.3,
+            "wave": 0.5 + (1 - energy) * 0.3,
+            "flame": 0.2 + energy * 0.6,
+            "moire": 0.3 + structure * 0.4,
             "noise_field": 0.4 + (1 - energy) * 0.3,
-            "sdf_shapes":  0.2 + structure * 0.4,
-            "cppn":        0.3,  # CPPN 始终有机会
+            "sdf_shapes": 0.2 + structure * 0.4,
+            "cppn": 0.3,  # CPPN 始终有机会
         }
         return self._weighted_choice(weights)
 
@@ -248,9 +243,9 @@ class VisualGrammar:
     def _choose_blend_mode(self, energy: float) -> str:
         """选择混合模式"""
         weights = {
-            "ADD":      0.3 + energy * 0.3,
-            "SCREEN":   0.3,
-            "OVERLAY":  0.2 + energy * 0.2,
+            "ADD": 0.3 + energy * 0.3,
+            "SCREEN": 0.3,
+            "OVERLAY": 0.2 + energy * 0.2,
             "MULTIPLY": 0.2 + (1 - energy) * 0.2,
         }
         return self._weighted_choice(weights)
@@ -262,11 +257,11 @@ class VisualGrammar:
         高结构 → grid/preset, 低结构 → scatter/spiral
         """
         weights = {
-            "random_scatter":   0.3 + (1 - structure) * 0.3,
-            "grid_jitter":      0.2 + structure * 0.4,
-            "spiral":           0.3,
-            "force_directed":   0.2,
-            "preset":           0.2 + structure * 0.3,
+            "random_scatter": 0.3 + (1 - structure) * 0.3,
+            "grid_jitter": 0.2 + structure * 0.4,
+            "spiral": 0.3,
+            "force_directed": 0.2,
+            "preset": 0.2 + structure * 0.3,
         }
         return self._weighted_choice(weights)
 
@@ -286,48 +281,52 @@ class VisualGrammar:
 
         # 浮动动画 (几乎总是启用)
         if self.rng.random() < 0.85:
-            anims.append({
-                "type": "floating",
-                "amp": 1.0 + energy * 7.0,
-                "speed": 0.5 + energy * 2.0,
-            })
+            anims.append(
+                {
+                    "type": "floating",
+                    "amp": 1.0 + energy * 7.0,
+                    "speed": 0.5 + energy * 2.0,
+                }
+            )
 
         # 呼吸动画
         if self.rng.random() < 0.7:
-            anims.append({
-                "type": "breathing",
-                "amp": 0.02 + abs(arousal) * 0.13,
-                "speed": 1.0 + energy * 2.0,
-            })
+            anims.append(
+                {
+                    "type": "breathing",
+                    "amp": 0.02 + abs(arousal) * 0.13,
+                    "speed": 1.0 + energy * 2.0,
+                }
+            )
 
         # 颜色循环 (概率性)
         if self.rng.random() < 0.3 + energy * 0.3:
-            anims.append({
-                "type": "color_cycle",
-                "speed": 0.1 + energy * 0.5,
-                "saturation": 0.7 + energy * 0.3,
-            })
+            anims.append(
+                {
+                    "type": "color_cycle",
+                    "speed": 0.1 + energy * 0.5,
+                    "saturation": 0.7 + energy * 0.3,
+                }
+            )
 
         return anims
 
     def _choose_decoration_style(self, structure: float) -> str:
         """选择装饰风格 (含 box-drawing 边框/网格/电路风格)"""
         weights = {
-            "corners":      0.20 + structure * 0.15,
-            "edges":        0.12 + structure * 0.12,
-            "scattered":    0.20 + (1 - structure) * 0.15,
-            "minimal":      0.12,
-            "none":         0.06,
+            "corners": 0.20 + structure * 0.15,
+            "edges": 0.12 + structure * 0.12,
+            "scattered": 0.20 + (1 - structure) * 0.15,
+            "minimal": 0.12,
+            "none": 0.06,
             # 新增 box-drawing 装饰风格
-            "frame":        0.10 + structure * 0.20,
-            "grid_lines":   0.06 + structure * 0.15,
-            "circuit":      0.08 + (1 - structure) * 0.08,
+            "frame": 0.10 + structure * 0.20,
+            "grid_lines": 0.06 + structure * 0.15,
+            "circuit": 0.08 + (1 - structure) * 0.08,
         }
         return self._weighted_choice(weights)
 
-    def _choose_decoration_chars(
-        self, energy: float, warmth: float
-    ) -> list[str]:
+    def _choose_decoration_chars(self, energy: float, warmth: float) -> list[str]:
         """选择装饰字符 (含 box-drawing 和 semigraphic 字符)"""
         # 经典 ASCII 装饰
         classic_sets = [
@@ -399,12 +398,12 @@ class VisualGrammar:
 
         # Probability-weighted pool (all categories always available)
         pool_weights = [
-            (classic_sets,      0.20),
-            (box_corner_sets,   0.15 + energy * 0.15),
-            (box_line_sets,     0.12 + (1 - energy) * 0.10),
-            (cross_sets,        0.08 + energy * 0.12),
-            (block_sets,        0.10 + energy * 0.10),
-            (dot_sets,          0.10 + (1 - energy) * 0.10 + warmth * 0.05),
+            (classic_sets, 0.20),
+            (box_corner_sets, 0.15 + energy * 0.15),
+            (box_line_sets, 0.12 + (1 - energy) * 0.10),
+            (cross_sets, 0.08 + energy * 0.12),
+            (block_sets, 0.10 + energy * 0.10),
+            (dot_sets, 0.10 + (1 - energy) * 0.10 + warmth * 0.05),
         ]
 
         # Weighted category selection
@@ -424,26 +423,26 @@ class VisualGrammar:
         """选择 ASCII 梯度 (含 box-drawing 和几何梯度)"""
         weights = {
             # 经典
-            "classic":          0.10,
-            "smooth":           0.12,
-            "matrix":           0.10 + energy * 0.10,
-            "plasma":           0.08 + energy * 0.15,
+            "classic": 0.10,
+            "smooth": 0.12,
+            "matrix": 0.10 + energy * 0.10,
+            "plasma": 0.08 + energy * 0.15,
             # 方块
-            "blocks":           0.10 + structure * 0.15,
-            "blocks_fine":      0.08 + structure * 0.10,
-            "glitch":           0.05 + energy * 0.15,
+            "blocks": 0.10 + structure * 0.15,
+            "blocks_fine": 0.08 + structure * 0.10,
+            "glitch": 0.05 + energy * 0.15,
             # Box-drawing
-            "box_density":      0.06 + structure * 0.12,
-            "box_cross":        0.04 + structure * 0.08 + energy * 0.08,
-            "circuit":          0.04 + structure * 0.10 + energy * 0.06,
+            "box_density": 0.06 + structure * 0.12,
+            "box_cross": 0.04 + structure * 0.08 + energy * 0.08,
+            "circuit": 0.04 + structure * 0.10 + energy * 0.06,
             # 几何/点阵
-            "dots_density":     0.06 + (1 - energy) * 0.08,
-            "geometric":        0.05 + structure * 0.08,
-            "braille_density":  0.04 + (1 - structure) * 0.06,
+            "dots_density": 0.06 + (1 - energy) * 0.08,
+            "geometric": 0.05 + structure * 0.08,
+            "braille_density": 0.04 + (1 - structure) * 0.06,
             # 混合
-            "tech":             0.06 + energy * 0.06,
-            "cyber":            0.04 + energy * 0.08,
-            "organic":          0.05 + (1 - structure) * 0.08,
+            "tech": 0.06 + energy * 0.06,
+            "cyber": 0.04 + energy * 0.08,
+            "organic": 0.05 + (1 - structure) * 0.08,
         }
         return self._weighted_choice(weights)
 
@@ -496,11 +495,11 @@ class VisualGrammar:
 
         # Probability-weighted pool (all categories always available)
         pool_weights = [
-            (classic,    0.20),
-            (geometric,  0.15 + (1 - energy) * 0.10),
-            (box_lines,  0.12 + energy * 0.15),
-            (blocks,     0.10 + energy * 0.12),
-            (braille,    0.08 + (1 - energy) * 0.08 + warmth * 0.05),
+            (classic, 0.20),
+            (geometric, 0.15 + (1 - energy) * 0.10),
+            (box_lines, 0.12 + energy * 0.15),
+            (blocks, 0.10 + energy * 0.12),
+            (braille, 0.08 + (1 - energy) * 0.08 + warmth * 0.05),
         ]
 
         total = sum(w for _, w in pool_weights)
@@ -600,48 +599,141 @@ class VisualGrammar:
         # 根据情绪选择词池 (含 box-drawing/semigraphic 装饰符号)
         if valence > 0.5:
             if arousal > 0.3:
-                pool = ["RISE", "UP", "BULL", "GO", "YES", "MAX", "TOP",
-                        "涨", "牛", "冲", "↑", "▲",
-                        "━━▶", "╱╲╱", "◉", "█▀█", "⣿"]
+                pool = [
+                    "RISE",
+                    "UP",
+                    "BULL",
+                    "GO",
+                    "YES",
+                    "MAX",
+                    "TOP",
+                    "涨",
+                    "牛",
+                    "冲",
+                    "↑",
+                    "▲",
+                    "━━▶",
+                    "╱╲╱",
+                    "◉",
+                    "█▀█",
+                    "⣿",
+                ]
             else:
-                pool = ["calm", "flow", "ease", "zen", "~",
-                        "静", "和", "润", "◎", "○",
-                        "╭─╮", "≈≈", "◌", "⠿", "·∙·"]
+                pool = [
+                    "calm",
+                    "flow",
+                    "ease",
+                    "zen",
+                    "~",
+                    "静",
+                    "和",
+                    "润",
+                    "◎",
+                    "○",
+                    "╭─╮",
+                    "≈≈",
+                    "◌",
+                    "⠿",
+                    "·∙·",
+                ]
         elif valence > 0.0:
-            pool = ["...", "---", "===", "~", "○", "△",
-                    "等", "观", "守", "…",
-                    "─┄─", "┈┈┈", "╌╌╌", "◦◦◦"]
+            pool = [
+                "...",
+                "---",
+                "===",
+                "~",
+                "○",
+                "△",
+                "等",
+                "观",
+                "守",
+                "…",
+                "─┄─",
+                "┈┈┈",
+                "╌╌╌",
+                "◦◦◦",
+            ]
         elif valence > -0.5:
             if arousal > 0.3:
-                pool = ["?!", "WARN", "ALERT", "!!",
-                        "慌", "急", "!", "⚠", "△",
-                        "╳╳╳", "┃┃┃", "▓▓▓", "╋╋╋"]
+                pool = [
+                    "?!",
+                    "WARN",
+                    "ALERT",
+                    "!!",
+                    "慌",
+                    "急",
+                    "!",
+                    "⚠",
+                    "△",
+                    "╳╳╳",
+                    "┃┃┃",
+                    "▓▓▓",
+                    "╋╋╋",
+                ]
             else:
-                pool = ["...", "fade", "dim", "gray",
-                        "淡", "沉", "暗", "—",
-                        "┄┄┄", "░░░", "┆┆┆", "⠁⠂⠄"]
+                pool = [
+                    "...",
+                    "fade",
+                    "dim",
+                    "gray",
+                    "淡",
+                    "沉",
+                    "暗",
+                    "—",
+                    "┄┄┄",
+                    "░░░",
+                    "┆┆┆",
+                    "⠁⠂⠄",
+                ]
         else:
             if arousal > 0.3:
-                pool = ["SELL", "DOWN", "BEAR", "RUN", "NO", "STOP",
-                        "跌", "崩", "逃", "↓", "▼",
-                        "█▄█", "━━╋", "▓█▓", "╬╬╬"]
+                pool = [
+                    "SELL",
+                    "DOWN",
+                    "BEAR",
+                    "RUN",
+                    "NO",
+                    "STOP",
+                    "跌",
+                    "崩",
+                    "逃",
+                    "↓",
+                    "▼",
+                    "█▄█",
+                    "━━╋",
+                    "▓█▓",
+                    "╬╬╬",
+                ]
             else:
-                pool = ["...", "___", "void", "null",
-                        "空", "无", "寂", "—",
-                        "░░░", "┈┈┈", "⠀⠀⠀", "···"]
+                pool = [
+                    "...",
+                    "___",
+                    "void",
+                    "null",
+                    "空",
+                    "无",
+                    "寂",
+                    "—",
+                    "░░░",
+                    "┈┈┈",
+                    "⠀⠀⠀",
+                    "···",
+                ]
 
         elements = []
         for _ in range(count):
             text = self.rng.choice(pool)
-            elements.append({
-                "text": text,
-                "position": (
-                    self.rng.uniform(0.1, 0.9),
-                    self.rng.uniform(0.1, 0.9),
-                ),
-                "size": self.rng.uniform(0.6, 1.5),
-                "opacity": self.rng.uniform(0.3, 0.8),
-            })
+            elements.append(
+                {
+                    "text": text,
+                    "position": (
+                        self.rng.uniform(0.1, 0.9),
+                        self.rng.uniform(0.1, 0.9),
+                    ),
+                    "size": self.rng.uniform(0.6, 1.5),
+                    "opacity": self.rng.uniform(0.3, 0.8),
+                }
+            )
 
         return elements
 
@@ -700,66 +792,76 @@ class VisualGrammar:
         # Headline placement (probabilistic position)
         if spec.content_headline:
             headline_positions = [
-                (0.5, 0.08),   # top center
-                (0.5, 0.92),   # bottom center
-                (0.5, 0.5),    # dead center
+                (0.5, 0.08),  # top center
+                (0.5, 0.92),  # bottom center
+                (0.5, 0.5),  # dead center
                 (0.15, 0.15),  # top-left area
                 (0.85, 0.85),  # bottom-right area
             ]
             pos = self.rng.choice(headline_positions)
-            spec.text_elements.append({
-                "text": spec.content_headline,
-                "position": pos,
-                "size": 1.5 + energy * 0.5,
-                "opacity": 0.9,
-                "role": "headline",
-            })
+            spec.text_elements.append(
+                {
+                    "text": spec.content_headline,
+                    "position": pos,
+                    "size": 1.5 + energy * 0.5,
+                    "opacity": 0.9,
+                    "role": "headline",
+                }
+            )
 
         # Metrics placement
         if spec.content_metrics:
             # Choose between clustered and scattered placement
-            clustered = self.rng.random() < (0.4 + visual_params.get("structure", 0.5) * 0.4)
+            clustered = self.rng.random() < (
+                0.4 + visual_params.get("structure", 0.5) * 0.4
+            )
 
             if clustered:
                 # Stack metrics vertically
                 base_y = self.rng.uniform(0.3, 0.7)
                 base_x = self.rng.uniform(0.15, 0.85)
                 for i, metric in enumerate(spec.content_metrics[:4]):
-                    spec.text_elements.append({
-                        "text": metric,
-                        "position": (base_x, base_y + i * 0.08),
-                        "size": 1.0 + energy * 0.3,
-                        "opacity": 0.85,
-                        "role": "metric",
-                    })
+                    spec.text_elements.append(
+                        {
+                            "text": metric,
+                            "position": (base_x, base_y + i * 0.08),
+                            "size": 1.0 + energy * 0.3,
+                            "opacity": 0.85,
+                            "role": "metric",
+                        }
+                    )
             else:
                 # Scatter metrics around canvas
                 for metric in spec.content_metrics[:4]:
                     pos = (self.rng.uniform(0.1, 0.9), self.rng.uniform(0.1, 0.9))
-                    spec.text_elements.append({
-                        "text": metric,
-                        "position": pos,
-                        "size": 0.8 + energy * 0.4,
-                        "opacity": 0.75,
-                        "role": "metric",
-                    })
+                    spec.text_elements.append(
+                        {
+                            "text": metric,
+                            "position": pos,
+                            "size": 0.8 + energy * 0.4,
+                            "opacity": 0.75,
+                            "role": "metric",
+                        }
+                    )
 
         # Timestamp placement (always subtle)
         if spec.content_timestamp:
             ts_positions = [
                 (0.85, 0.95),  # bottom-right
                 (0.15, 0.95),  # bottom-left
-                (0.5, 0.97),   # bottom-center
+                (0.5, 0.97),  # bottom-center
                 (0.85, 0.05),  # top-right
             ]
             pos = self.rng.choice(ts_positions)
-            spec.text_elements.append({
-                "text": spec.content_timestamp,
-                "position": pos,
-                "size": 0.6,
-                "opacity": 0.5,
-                "role": "timestamp",
-            })
+            spec.text_elements.append(
+                {
+                    "text": spec.content_timestamp,
+                    "position": pos,
+                    "size": 0.6,
+                    "opacity": 0.5,
+                    "role": "timestamp",
+                }
+            )
 
         # Source ambient words (from vocabulary)
         if vocab.get("ambient_words"):
@@ -775,13 +877,18 @@ class VisualGrammar:
             ambient_count = self.rng.randint(0, min(2, len(word_pool)))
             for _ in range(ambient_count):
                 word = self.rng.choice(word_pool)
-                spec.text_elements.append({
-                    "text": word,
-                    "position": (self.rng.uniform(0.1, 0.9), self.rng.uniform(0.1, 0.9)),
-                    "size": self.rng.uniform(0.5, 1.0),
-                    "opacity": self.rng.uniform(0.3, 0.6),
-                    "role": "ambient",
-                })
+                spec.text_elements.append(
+                    {
+                        "text": word,
+                        "position": (
+                            self.rng.uniform(0.1, 0.9),
+                            self.rng.uniform(0.1, 0.9),
+                        ),
+                        "size": self.rng.uniform(0.5, 1.0),
+                        "opacity": self.rng.uniform(0.3, 0.6),
+                        "role": "ambient",
+                    }
+                )
 
     # === 工具方法 ===
 

@@ -543,7 +543,7 @@ class FlexiblePipeline:
                 y=py,
                 color=tuple(palette["primary"]),
                 outline_color=tuple(palette["outline"]),
-                scale=max(1, size // 100),
+                scale=max(3, size // 25),
                 animations=sprite_anims,
             )
             sprites.append(sprite)
@@ -557,7 +557,7 @@ class FlexiblePipeline:
                 y=h // 2 - spec.central_size // 2,
                 color=tuple(palette["accent"]),
                 outline_color=tuple(palette["outline"]),
-                scale=max(1, spec.central_size // 80),
+                scale=max(9, spec.central_size // 20),
                 animations=[
                     {"type": "breathing", "amp": spec.breath_amp * 1.5, "speed": 1.5},
                 ],
