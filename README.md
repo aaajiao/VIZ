@@ -231,6 +231,10 @@ pytest tests/test_emotion.py -v
 
 307 个测试覆盖所有核心模块，CI 通过 GitHub Actions 自动运行。
 
+## License
+
+MIT License - 详见 [LICENSE](LICENSE) 文件
+
 ## 参考
 
 - [play.ertdfgcvb.xyz](https://play.ertdfgcvb.xyz) - 灵感来源
