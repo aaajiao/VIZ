@@ -246,15 +246,60 @@ sprite = KaomojiSprite('bull', x=100, y=100, animations=[
 
 ## 颜文字系统
 
-### 支持的情绪
+20 个情绪分类，300+ 个独特颜文字，覆盖从狂喜到恐慌的完整情感光谱。
 
-| 情绪 | 示例 |
-|------|------|
-| `bull` | (^o^), (≧▽≦), \(^o^)/ |
-| `bear` | (;_;), (x_x), (╥﹏╥) |
-| `neutral` | (._.), (o_o), (-_-) |
-| `euphoria` | ٩(◕‿◕)۶, ☆*:.｡.o(≧▽≦)o.｡.:*☆ |
-| `panic` | (ﾟДﾟ;), Σ(°△°|||) |
+### 情绪分类
+
+**正面情绪 (Positive)**
+
+| 分类 | 示例 | 描述 |
+|------|------|------|
+| `happy` | (◠‿◠) (◕‿◕) (⌒‿⌒) | 开心、愉悦 |
+| `euphoria` | \\(≧∇≦)/ ヽ(>∀<☆)ノ (ﾉ◕ヮ◕)ﾉ*:・ﾟ✧ | 狂喜、极度兴奋 |
+| `excitement` | (*^_^*) ヾ(^▽^)ノ ♪(´▽｀) | 兴奋、活力 |
+| `love` | (♡˙︶˙♡) (◕‿◕)♡ (灬♥ω♥灬) | 爱意、心动 |
+| `proud` | (•̀ᴗ•́)و (`・ω・´) (⌐■_■) | 自豪、得意 |
+| `relaxed` | (´ー`) (◡‿◡✿) ( ˘ω˘ ) | 放松、惬意 |
+
+**负面情绪 (Negative)**
+
+| 分类 | 示例 | 描述 |
+|------|------|------|
+| `sad` | (ಥ_ಥ) (╥﹏╥) (ノД`)・゜・。 | 悲伤、难过 |
+| `angry` | (╬ Ò﹏Ó) (ノಠ益ಠ)ノ ヽ(`Д´)ノ | 愤怒、暴躁 |
+| `anxiety` | (´；ω；`) (°△°\|\|\|) (⊙﹏⊙) | 焦虑、不安 |
+| `fear` | Σ(°△°\|\|\|)︴ ((((；゜Д゜))) (ʘᗩʘ') | 恐惧、害怕 |
+| `panic` | (×_×;） (✖╭╮✖) Σ(ﾟДﾟ;≡;ﾟдﾟ) | 恐慌、崩溃 |
+| `disappointed` | (ー_ー)!! ┐(´д`)┌ (；￣Д￣) | 失望、沮丧 |
+| `lonely` | (◞‸◟) (ノω・、) (•̩̩̩̩_•̩̩̩̩) | 孤独、寂寞 |
+
+**中性 / 其他 (Neutral / Other)**
+
+| 分类 | 示例 | 描述 |
+|------|------|------|
+| `neutral` | (._.) (-_-) (・_・) | 平静、无表情 |
+| `confused` | (？_？) (•ิ_•ิ)? щ(゜ロ゜щ) | 困惑、疑问 |
+| `surprised` | Σ(ﾟДﾟ) (ﾟoﾟ) w(°o°)w | 惊讶、吃惊 |
+| `sleepy` | (=_=) zzZ (-.-)Zzz・・・ (_ _).。o○ | 困倦、想睡 |
+| `thinking` | ( ˘_˘ ) (◔_◔) ( ˇ‸ˇ ) | 思考、沉思 |
+| `embarrassed` | (〃▽〃) (*/ω＼*) (*ﾉ▽ﾉ) | 害羞、尴尬 |
+| `bored` | (￢_￢) ( ´_ゝ`) (-_-)旦~ | 无聊、厌倦 |
+
+**经典别名**: `bull` (= happy 精选) / `bear` (= sad 精选)，向后兼容。
+
+### 架构
+
+```
+kaomoji_data.py (唯一数据源: 20 分类 × 15 颜文字)
+     ↓ import
+kaomoji.py (渲染器: 精确匹配优先 → 父类兜底)
+     ↓ draw_kaomoji()
+layers.py (KaomojiSprite 精灵 + 动画)
+     ↓
+pipeline.py (6 档效价梯度 → 细分情绪选择)
+```
+
+渲染策略：传入 `mood="love"` 时直接命中 love 分类的 15 个专属颜文字，而非被压缩到 bull 的 5 个。
 
 ### 用法
 
@@ -263,10 +308,13 @@ from lib.kaomoji import draw_kaomoji
 from lib.kaomoji_data import KAOMOJI_SINGLE, get_kaomoji
 
 # 绘制颜文字（size 1-50 可读）
-draw_kaomoji(draw, x, y, 'bull', color, outline_color, size=20)
+draw_kaomoji(draw, x, y, 'love', color, outline_color, size=20)
 
-# 获取单行颜文字
-face = get_kaomoji('euphoria', format='single')
+# 获取特定情绪的颜文字列表
+faces = get_kaomoji('embarrassed', format='single')  # 15 个害羞颜文字
+
+# 经典用法仍然有效
+draw_kaomoji(draw, x, y, 'bull', color, outline_color, size=20)
 ```
 
 ## 项目结构
