@@ -107,6 +107,7 @@ class FlexiblePipeline:
         seed: int | None = None,
         title: str | None = None,
         output_path: str | None = None,
+        content: dict | None = None,
     ) -> Image.Image:
         """
         生成单帧可视化
@@ -151,6 +152,10 @@ class FlexiblePipeline:
             arousal=visual_params.get("arousal", 0.0),
         )
 
+        # === 4b. Place content data ===
+        if content:
+            grammar.place_content(spec, content, visual_params)
+
         # === 5. 构建效果 ===
         effect = self._build_effect(spec, visual_params, seed)
 
@@ -176,9 +181,15 @@ class FlexiblePipeline:
         # 合并效果参数和色温参数
         # 注意：overlay_params 也合并进来，使复合效果的两个子效果
         # 都能从 ctx.params 中找到自己的参数
-        render_params = {**spec.bg_params}
+        render_params = {}
+        for k, v in spec.bg_params.items():
+            render_params[k] = v
+            render_params["bg_" + k] = v
         if spec.overlay_params:
-            render_params.update(spec.overlay_params)
+            for k, v in spec.overlay_params.items():
+                if k not in render_params:
+                    render_params[k] = v
+                render_params["overlay_" + k] = v
         render_params["warmth"] = visual_params.get("warmth", 0.5)
         render_params["saturation"] = visual_params.get("saturation", 0.9)
 
@@ -209,6 +220,7 @@ class FlexiblePipeline:
         duration: float = 3.0,
         fps: int = 15,
         output_path: str | None = None,
+        content: dict | None = None,
     ) -> list[Image.Image]:
         """
         生成动画序列
@@ -237,6 +249,10 @@ class FlexiblePipeline:
             arousal=visual_params.get("arousal", 0.0),
         )
 
+        # Place content data
+        if content:
+            grammar.place_content(spec, content, visual_params)
+
         effect = self._build_effect(spec, visual_params, seed)
         sprites = self._build_sprites(spec, visual_params, seed, title)
 
@@ -248,9 +264,15 @@ class FlexiblePipeline:
             contrast=spec.contrast,
         )
 
-        render_params = {**spec.bg_params}
+        render_params = {}
+        for k, v in spec.bg_params.items():
+            render_params[k] = v
+            render_params["bg_" + k] = v
         if spec.overlay_params:
-            render_params.update(spec.overlay_params)
+            for k, v in spec.overlay_params.items():
+                if k not in render_params:
+                    render_params[k] = v
+                render_params["overlay_" + k] = v
         render_params["warmth"] = visual_params.get("warmth", 0.5)
         render_params["saturation"] = visual_params.get("saturation", 0.9)
 
@@ -294,6 +316,7 @@ class FlexiblePipeline:
         emotion_vector: EmotionVector | None = None,
         count: int = 5,
         base_seed: int | None = None,
+        content: dict | None = None,
     ) -> list[Image.Image]:
         """
         生成多个不同变体
@@ -318,6 +341,7 @@ class FlexiblePipeline:
                 emotion=emotion,
                 emotion_vector=emotion_vector,
                 seed=base_seed + i,
+                content=content,
             )
             variants.append(img)
 
@@ -423,10 +447,23 @@ class FlexiblePipeline:
         ]
 
         # === 颜文字精灵 ===
-        mood_options = self._mood_from_valence_arousal(
-            visual_params.get("valence", 0.0),
-            visual_params.get("arousal", 0.0),
-        )
+        # Override moods from content vocabulary if present
+        content_moods = None
+        if hasattr(spec, 'content_source') and spec.content_source:
+            try:
+                from lib.vocabulary import get_vocabulary
+                vocab = get_vocabulary(spec.content_source)
+                content_moods = vocab.get("kaomoji_moods")
+            except ImportError:
+                pass
+
+        if content_moods:
+            mood_options = content_moods
+        else:
+            mood_options = self._mood_from_valence_arousal(
+                visual_params.get("valence", 0.0),
+                visual_params.get("arousal", 0.0),
+            )
         for i, pos in enumerate(positions[:spec.kaomoji_count]):
             if len(pos) == 3:
                 px, py, size = pos
