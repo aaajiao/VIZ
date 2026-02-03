@@ -44,15 +44,17 @@ class ContinuousColorSpace:
     # 色温锚点: warmth → 基础色相 (HSV)
     # 0.0=冷(蓝) → 0.5=中性(绿) → 1.0=暖(红)
     _WARMTH_HUE_CURVE = [
-        (0.0, 0.60),   # 深蓝
-        (0.15, 0.55),  # 蓝紫
-        (0.3, 0.50),   # 青蓝
-        (0.45, 0.40),  # 青
-        (0.55, 0.30),  # 绿
-        (0.7, 0.15),   # 黄绿
-        (0.8, 0.10),   # 黄
-        (0.9, 0.03),   # 橙
-        (1.0, 0.00),   # 红
+        (0.0, 0.75),   # 紫罗兰 violet
+        (0.10, 0.65),  # 蓝紫 blue-violet
+        (0.20, 0.58),  # 蓝 blue
+        (0.30, 0.50),  # 青蓝 cyan-blue
+        (0.40, 0.40),  # 青 cyan
+        (0.50, 0.30),  # 绿 green
+        (0.60, 0.18),  # 黄绿 yellow-green
+        (0.70, 0.12),  # 黄 yellow
+        (0.80, 0.05),  # 橙 orange
+        (0.90, 0.00),  # 红 red
+        (1.0, 0.92),   # 洋红/粉 magenta/pink
     ]
 
     def warmth_to_hue(self, warmth: float) -> float:
@@ -142,7 +144,7 @@ class ContinuousColorSpace:
         base_hue = self.warmth_to_hue(warmth)
 
         # 背景: 极暗，带有色温倾向
-        bg_v = mix(0.02, 0.08, 1.0 - contrast)
+        bg_v = mix(0.02, 0.08 + brightness * 0.15, 1.0 - contrast)
         bg_s = saturation * 0.3
         br, bg, bb = colorsys.hsv_to_rgb(base_hue, bg_s, bg_v)
         bg_color = (int(br * 255), int(bg * 255), int(bb * 255))
@@ -153,7 +155,7 @@ class ContinuousColorSpace:
         primary = (int(pr * 255), int(pg * 255), int(pb * 255))
 
         # 副色: 色相偏移，稍暗
-        sec_hue = (base_hue + 0.05) % 1.0
+        sec_hue = (base_hue + 0.08 + 0.07 * (1.0 - warmth)) % 1.0
         s_v = mix(0.5, 0.85, brightness)
         sr, sg, sb = colorsys.hsv_to_rgb(sec_hue, saturation * 0.9, s_v)
         secondary = (int(sr * 255), int(sg * 255), int(sb * 255))

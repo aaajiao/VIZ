@@ -5,39 +5,54 @@ ASCII art visualization toolkit producing 1080x1080 PNG/GIF images with kaomoji,
 ## Quick Commands
 
 ```bash
-# Run main CLI (4 content types: market, art, mood, news)
-python3 universal_viz_system.py market
-python3 universal_viz_system.py art "query"
-python3 universal_viz_system.py mood --video
-python3 universal_viz_system.py news
+# Generate visualization (pure visual, emotion-driven)
+python3 viz.py generate --emotion euphoria --seed 42
 
-# Flexible output system (recommended - infinite variations)
-python3 demo_flexible.py --emotion euphoria --effect plasma --seed 42
+# Generate with content data via stdin JSON (AI integration)
+echo '{"source":"market","headline":"DOW +600","emotion":"bull","metrics":["BTC: $92k"]}' | python3 viz.py generate
 
-# Emotion-specific market viz
-python3 emotional_market_viz.py euphoria
+# Generate with CLI args
+python3 viz.py generate --emotion panic --title "CRASH" --source market --video
 
-# Image-to-ASCII converter
-python3 stock_pixel_ascii.py image.png
+# Convert image to ASCII art
+python3 viz.py convert image.png --charset blocks --emotion bull
+
+# Query capabilities (for AI discovery)
+python3 viz.py capabilities --format json
 ```
 
-**No build, lint, test, or CI/CD system exists.** Each `.py` is a standalone script with `if __name__ == "__main__":` and argparse CLI. There are no unit tests.
+**No build, lint, test, or CI/CD system exists.** `viz.py` is the single CLI entry point. Old scripts moved to `archive/`. There are no unit tests.
+
+## Architecture
+
+**viz.py** is the unified CLI with 3 commands:
+- `generate` - Generates 1080x1080 PNG/GIF visualizations. Accepts emotion/VAD + optional content data (headline, metrics, timestamp). AI passes data via stdin JSON or CLI args.
+- `convert` - Converts images to ASCII art (wraps `stock_pixel_ascii.py`).
+- `capabilities` - Outputs JSON schema for AI discovery (emotions, effects, sources, etc.).
+
+**FlexiblePipeline** (in `procedural/flexible/pipeline.py`) now accepts optional `content` dict with:
+- `headline`, `metrics`, `timestamp`, `body` - text content to render
+- `source` - determines visual vocabulary (market, art, news, mood)
+- `vocabulary` - visual elements (kaomoji, decorations, gradients)
+
+**Content flow**: AI analyzes user request -> constructs JSON with emotion + content data -> pipes to `viz.py generate` -> VIZ renders -> outputs path JSON.
 
 ## Project Structure
 
 ```
 VIZ/
-├── universal_viz_system.py       # Main CLI entry point (4 content types)
-├── demo_flexible.py              # Flexible Output System demo (recommended)
-├── emotional_market_viz.py       # 5-emotion market visualization
-├── market_viz_complete.py        # End-to-end market pipeline + sentiment
-├── stock_pixel_ascii.py          # Image-to-ASCII converter
+├── viz.py                        # Single CLI entry point (generate, convert, capabilities)
+├── stock_pixel_ascii.py          # Image-to-ASCII converter (called by viz.py convert)
 │
 ├── lib/                          # Shared utilities
+│   ├── content.py                # Content data structure maker
+│   ├── vocabulary.py             # Visual vocabularies (market, art, news, mood)
+│   ├── glow.py                   # Glow text effect
+│   ├── ascii_texture.py          # ASCII texture utilities
 │   ├── kaomoji.py                # Kaomoji rendering (20 categories, 300+ faces)
 │   ├── kaomoji_data.py           # Kaomoji data (single-line + multi-line)
 │   ├── box_chars.py              # Box-drawing characters (37 charsets)
-│   └── effects.py                # Glow text, glitch effects, particles
+│   └── effects.py                # Glitch effects, particles
 │
 ├── procedural/                   # Rendering engine (160x160 -> 1080x1080)
 │   ├── engine.py                 # Orchestrator: render_frame, render_video, save_gif
@@ -250,6 +265,7 @@ engine.save_gif(frames, 'output.gif', fps=15)
 | `moire` | Radial interference patterns |
 | `sdf_shapes` | Smooth distance field circles/boxes |
 | `noise_field` | Perlin-like value noise + FBM |
+| `cppn` | CPPN neural network patterns (compositional) |
 
 ### Color Schemes
 
@@ -283,30 +299,47 @@ bear_words = ['down', 'fall', 'drop', 'decline', 'crash', 'bear', 'negative']
 
 | Task | Location |
 |------|----------|
-| Add new viz content type | `universal_viz_system.py` -> `CONTENT_TYPES` dict |
+| Add new CLI command | `viz.py` -> add subparser + command function |
+| Add new vocabulary source | `lib/vocabulary.py` -> `VOCABULARIES` dict |
 | Add new background effect | `procedural/effects/` + register in `__init__.py` |
 | Change color scheme | `procedural/palette.py` -> `COLOR_SCHEMES`, `ASCII_GRADIENTS` |
-| Modify sentiment analysis | `universal_viz_system.py` -> `analyze_sentiment()` |
 | Add kaomoji faces | `lib/kaomoji_data.py` -> `KAOMOJI_SINGLE` dict |
 | Add box-drawing charset | `lib/box_chars.py` -> `CHARSETS` |
 | Video/GIF rendering | `procedural/engine.py` -> `render_video()`, `save_gif()` |
-| Glitch/glow effects | `lib/effects.py` -> `apply_glitch()`, `draw_glow_text()` |
+| Glitch/glow effects | `lib/effects.py` -> `apply_glitch()` |
+| Glow text rendering | `lib/glow.py` -> `draw_glow_text()` |
+| ASCII textures | `lib/ascii_texture.py` -> texture generators |
+| Content data handling | `lib/content.py` -> `make_content()` |
 | Sprite animation | `procedural/layers.py` -> breathing, floating, color_cycle |
 | Layout algorithms | `procedural/layouts.py` -> scatter, grid, spiral, force |
 | Math primitives | `procedural/core/` -> vec, sdf, noise, mathx |
 | Emotion mapping | `procedural/flexible/emotion.py` -> VAD anchors |
 | Visual grammar rules | `procedural/flexible/grammar.py` |
+| Content integration | `procedural/flexible/pipeline.py` -> FlexiblePipeline |
 
-## CLI Arguments (common across scripts)
+## CLI Arguments (viz.py generate)
 
 | Arg | Type | Default | Description |
 |-----|------|---------|-------------|
-| positional | string | required | Viz type or search query |
-| `--video` | flag | false | Output GIF instead of PNG |
-| `--effect` | string | `plasma` | Background effect name |
-| `--duration` | float | 5.0 | Video duration in seconds |
-| `--fps` | int | 15 | Frames per second |
+| `--emotion` | string | inferred | Emotion name (joy, fear, bull, bear, etc.) |
+| `--source` | string | none | Content source (market, art, news, mood) |
+| `--title` | string | none | Title overlay text |
+| `--text` | string | none | Text for emotion inference (fallback) |
+| `--headline` | string | none | Main headline text |
+| `--metrics` | list | none | Metrics to display (space-separated) |
+| `--vad` | string | none | Direct VAD vector (e.g., "0.8,0.9,0.7") |
+| `--effect` | string | auto | Background effect name |
 | `--seed` | int | random | Seed for reproducible output |
+| `--video` | flag | false | Output GIF instead of PNG |
+| `--duration` | float | 3.0 | GIF duration in seconds |
+| `--fps` | int | 15 | Frames per second |
+| `--variants` | int | 1 | Number of variants to generate |
+| `--layout` | string | auto | Layout algorithm name |
+| `--decoration` | string | auto | Decoration style |
+| `--gradient` | string | auto | ASCII gradient name |
+| `--output-dir` | string | `./media` | Output directory |
+
+**Stdin JSON support**: All arguments can be provided via stdin JSON. CLI args override stdin values.
 
 ## Emotion System
 
