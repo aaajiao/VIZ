@@ -174,7 +174,7 @@ def cmd_generate(args):
 
     # === 2. Resolve emotion ===
     emotion_vector = None
-    emotion_name = content.get("emotion")
+    emotion_name = str(content["emotion"]) if content.get("emotion") else None
 
     if content.get("vad"):
         # Direct VAD vector
@@ -264,10 +264,16 @@ def cmd_generate(args):
 
     results = []
 
-    variant_count = int(content.get("variants", 1))
-    is_video = bool(content.get("video", False))
-    duration = float(content.get("duration", 3.0))
-    fps = int(content.get("fps", 15))
+    _variants = content["variants"]
+    variant_count = _variants if isinstance(_variants, int) else int(_variants)
+    is_video = bool(content["video"])
+    _dur = content["duration"]
+    duration = _dur if isinstance(_dur, float) else float(_dur)
+    _fps = content["fps"]
+    fps = _fps if isinstance(_fps, int) else int(_fps)
+
+    body_text = str(content["body"]) if content.get("body") else None
+    title_text = str(content["title"]) if content.get("title") else None
 
     for variant_idx in range(variant_count):
         variant_seed = seed + variant_idx
@@ -279,11 +285,11 @@ def cmd_generate(args):
             )
 
             pipe.generate_video(
-                text=content.get("body"),
+                text=body_text,
                 emotion=emotion_name,
                 emotion_vector=emotion_vector,
                 seed=variant_seed,
-                title=content.get("title"),
+                title=title_text,
                 content=pipeline_content if content_has_data(pipeline_content) else None,
                 duration=duration,
                 fps=fps,
@@ -306,11 +312,11 @@ def cmd_generate(args):
             )
 
             pipe.generate(
-                text=content.get("body"),
+                text=body_text,
                 emotion=emotion_name,
                 emotion_vector=emotion_vector,
                 seed=variant_seed,
-                title=content.get("title"),
+                title=title_text,
                 content=pipeline_content if content_has_data(pipeline_content) else None,
                 output_path=output_path,
                 overrides=overrides or None,
@@ -490,20 +496,26 @@ def cmd_capabilities(args):
         },
     }
 
+    emotions_dict = capabilities["emotions"]
+    effects_list = capabilities["effects"]
+    sources_list = capabilities["sources"]
+    layouts_list = capabilities["layouts"]
+    decorations_list = capabilities["decorations"]
+
     format_type = args.format if hasattr(args, 'format') else "json"
     if format_type == "json":
         print(json.dumps(capabilities, ensure_ascii=False, indent=2))
     else:
         # Human-readable
         print("=== VIZ Capabilities ===\n")
-        print(f"Emotions ({len(capabilities['emotions'])}):")
-        for name in sorted(capabilities['emotions']):
-            ev = capabilities['emotions'][name]
+        print(f"Emotions ({len(emotions_dict)}):")
+        for name in sorted(emotions_dict):
+            ev = emotions_dict[name]
             print(f"  {name:<15} V={ev['valence']:+.2f} A={ev['arousal']:+.2f} D={ev['dominance']:+.2f}")
-        print(f"\nEffects ({len(capabilities['effects'])}): {', '.join(capabilities['effects'])}")
-        print(f"Sources ({len(capabilities['sources'])}): {', '.join(capabilities['sources'])}")
-        print(f"Layouts ({len(capabilities['layouts'])}): {', '.join(capabilities['layouts'])}")
-        print(f"Decorations ({len(capabilities['decorations'])}): {', '.join(capabilities['decorations'])}")
+        print(f"\nEffects ({len(effects_list)}): {', '.join(effects_list)}")
+        print(f"Sources ({len(sources_list)}): {', '.join(sources_list)}")
+        print(f"Layouts ({len(layouts_list)}): {', '.join(layouts_list)}")
+        print(f"Decorations ({len(decorations_list)}): {', '.join(decorations_list)}")
 
 
 def build_parser():
