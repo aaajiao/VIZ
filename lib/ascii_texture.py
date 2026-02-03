@@ -10,13 +10,15 @@ from PIL import ImageDraw
 try:
     from lib.kaomoji import draw_kaomoji
 except ImportError:
-    from viz.lib.kaomoji import draw_kaomoji  # type: ignore[import-not-found]
+    from viz.lib.kaomoji import draw_kaomoji  # pyright: ignore[reportMissingImports]
 
 ASCII_GRADIENT = " .:-=+*#%@"
 ASCII_GRADIENT_FINE = " .':;!>+*%@#█"
 
 
-def draw_ascii_texture(draw, rng, width, height, color, density=0.35, gradient=None, cell_sizes=None):
+def draw_ascii_texture(
+    draw, rng, width, height, color, density=0.35, gradient=None, cell_sizes=None
+):
     """
     绘制 ASCII 纹理层 - Draw ASCII texture layer
 
@@ -43,7 +45,18 @@ def draw_ascii_texture(draw, rng, width, height, color, density=0.35, gradient=N
                 draw.text((x, y), char, fill=color)
 
 
-def scatter_kaomoji(draw, rng, width, height, mood, color, outline_color=None, count=None, exclude_rect=None, avoid_center=False):
+def scatter_kaomoji(
+    draw,
+    rng,
+    width,
+    height,
+    mood,
+    color,
+    outline_color=None,
+    count=None,
+    exclude_rect=None,
+    avoid_center=False,
+):
     """
     散布小型颜文字 - Scatter small kaomoji
 
@@ -87,7 +100,10 @@ def scatter_kaomoji(draw, rng, width, height, mood, color, outline_color=None, c
 
         size = rng.randint(2, 5)
         draw_kaomoji(
-            draw, x, y, m,
+            draw,
+            x,
+            y,
+            m,
             color=color,
             outline_color=outline_color,
             size=size,
@@ -95,7 +111,9 @@ def scatter_kaomoji(draw, rng, width, height, mood, color, outline_color=None, c
         )
 
 
-def draw_data_particles(draw, rng, width, height, color, chars="0123456789", count=None, bold=False):
+def draw_data_particles(
+    draw, rng, width, height, color, chars="0123456789", count=None, bold=False
+):
     """
     绘制数据粒子背景 - Draw data particle background
 

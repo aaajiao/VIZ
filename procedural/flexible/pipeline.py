@@ -50,7 +50,7 @@ from __future__ import annotations
 import os
 import random
 from datetime import datetime
-from typing import Any
+from typing import Any, cast
 
 from PIL import Image
 
@@ -58,13 +58,19 @@ from procedural.engine import Engine
 from procedural.effects import EFFECT_REGISTRY, get_effect
 from procedural.compositor import CompositeEffect, BlendMode
 from procedural.layouts import (
-    random_scatter, grid_with_jitter, spiral_layout,
-    force_directed_layout, LAYOUT_PRESETS,
+    random_scatter,
+    grid_with_jitter,
+    spiral_layout,
+    force_directed_layout,
+    LAYOUT_PRESETS,
 )
 from procedural.layers import TextSprite, KaomojiSprite
 
 from .emotion import (
-    EmotionVector, text_to_emotion, emotion_from_name, VAD_ANCHORS,
+    EmotionVector,
+    text_to_emotion,
+    emotion_from_name,
+    VAD_ANCHORS,
 )
 from .color_space import ContinuousColorSpace
 from .modulator import modulate_visual_params
@@ -139,8 +145,10 @@ class FlexiblePipeline:
         # === 3. 噪声调制 (单帧用 t=0 的调制) ===
         if self.drift_amount > 0:
             visual_params = modulate_visual_params(
-                visual_params, t=0.0,
-                drift_amount=self.drift_amount, seed=seed,
+                visual_params,
+                t=0.0,
+                drift_amount=self.drift_amount,
+                seed=seed,
             )
 
         # === 4. 文法生成场景规格 ===
@@ -297,7 +305,8 @@ class FlexiblePipeline:
             # 每帧施加噪声调制
             if self.drift_amount > 0:
                 frame_params = modulate_visual_params(
-                    render_params, t=t,
+                    render_params,
+                    t=t,
                     drift_amount=self.drift_amount * 0.5,
                     seed=seed,
                 )
@@ -479,17 +488,22 @@ class FlexiblePipeline:
         )
 
         # === 从 grammar 动画配置构建动画模板 ===
-        anim_templates = spec.animations if spec.animations else [
-            {"type": "floating", "amp": spec.float_amp, "speed": 1.0},
-            {"type": "breathing", "amp": spec.breath_amp, "speed": 2.0},
-        ]
+        anim_templates = (
+            spec.animations
+            if spec.animations
+            else [
+                {"type": "floating", "amp": spec.float_amp, "speed": 1.0},
+                {"type": "breathing", "amp": spec.breath_amp, "speed": 2.0},
+            ]
+        )
 
         # === 颜文字精灵 ===
         # Override moods from content vocabulary if present
         content_moods = None
-        if hasattr(spec, 'content_source') and spec.content_source:
+        if hasattr(spec, "content_source") and spec.content_source:
             try:
                 from lib.vocabulary import get_vocabulary
+
                 vocab = get_vocabulary(spec.content_source)
                 content_moods = vocab.get("kaomoji_moods")
             except ImportError:
@@ -502,7 +516,7 @@ class FlexiblePipeline:
                 float(visual_params.get("valence", 0.0)),
                 float(visual_params.get("arousal", 0.0)),
             )
-        for i, pos in enumerate(positions[:spec.kaomoji_count]):
+        for i, pos in enumerate(positions[: spec.kaomoji_count]):
             if len(pos) == 3:
                 px, py, size = pos
             else:
@@ -525,7 +539,8 @@ class FlexiblePipeline:
 
             sprite = KaomojiSprite(
                 mood=mood,
-                x=px, y=py,
+                x=px,
+                y=py,
                 color=tuple(palette["primary"]),
                 outline_color=tuple(palette["outline"]),
                 scale=max(1, size // 100),
@@ -551,16 +566,12 @@ class FlexiblePipeline:
 
         # === 装饰 ===
         if spec.decoration_style != "none":
-            deco_sprites = self._build_decoration_sprites(
-                spec, palette, w, h, rng
-            )
+            deco_sprites = self._build_decoration_sprites(spec, palette, w, h, rng)
             sprites.extend(deco_sprites)
 
         # === 粒子文字 ===
         if spec.particle_chars:
-            particle_sprites = self._build_particle_sprites(
-                spec, palette, w, h, rng
-            )
+            particle_sprites = self._build_particle_sprites(spec, palette, w, h, rng)
             sprites.extend(particle_sprites)
 
         # === 氛围文字 ===
@@ -572,39 +583,41 @@ class FlexiblePipeline:
             # 通过降低颜色亮度模拟透明度
             dim_factor = max(0.2, opacity)
             secondary = tuple(palette["secondary"])
-            text_color = tuple(
-                int(c * dim_factor) for c in secondary
+            text_color = tuple(int(c * dim_factor) for c in secondary)
+            sprites.append(
+                TextSprite(
+                    text=elem["text"],
+                    x=px,
+                    y=py,
+                    color=text_color,
+                    glow_color=tuple(palette.get("glow", text_color)),
+                    glow_size=1,
+                    animations=[
+                        {
+                            "type": "floating",
+                            "amp": 2.0,
+                            "speed": 0.3,
+                            "phase": rng.uniform(0, 6.28),
+                        },
+                    ],
+                )
             )
-            sprites.append(TextSprite(
-                text=elem["text"],
-                x=px,
-                y=py,
-                color=text_color,
-                glow_color=tuple(palette.get("glow", text_color)),
-                glow_size=1,
-                animations=[
-                    {
-                        "type": "floating",
-                        "amp": 2.0,
-                        "speed": 0.3,
-                        "phase": rng.uniform(0, 6.28),
-                    },
-                ],
-            ))
 
         # === 标题文字 ===
         if title:
-            sprites.append(TextSprite(
-                text=title,
-                x=w // 2 - len(title) * 4,
-                y=30,
-                color=tuple(palette["primary"]),
-                glow_color=tuple(palette["glow"]),
-                glow_size=2,
-                animations=[
-                    {"type": "breathing", "amp": 0.03, "speed": 1.0},
-                ],
-            ))
+            sprites.append(
+                TextSprite(
+                    text=title,
+                    x=w // 2 - len(title) * 4,
+                    y=30,
+                    color=tuple(palette["primary"]),
+                    glow_color=tuple(palette["glow"]),
+                    glow_size=2,
+                    animations=[
+                        {"type": "breathing", "amp": 0.03, "speed": 1.0},
+                    ],
+                )
+            )
 
         return sprites
 
@@ -631,10 +644,16 @@ class FlexiblePipeline:
             ]
             for i, (x, y) in enumerate(positions):
                 ch = chars[i % len(chars)]
-                decos.append(TextSprite(
-                    text=ch, x=x, y=y, color=color, scale=1.0,
-                    animations=[{"type": "breathing", "amp": 0.02, "speed": 0.5}],
-                ))
+                decos.append(
+                    TextSprite(
+                        text=ch,
+                        x=x,
+                        y=y,
+                        color=color,
+                        scale=1.0,
+                        animations=[{"type": "breathing", "amp": 0.02, "speed": 0.5}],
+                    )
+                )
 
         elif spec.decoration_style == "edges":
             # 四条边各放一些字符
@@ -650,9 +669,15 @@ class FlexiblePipeline:
                         x, y = margin, int(t * h)
                     else:  # right
                         x, y = w - margin, int(t * h)
-                    decos.append(TextSprite(
-                        text=ch, x=x, y=y, color=color, scale=1.0,
-                    ))
+                    decos.append(
+                        TextSprite(
+                            text=ch,
+                            x=x,
+                            y=y,
+                            color=color,
+                            scale=1.0,
+                        )
+                    )
 
         elif spec.decoration_style == "scattered":
             count = rng.randint(8, 16)
@@ -660,28 +685,49 @@ class FlexiblePipeline:
                 ch = rng.choice(chars)
                 x = rng.randint(margin, w - margin)
                 y = rng.randint(margin, h - margin)
-                decos.append(TextSprite(
-                    text=ch, x=x, y=y, color=color, scale=1.0,
-                    animations=[{
-                        "type": "floating",
-                        "amp": rng.uniform(1, 4),
-                        "speed": rng.uniform(0.3, 1.0),
-                        "phase": rng.uniform(0, 6.28),
-                    }],
-                ))
+                decos.append(
+                    TextSprite(
+                        text=ch,
+                        x=x,
+                        y=y,
+                        color=color,
+                        scale=1.0,
+                        animations=[
+                            {
+                                "type": "floating",
+                                "amp": rng.uniform(1, 4),
+                                "speed": rng.uniform(0.3, 1.0),
+                                "phase": rng.uniform(0, 6.28),
+                            }
+                        ],
+                    )
+                )
 
         elif spec.decoration_style == "minimal":
             # 只在两个对角放装饰
-            decos.append(TextSprite(
-                text=chars[0], x=margin, y=margin, color=color, scale=1.0,
-            ))
-            decos.append(TextSprite(
-                text=chars[-1], x=w - margin, y=h - margin, color=color, scale=1.0,
-            ))
+            decos.append(
+                TextSprite(
+                    text=chars[0],
+                    x=margin,
+                    y=margin,
+                    color=color,
+                    scale=1.0,
+                )
+            )
+            decos.append(
+                TextSprite(
+                    text=chars[-1],
+                    x=w - margin,
+                    y=h - margin,
+                    color=color,
+                    scale=1.0,
+                )
+            )
 
         elif spec.decoration_style == "frame":
             # Box-drawing 边框: 用连续字符勾勒矩形边框
             from lib.box_chars import get_border_set
+
             # 根据 energy 选择边框粗细
             energy = spec.warmth  # 近似 energy
             if energy > 0.6:
@@ -693,22 +739,46 @@ class FlexiblePipeline:
 
             inset = margin
             # 四个角
-            decos.append(TextSprite(
-                text=bs["tl"], x=inset, y=inset, color=color, scale=1.0,
-                animations=[{"type": "breathing", "amp": 0.02, "speed": 0.4}],
-            ))
-            decos.append(TextSprite(
-                text=bs["tr"], x=w - inset, y=inset, color=color, scale=1.0,
-                animations=[{"type": "breathing", "amp": 0.02, "speed": 0.4}],
-            ))
-            decos.append(TextSprite(
-                text=bs["bl"], x=inset, y=h - inset, color=color, scale=1.0,
-                animations=[{"type": "breathing", "amp": 0.02, "speed": 0.4}],
-            ))
-            decos.append(TextSprite(
-                text=bs["br"], x=w - inset, y=h - inset, color=color, scale=1.0,
-                animations=[{"type": "breathing", "amp": 0.02, "speed": 0.4}],
-            ))
+            decos.append(
+                TextSprite(
+                    text=bs["tl"],
+                    x=inset,
+                    y=inset,
+                    color=color,
+                    scale=1.0,
+                    animations=[{"type": "breathing", "amp": 0.02, "speed": 0.4}],
+                )
+            )
+            decos.append(
+                TextSprite(
+                    text=bs["tr"],
+                    x=w - inset,
+                    y=inset,
+                    color=color,
+                    scale=1.0,
+                    animations=[{"type": "breathing", "amp": 0.02, "speed": 0.4}],
+                )
+            )
+            decos.append(
+                TextSprite(
+                    text=bs["bl"],
+                    x=inset,
+                    y=h - inset,
+                    color=color,
+                    scale=1.0,
+                    animations=[{"type": "breathing", "amp": 0.02, "speed": 0.4}],
+                )
+            )
+            decos.append(
+                TextSprite(
+                    text=bs["br"],
+                    x=w - inset,
+                    y=h - inset,
+                    color=color,
+                    scale=1.0,
+                    animations=[{"type": "breathing", "amp": 0.02, "speed": 0.4}],
+                )
+            )
 
             # 水平边 (等分放置)
             h_count = rng.randint(5, 12)
@@ -716,25 +786,49 @@ class FlexiblePipeline:
                 t = (i + 1) / (h_count + 1)
                 px = int(inset + t * (w - 2 * inset))
                 # 顶边
-                decos.append(TextSprite(
-                    text=bs["h"], x=px, y=inset, color=color, scale=1.0,
-                ))
+                decos.append(
+                    TextSprite(
+                        text=bs["h"],
+                        x=px,
+                        y=inset,
+                        color=color,
+                        scale=1.0,
+                    )
+                )
                 # 底边
-                decos.append(TextSprite(
-                    text=bs["h"], x=px, y=h - inset, color=color, scale=1.0,
-                ))
+                decos.append(
+                    TextSprite(
+                        text=bs["h"],
+                        x=px,
+                        y=h - inset,
+                        color=color,
+                        scale=1.0,
+                    )
+                )
 
             # 垂直边
             v_count = rng.randint(4, 10)
             for i in range(v_count):
                 t = (i + 1) / (v_count + 1)
                 py = int(inset + t * (h - 2 * inset))
-                decos.append(TextSprite(
-                    text=bs["v"], x=inset, y=py, color=color, scale=1.0,
-                ))
-                decos.append(TextSprite(
-                    text=bs["v"], x=w - inset, y=py, color=color, scale=1.0,
-                ))
+                decos.append(
+                    TextSprite(
+                        text=bs["v"],
+                        x=inset,
+                        y=py,
+                        color=color,
+                        scale=1.0,
+                    )
+                )
+                decos.append(
+                    TextSprite(
+                        text=bs["v"],
+                        x=w - inset,
+                        y=py,
+                        color=color,
+                        scale=1.0,
+                    )
+                )
 
             # 随机在边上添加 T 形接头
             if rng.random() < 0.5:
@@ -753,13 +847,20 @@ class FlexiblePipeline:
                     else:  # right
                         px, py = w - inset, int(inset + t * (h - 2 * inset))
                         ch = bs["rt"]
-                    decos.append(TextSprite(
-                        text=ch, x=px, y=py, color=color, scale=1.0,
-                    ))
+                    decos.append(
+                        TextSprite(
+                            text=ch,
+                            x=px,
+                            y=py,
+                            color=color,
+                            scale=1.0,
+                        )
+                    )
 
         elif spec.decoration_style == "grid_lines":
             # 网格线: 在画面中绘制交叉网格
             from lib.box_chars import get_border_set
+
             bs = get_border_set(rng.choice(["light", "heavy", "dash_light"]))
 
             grid_cols = rng.randint(2, 5)
@@ -773,9 +874,15 @@ class FlexiblePipeline:
                 px = int(t * w)
                 for r in range(rng.randint(3, 8)):
                     py = rng.randint(margin, h - margin)
-                    decos.append(TextSprite(
-                        text=bs["v"], x=px, y=py, color=dim_color, scale=1.0,
-                    ))
+                    decos.append(
+                        TextSprite(
+                            text=bs["v"],
+                            x=px,
+                            y=py,
+                            color=dim_color,
+                            scale=1.0,
+                        )
+                    )
 
             # 水平网格线
             for r in range(grid_rows):
@@ -783,9 +890,15 @@ class FlexiblePipeline:
                 py = int(t * h)
                 for c in range(rng.randint(3, 8)):
                     px = rng.randint(margin, w - margin)
-                    decos.append(TextSprite(
-                        text=bs["h"], x=px, y=py, color=dim_color, scale=1.0,
-                    ))
+                    decos.append(
+                        TextSprite(
+                            text=bs["h"],
+                            x=px,
+                            y=py,
+                            color=dim_color,
+                            scale=1.0,
+                        )
+                    )
 
             # 交叉点
             for c in range(grid_cols):
@@ -793,14 +906,23 @@ class FlexiblePipeline:
                     if rng.random() < 0.6:
                         px = int((c + 1) / (grid_cols + 1) * w)
                         py = int((r + 1) / (grid_rows + 1) * h)
-                        decos.append(TextSprite(
-                            text=bs["cross"], x=px, y=py, color=color, scale=1.0,
-                            animations=[{"type": "breathing", "amp": 0.03, "speed": 0.3}],
-                        ))
+                        decos.append(
+                            TextSprite(
+                                text=bs["cross"],
+                                x=px,
+                                y=py,
+                                color=color,
+                                scale=1.0,
+                                animations=[
+                                    {"type": "breathing", "amp": 0.03, "speed": 0.3}
+                                ],
+                            )
+                        )
 
         elif spec.decoration_style == "circuit":
             # 电路板风格: 随机线路和节点
             from lib.box_chars import get_border_set
+
             bs = get_border_set(rng.choice(["light", "heavy"]))
 
             node_count = rng.randint(4, 10)
@@ -812,12 +934,19 @@ class FlexiblePipeline:
                 ny = rng.randint(margin * 2, h - margin * 2)
 
                 # 节点字符 (交叉/T形)
-                node_char = rng.choice([bs["cross"], bs["lt"], bs["rt"],
-                                        bs["tt"], bs["bt"]])
-                decos.append(TextSprite(
-                    text=node_char, x=nx, y=ny, color=color, scale=1.0,
-                    animations=[{"type": "breathing", "amp": 0.02, "speed": 0.6}],
-                ))
+                node_char = rng.choice(
+                    [bs["cross"], bs["lt"], bs["rt"], bs["tt"], bs["bt"]]
+                )
+                decos.append(
+                    TextSprite(
+                        text=node_char,
+                        x=nx,
+                        y=ny,
+                        color=color,
+                        scale=1.0,
+                        animations=[{"type": "breathing", "amp": 0.02, "speed": 0.6}],
+                    )
+                )
 
                 # 从节点延伸线路 (水平或垂直)
                 trace_len = rng.randint(2, 6)
@@ -836,9 +965,15 @@ class FlexiblePipeline:
                         ch = bs["v"]
 
                     if margin < px < w - margin and margin < py < h - margin:
-                        decos.append(TextSprite(
-                            text=ch, x=px, y=py, color=trace_color, scale=1.0,
-                        ))
+                        decos.append(
+                            TextSprite(
+                                text=ch,
+                                x=px,
+                                y=py,
+                                color=trace_color,
+                                scale=1.0,
+                            )
+                        )
 
                 # 线路末端加角落/端点
                 if direction == "h":
@@ -849,12 +984,18 @@ class FlexiblePipeline:
                     end_y = ny + sign * (trace_len + 1) * 20
 
                 if margin < end_x < w - margin and margin < end_y < h - margin:
-                    end_char = rng.choice(["·", "•", "◦", "○",
-                                           bs["tl"], bs["tr"], bs["bl"], bs["br"]])
-                    decos.append(TextSprite(
-                        text=end_char, x=end_x, y=end_y, color=trace_color,
-                        scale=1.0,
-                    ))
+                    end_char = rng.choice(
+                        ["·", "•", "◦", "○", bs["tl"], bs["tr"], bs["bl"], bs["br"]]
+                    )
+                    decos.append(
+                        TextSprite(
+                            text=end_char,
+                            x=end_x,
+                            y=end_y,
+                            color=trace_color,
+                            scale=1.0,
+                        )
+                    )
 
         return decos
 
@@ -876,15 +1017,23 @@ class FlexiblePipeline:
             ch = rng.choice(chars)
             x = rng.randint(20, w - 20)
             y = rng.randint(20, h - 20)
-            particles.append(TextSprite(
-                text=ch, x=x, y=y, color=color, scale=1.0,
-                animations=[{
-                    "type": "floating",
-                    "amp": rng.uniform(2, 6),
-                    "speed": rng.uniform(0.2, 0.8),
-                    "phase": rng.uniform(0, 6.28),
-                }],
-            ))
+            particles.append(
+                TextSprite(
+                    text=ch,
+                    x=x,
+                    y=y,
+                    color=color,
+                    scale=1.0,
+                    animations=[
+                        {
+                            "type": "floating",
+                            "amp": rng.uniform(2, 6),
+                            "speed": rng.uniform(0.2, 0.8),
+                            "phase": rng.uniform(0, 6.28),
+                        }
+                    ],
+                )
+            )
 
         return particles
 
@@ -907,7 +1056,7 @@ class FlexiblePipeline:
             return force_directed_layout(width, height, count, rng, iterations=30)
         elif layout_type == "preset":
             preset = rng.choice(LAYOUT_PRESETS)
-            return list(preset["positions"])[:count]
+            return list(cast(list[tuple[int, int, int]], preset["positions"]))[:count]
         else:
             return random_scatter(width, height, count, rng)
 

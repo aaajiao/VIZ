@@ -99,7 +99,7 @@ def image_to_ascii_art(
     ascii_string = ""
     for i in range(height):
         for j in range(width):
-            r, g, b = pix[j, i]  # type: ignore[index]
+            r, g, b = pix[j, i]  # pyright: ignore[reportOptionalSubscript,reportGeneralTypeIssues]
 
             # 限制 RGB
             r = min(r, max_r)
@@ -144,9 +144,7 @@ def add_market_overlay(ascii_image, market_data, font_size=48):
     # 半透明黑色背景条
     overlay = Image.new("RGBA", (width, height), (0, 0, 0, 0))
     overlay_draw = ImageDraw.Draw(overlay)
-    overlay_draw.rectangle(
-        [(0, height - 120), (width, height)], fill=(0, 0, 0, 180)
-    )
+    overlay_draw.rectangle([(0, height - 120), (width, height)], fill=(0, 0, 0, 180))
     ascii_image.paste(
         Image.alpha_composite(ascii_image.convert("RGBA"), overlay).convert("RGB")
     )

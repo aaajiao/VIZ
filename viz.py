@@ -23,11 +23,14 @@ Usage:
     python3 viz.py capabilities
 """
 
+from __future__ import annotations
+
 import argparse
 import json
 import os
 import sys
 import time
+from typing import Any, cast
 
 # Ensure project root on path
 _script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -37,7 +40,16 @@ from datetime import datetime
 
 
 _VALID_LAYOUTS = {"random_scatter", "grid_jitter", "spiral", "force_directed", "preset"}
-_VALID_DECORATIONS = {"corners", "edges", "scattered", "minimal", "none", "frame", "grid_lines", "circuit"}
+_VALID_DECORATIONS = {
+    "corners",
+    "edges",
+    "scattered",
+    "minimal",
+    "none",
+    "frame",
+    "grid_lines",
+    "circuit",
+}
 _VALID_BLEND_MODES = {"ADD", "SCREEN", "OVERLAY", "MULTIPLY"}
 
 
@@ -51,6 +63,7 @@ def _validate_overrides(overrides):
 
     if "effect" in overrides:
         from procedural.effects import EFFECT_REGISTRY
+
         valid_effects = set(EFFECT_REGISTRY.keys()) | {"cppn"}
         if overrides["effect"] not in valid_effects:
             errors.append(
@@ -71,6 +84,7 @@ def _validate_overrides(overrides):
 
     if "gradient" in overrides:
         from procedural.palette import ASCII_GRADIENTS
+
         if overrides["gradient"] not in ASCII_GRADIENTS:
             errors.append(
                 f"Unknown gradient '{overrides['gradient']}', valid: {sorted(ASCII_GRADIENTS.keys())}"
@@ -81,6 +95,7 @@ def _validate_overrides(overrides):
         if isinstance(ov, dict):
             if ov.get("effect"):
                 from procedural.effects import EFFECT_REGISTRY
+
                 valid_effects = set(EFFECT_REGISTRY.keys()) | {"cppn"}
                 if ov["effect"] not in valid_effects:
                     errors.append(
@@ -127,10 +142,15 @@ def cmd_generate(args):
             if raw.strip():
                 stdin_data = json.loads(raw)
         except json.JSONDecodeError as e:
-            print(json.dumps({
-                "status": "error",
-                "message": f"Invalid stdin JSON: {e}",
-            }), file=sys.stderr)
+            print(
+                json.dumps(
+                    {
+                        "status": "error",
+                        "message": f"Invalid stdin JSON: {e}",
+                    }
+                ),
+                file=sys.stderr,
+            )
         except IOError:
             pass
 
@@ -185,10 +205,14 @@ def cmd_generate(args):
             elif isinstance(vad, (list, tuple)):
                 parts = [float(x) for x in vad]
             else:
-                raise ValueError(f"vad must be string 'V,A,D' or list [V,A,D], got {type(vad).__name__}")
+                raise ValueError(
+                    f"vad must be string 'V,A,D' or list [V,A,D], got {type(vad).__name__}"
+                )
 
             if len(parts) != 3:
-                raise ValueError(f"vad requires exactly 3 values (V,A,D), got {len(parts)}")
+                raise ValueError(
+                    f"vad requires exactly 3 values (V,A,D), got {len(parts)}"
+                )
 
             for i, v in enumerate(parts):
                 if not (-1.0 <= v <= 1.0):
@@ -196,10 +220,14 @@ def cmd_generate(args):
 
             emotion_vector = EmotionVector(*parts)
         except ValueError as e:
-            print(json.dumps({
-                "status": "error",
-                "message": f"Invalid --vad: {e}",
-            }))
+            print(
+                json.dumps(
+                    {
+                        "status": "error",
+                        "message": f"Invalid --vad: {e}",
+                    }
+                )
+            )
             return
     elif emotion_name:
         emotion_name = emotion_name  # Will be passed to pipeline
@@ -224,6 +252,7 @@ def cmd_generate(args):
 
     # === 4. Determine seed ===
     import random
+
     raw_seed = content.get("seed")
     if raw_seed is not None:
         seed = int(raw_seed)
@@ -255,22 +284,23 @@ def cmd_generate(args):
     # Validate overrides against known values
     errors = _validate_overrides(overrides)
     if errors:
-        print(json.dumps({
-            "status": "error",
-            "message": "Invalid override values",
-            "errors": errors,
-        }))
+        print(
+            json.dumps(
+                {
+                    "status": "error",
+                    "message": "Invalid override values",
+                    "errors": errors,
+                }
+            )
+        )
         return
 
-    results = []
+    results: list[dict[str, Any]] = []
 
-    _variants = content["variants"]
-    variant_count = _variants if isinstance(_variants, int) else int(_variants)
-    is_video = bool(content["video"])
-    _dur = content["duration"]
-    duration = _dur if isinstance(_dur, float) else float(_dur)
-    _fps = content["fps"]
-    fps = _fps if isinstance(_fps, int) else int(_fps)
+    variant_count = cast(int, content.get("variants") or 1)
+    is_video = bool(content.get("video"))
+    duration = cast(float, content.get("duration") or 3.0)
+    fps = cast(int, content.get("fps") or 15)
 
     body_text = str(content["body"]) if content.get("body") else None
     title_text = str(content["title"]) if content.get("title") else None
@@ -280,9 +310,7 @@ def cmd_generate(args):
 
         if is_video:
             suffix = f"_v{variant_idx}" if variant_count > 1 else ""
-            output_path = os.path.join(
-                output_dir, f"viz_{timestamp_str}{suffix}.gif"
-            )
+            output_path = os.path.join(output_dir, f"viz_{timestamp_str}{suffix}.gif")
 
             pipe.generate_video(
                 text=body_text,
@@ -290,26 +318,28 @@ def cmd_generate(args):
                 emotion_vector=emotion_vector,
                 seed=variant_seed,
                 title=title_text,
-                content=pipeline_content if content_has_data(pipeline_content) else None,
+                content=pipeline_content
+                if content_has_data(pipeline_content)
+                else None,
                 duration=duration,
                 fps=fps,
                 output_path=output_path,
                 overrides=overrides or None,
             )
 
-            results.append({
-                "path": os.path.abspath(output_path),
-                "seed": variant_seed,
-                "format": "gif",
-                "duration": duration,
-                "fps": fps,
-            })
+            results.append(
+                {
+                    "path": os.path.abspath(output_path),
+                    "seed": variant_seed,
+                    "format": "gif",
+                    "duration": duration,
+                    "fps": fps,
+                }
+            )
 
         else:
             suffix = f"_v{variant_idx}" if variant_count > 1 else ""
-            output_path = os.path.join(
-                output_dir, f"viz_{timestamp_str}{suffix}.png"
-            )
+            output_path = os.path.join(output_dir, f"viz_{timestamp_str}{suffix}.png")
 
             pipe.generate(
                 text=body_text,
@@ -317,16 +347,20 @@ def cmd_generate(args):
                 emotion_vector=emotion_vector,
                 seed=variant_seed,
                 title=title_text,
-                content=pipeline_content if content_has_data(pipeline_content) else None,
+                content=pipeline_content
+                if content_has_data(pipeline_content)
+                else None,
                 output_path=output_path,
                 overrides=overrides or None,
             )
 
-            results.append({
-                "path": os.path.abspath(output_path),
-                "seed": variant_seed,
-                "format": "png",
-            })
+            results.append(
+                {
+                    "path": os.path.abspath(output_path),
+                    "seed": variant_seed,
+                    "format": "png",
+                }
+            )
 
     # === 6. Output JSON ===
     output = {
@@ -348,7 +382,7 @@ def cmd_convert(args):
     try:
         from lib.ascii_convert import image_to_ascii_art, add_market_overlay
     except ImportError:
-        from viz.lib.ascii_convert import image_to_ascii_art, add_market_overlay  # type: ignore[import-not-found]
+        from viz.lib.ascii_convert import image_to_ascii_art, add_market_overlay  # pyright: ignore[reportMissingImports]
 
     if not os.path.exists(args.image):
         result = {"status": "error", "message": f"Image not found: {args.image}"}
@@ -400,10 +434,15 @@ def cmd_convert(args):
             if raw.strip():
                 overlay_data = json.loads(raw)
         except json.JSONDecodeError as e:
-            print(json.dumps({
-                "status": "error",
-                "message": f"Invalid stdin JSON: {e}",
-            }), file=sys.stderr)
+            print(
+                json.dumps(
+                    {
+                        "status": "error",
+                        "message": f"Invalid stdin JSON: {e}",
+                    }
+                ),
+                file=sys.stderr,
+            )
         except IOError:
             pass
 
@@ -456,16 +495,54 @@ def cmd_capabilities(args):
         "effects": sorted(EFFECT_REGISTRY.keys()),
         "sources": sorted(VOCABULARIES.keys()),
         "blend_modes": ["ADD", "SCREEN", "OVERLAY", "MULTIPLY"],
-        "layouts": ["random_scatter", "grid_jitter", "spiral", "force_directed", "preset"],
-        "decorations": ["corners", "edges", "scattered", "minimal", "none", "frame", "grid_lines", "circuit"],
-        "gradients": [
-            "classic", "smooth", "matrix", "plasma", "default",
-            "blocks", "blocks_fine", "blocks_ultra", "glitch",
-            "box_density", "box_vertical", "box_cross", "circuit",
-            "dots_density", "geometric", "braille_density",
-            "tech", "cyber", "organic", "noise",
+        "layouts": [
+            "random_scatter",
+            "grid_jitter",
+            "spiral",
+            "force_directed",
+            "preset",
         ],
-        "charsets_convert": ["classic", "simple", "blocks", "bull", "bear", "numbers", "money"],
+        "decorations": [
+            "corners",
+            "edges",
+            "scattered",
+            "minimal",
+            "none",
+            "frame",
+            "grid_lines",
+            "circuit",
+        ],
+        "gradients": [
+            "classic",
+            "smooth",
+            "matrix",
+            "plasma",
+            "default",
+            "blocks",
+            "blocks_fine",
+            "blocks_ultra",
+            "glitch",
+            "box_density",
+            "box_vertical",
+            "box_cross",
+            "circuit",
+            "dots_density",
+            "geometric",
+            "braille_density",
+            "tech",
+            "cyber",
+            "organic",
+            "noise",
+        ],
+        "charsets_convert": [
+            "classic",
+            "simple",
+            "blocks",
+            "bull",
+            "bear",
+            "numbers",
+            "money",
+        ],
         "input_schema": {
             "source": "string (market|art|news|mood) - determines visual vocabulary",
             "headline": "string - main title text",
@@ -496,13 +573,13 @@ def cmd_capabilities(args):
         },
     }
 
-    emotions_dict = capabilities["emotions"]
-    effects_list = capabilities["effects"]
-    sources_list = capabilities["sources"]
-    layouts_list = capabilities["layouts"]
-    decorations_list = capabilities["decorations"]
+    emotions_dict = cast(dict[str, dict[str, float]], capabilities["emotions"])
+    effects_list = cast(list[str], capabilities["effects"])
+    sources_list = cast(list[str], capabilities["sources"])
+    layouts_list = cast(list[str], capabilities["layouts"])
+    decorations_list = cast(list[str], capabilities["decorations"])
 
-    format_type = args.format if hasattr(args, 'format') else "json"
+    format_type = args.format if hasattr(args, "format") else "json"
     if format_type == "json":
         print(json.dumps(capabilities, ensure_ascii=False, indent=2))
     else:
@@ -510,8 +587,10 @@ def cmd_capabilities(args):
         print("=== VIZ Capabilities ===\n")
         print(f"Emotions ({len(emotions_dict)}):")
         for name in sorted(emotions_dict):
-            ev = emotions_dict[name]
-            print(f"  {name:<15} V={ev['valence']:+.2f} A={ev['arousal']:+.2f} D={ev['dominance']:+.2f}")
+            ev: dict[str, float] = emotions_dict[name]
+            print(
+                f"  {name:<15} V={ev['valence']:+.2f} A={ev['arousal']:+.2f} D={ev['dominance']:+.2f}"
+            )
         print(f"\nEffects ({len(effects_list)}): {', '.join(effects_list)}")
         print(f"Sources ({len(sources_list)}): {', '.join(sources_list)}")
         print(f"Layouts ({len(layouts_list)}): {', '.join(layouts_list)}")
@@ -529,8 +608,11 @@ def build_parser():
     # === generate ===
     gen = subparsers.add_parser("generate", help="生成可视化 Generate visualization")
     gen.add_argument("--emotion", help="情绪名称 (如 joy, fear, euphoria)")
-    gen.add_argument("--source", choices=["market", "art", "news", "mood"],
-                     help="信息来源 (决定视觉词汇)")
+    gen.add_argument(
+        "--source",
+        choices=["market", "art", "news", "mood"],
+        help="信息来源 (决定视觉词汇)",
+    )
     gen.add_argument("--title", help="标题文字")
     gen.add_argument("--text", help="文本输入 (用于情绪推断)")
     gen.add_argument("--headline", help="主标题")
@@ -557,8 +639,12 @@ def build_parser():
 
     # === capabilities ===
     cap = subparsers.add_parser("capabilities", help="列出所有可用选项")
-    cap.add_argument("--format", choices=["json", "text"], default="json",
-                     help="输出格式 (default: json)")
+    cap.add_argument(
+        "--format",
+        choices=["json", "text"],
+        default="json",
+        help="输出格式 (default: json)",
+    )
 
     return parser
 

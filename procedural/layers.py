@@ -235,7 +235,7 @@ class Sprite:
                     'color': tuple | None, # RGB 颜色 (最后一个颜色循环的值)
                 }
         """
-        result = {
+        result: dict[str, Any] = {
             "scale": self.scale,
             "y_offset": 0.0,
             "color": None,
