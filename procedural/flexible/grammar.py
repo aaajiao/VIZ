@@ -192,6 +192,14 @@ class VisualGrammar:
         # === 粒子字符 ===
         spec.particle_chars = self._choose_particle_chars(warmth, energy)
 
+        # === 文字元素 ===
+        spec.text_elements = self._choose_text_elements(
+            valence, arousal, energy
+        )
+
+        # === 颜文字情绪 ===
+        spec.kaomoji_mood = self._choose_kaomoji_mood(valence, arousal)
+
         return spec
 
     # === 产生式规则实现 ===
@@ -416,6 +424,81 @@ class VisualGrammar:
             }
         else:
             return {}
+
+    def _choose_text_elements(
+        self, valence: float, arousal: float, energy: float
+    ) -> list[dict]:
+        """
+        生成氛围文字元素
+
+        根据情绪维度选择散布在画面中的氛围文字词汇。
+        每个元素包含 text, position (相对), size, opacity。
+        """
+        # 根据能量决定数量 (0-3)
+        count = 0
+        if self.rng.random() < 0.3 + energy * 0.4:
+            count = self.rng.randint(1, 3)
+        if count == 0:
+            return []
+
+        # 根据情绪选择词池
+        if valence > 0.5:
+            if arousal > 0.3:
+                pool = ["RISE", "UP", "BULL", "GO", "YES", "MAX", "TOP",
+                        "涨", "牛", "冲", "↑", "▲"]
+            else:
+                pool = ["calm", "flow", "ease", "zen", "~",
+                        "静", "和", "润", "◎", "○"]
+        elif valence > 0.0:
+            pool = ["...", "---", "===", "~", "○", "△",
+                    "等", "观", "守", "…"]
+        elif valence > -0.5:
+            if arousal > 0.3:
+                pool = ["?!", "WARN", "ALERT", "!!",
+                        "慌", "急", "!", "⚠", "△"]
+            else:
+                pool = ["...", "fade", "dim", "gray",
+                        "淡", "沉", "暗", "—"]
+        else:
+            if arousal > 0.3:
+                pool = ["SELL", "DOWN", "BEAR", "RUN", "NO", "STOP",
+                        "跌", "崩", "逃", "↓", "▼"]
+            else:
+                pool = ["...", "___", "void", "null",
+                        "空", "无", "寂", "—"]
+
+        elements = []
+        for _ in range(count):
+            text = self.rng.choice(pool)
+            elements.append({
+                "text": text,
+                "position": (
+                    self.rng.uniform(0.1, 0.9),
+                    self.rng.uniform(0.1, 0.9),
+                ),
+                "size": self.rng.uniform(0.6, 1.5),
+                "opacity": self.rng.uniform(0.3, 0.8),
+            })
+
+        return elements
+
+    def _choose_kaomoji_mood(self, valence: float, arousal: float) -> str:
+        """
+        根据 valence + arousal 二维空间选择颜文字情绪类别
+
+        作为 SceneSpec 的参考情绪，pipeline 可用作 fallback。
+        """
+        high_a = arousal > 0.3
+        if valence > 0.5:
+            return "euphoria" if high_a else "happy"
+        elif valence > 0.0:
+            return "excitement" if high_a else "relaxed"
+        elif valence > -0.3:
+            return "confused" if high_a else "bored"
+        elif valence > -0.6:
+            return "anxiety" if high_a else "sad"
+        else:
+            return "panic" if high_a else "lonely"
 
     # === 工具方法 ===
 

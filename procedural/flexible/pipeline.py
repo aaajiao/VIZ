@@ -482,6 +482,34 @@ class FlexiblePipeline:
             )
             sprites.extend(particle_sprites)
 
+        # === 氛围文字 ===
+        for elem in spec.text_elements:
+            ex, ey = elem["position"]
+            px = int(ex * w)
+            py = int(ey * h)
+            opacity = elem.get("opacity", 0.6)
+            # 通过降低颜色亮度模拟透明度
+            dim_factor = max(0.2, opacity)
+            text_color = tuple(
+                int(c * dim_factor) for c in palette["secondary"]
+            )
+            sprites.append(TextSprite(
+                text=elem["text"],
+                x=px,
+                y=py,
+                color=text_color,
+                glow_color=palette.get("glow", text_color),
+                glow_size=1,
+                animations=[
+                    {
+                        "type": "floating",
+                        "amp": 2.0,
+                        "speed": 0.3,
+                        "phase": rng.uniform(0, 6.28),
+                    },
+                ],
+            ))
+
         # === 标题文字 ===
         if title:
             sprites.append(TextSprite(
