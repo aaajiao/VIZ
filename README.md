@@ -165,11 +165,11 @@ composite = CompositeEffect(
 ```
 VIZ/
 ├── viz.py                        # 唯一 CLI 入口（generate / convert / capabilities）
-├── stock_pixel_ascii.py          # 图片转 ASCII（由 viz.py convert 调用）
 │
 ├── lib/                          # 共享模块
 │   ├── content.py                # Content 数据结构
 │   ├── vocabulary.py             # 来源视觉词汇（market / art / news / mood）
+│   ├── ascii_convert.py           # 图片转 ASCII 艺术（由 viz.py convert 调用）
 │   ├── glow.py                   # 发光文字效果
 │   ├── ascii_texture.py          # ASCII 纹理和粒子散布
 │   ├── kaomoji.py                # 颜文字渲染（20 分类，300+ 面孔）
@@ -214,10 +214,9 @@ VIZ/
 
 ```
 Pillow>=9.0.0
-requests  # 可选，仅用于 stock_pixel_ascii.py
 ```
 
-所有数学运算纯 Python stdlib，禁止 NumPy。
+所有数学运算纯 Python stdlib，禁止 NumPy。唯一外部依赖是 Pillow。
 
 ## 参考
 

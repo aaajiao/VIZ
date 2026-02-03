@@ -223,9 +223,12 @@ def cmd_convert(args):
     """
     图像转 ASCII - Convert image to ASCII art
 
-    Wraps the stock_pixel_ascii module.
+    Wraps lib/ascii_convert module.
     """
-    from stock_pixel_ascii import image_to_ascii_art, add_market_overlay
+    try:
+        from lib.ascii_convert import image_to_ascii_art, add_market_overlay
+    except ImportError:
+        from viz.lib.ascii_convert import image_to_ascii_art, add_market_overlay
 
     if not os.path.exists(args.image):
         result = {"status": "error", "message": f"Image not found: {args.image}"}
