@@ -95,6 +95,7 @@ VIZ/
 │       ├── modulator.py          # Noise drifting + domain warping
 │       ├── grammar.py            # Probabilistic visual grammar rules
 │       ├── cppn.py               # CPPN neural network patterns
+│       ├── decorations.py        # Decoration style builders (dispatcher pattern)
 │       └── pipeline.py           # Orchestrator combining all modules
 │
 ├── docs/                         # Detailed documentation
@@ -326,6 +327,7 @@ bear_words = ['down', 'fall', 'drop', 'decline', 'crash', 'bear', 'negative']
 | Math primitives | `procedural/core/` -> vec, sdf, noise, mathx |
 | Emotion mapping | `procedural/flexible/emotion.py` -> VAD anchors |
 | Visual grammar rules | `procedural/flexible/grammar.py` |
+| Add decoration style | `procedural/flexible/decorations.py` -> add `deco_xxx()` + register |
 | Content integration | `procedural/flexible/pipeline.py` -> FlexiblePipeline |
 
 ## CLI Arguments (viz.py generate)
