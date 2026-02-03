@@ -50,6 +50,7 @@ from __future__ import annotations
 import os
 import random
 from datetime import datetime
+from typing import Any
 
 from PIL import Image
 
@@ -107,8 +108,8 @@ class FlexiblePipeline:
         seed: int | None = None,
         title: str | None = None,
         output_path: str | None = None,
-        content: dict | None = None,
-        overrides: dict | None = None,
+        content: dict[str, Any] | None = None,
+        overrides: dict[str, Any] | None = None,
     ) -> Image.Image:
         """
         生成单帧可视化
@@ -225,8 +226,8 @@ class FlexiblePipeline:
         duration: float = 3.0,
         fps: int = 15,
         output_path: str | None = None,
-        content: dict | None = None,
-        overrides: dict | None = None,
+        content: dict[str, Any] | None = None,
+        overrides: dict[str, Any] | None = None,
     ) -> list[Image.Image]:
         """
         生成动画序列
@@ -326,7 +327,7 @@ class FlexiblePipeline:
         emotion_vector: EmotionVector | None = None,
         count: int = 5,
         base_seed: int | None = None,
-        content: dict | None = None,
+        content: dict[str, Any] | None = None,
     ) -> list[Image.Image]:
         """
         生成多个不同变体
@@ -359,7 +360,7 @@ class FlexiblePipeline:
 
     # === 内部方法 ===
 
-    def _apply_overrides(self, spec, overrides):
+    def _apply_overrides(self, spec: SceneSpec, overrides: dict[str, Any]) -> None:
         """
         用户覆盖应用 - Apply user overrides to SceneSpec
 
@@ -404,9 +405,9 @@ class FlexiblePipeline:
     def _build_effect(
         self,
         spec: SceneSpec,
-        visual_params: dict,
+        visual_params: dict[str, Any],
         seed: int,
-    ):
+    ) -> Any:
         """根据 SceneSpec 构建效果 (可能是复合效果)"""
 
         # 构建主效果
@@ -456,10 +457,10 @@ class FlexiblePipeline:
     def _build_sprites(
         self,
         spec: SceneSpec,
-        visual_params: dict,
+        visual_params: dict[str, Any],
         seed: int,
         title: str | None,
-    ) -> list:
+    ) -> list[Any]:
         """根据 SceneSpec 构建精灵列表"""
         rng = random.Random(seed)
         sprites = []
@@ -494,12 +495,12 @@ class FlexiblePipeline:
             except ImportError:
                 pass
 
-        if content_moods:
-            mood_options = content_moods
+        if content_moods and isinstance(content_moods, list):
+            mood_options: list[str] = content_moods
         else:
             mood_options = self._mood_from_valence_arousal(
-                visual_params.get("valence", 0.0),
-                visual_params.get("arousal", 0.0),
+                float(visual_params.get("valence", 0.0)),
+                float(visual_params.get("arousal", 0.0)),
             )
         for i, pos in enumerate(positions[:spec.kaomoji_count]):
             if len(pos) == 3:
@@ -517,16 +518,16 @@ class FlexiblePipeline:
                 anim = dict(tmpl)
                 if anim["type"] == "floating":
                     anim["phase"] = phase
-                    anim["speed"] = anim.get("speed", 1.0) + rng.random() * 0.5
+                    anim["speed"] = float(anim.get("speed", 1.0)) + rng.random() * 0.5
                 elif anim["type"] == "breathing":
-                    anim["speed"] = anim.get("speed", 2.0) + rng.random()
+                    anim["speed"] = float(anim.get("speed", 2.0)) + rng.random()
                 sprite_anims.append(anim)
 
             sprite = KaomojiSprite(
                 mood=mood,
                 x=px, y=py,
-                color=palette["primary"],
-                outline_color=palette["outline"],
+                color=tuple(palette["primary"]),
+                outline_color=tuple(palette["outline"]),
                 scale=max(1, size // 100),
                 animations=sprite_anims,
             )
@@ -539,8 +540,8 @@ class FlexiblePipeline:
                 mood=central_mood,
                 x=w // 2 - spec.central_size // 2,
                 y=h // 2 - spec.central_size // 2,
-                color=palette["accent"],
-                outline_color=palette["outline"],
+                color=tuple(palette["accent"]),
+                outline_color=tuple(palette["outline"]),
                 scale=max(1, spec.central_size // 80),
                 animations=[
                     {"type": "breathing", "amp": spec.breath_amp * 1.5, "speed": 1.5},
@@ -570,15 +571,16 @@ class FlexiblePipeline:
             opacity = elem.get("opacity", 0.6)
             # 通过降低颜色亮度模拟透明度
             dim_factor = max(0.2, opacity)
+            secondary = tuple(palette["secondary"])
             text_color = tuple(
-                int(c * dim_factor) for c in palette["secondary"]
+                int(c * dim_factor) for c in secondary
             )
             sprites.append(TextSprite(
                 text=elem["text"],
                 x=px,
                 y=py,
                 color=text_color,
-                glow_color=palette.get("glow", text_color),
+                glow_color=tuple(palette.get("glow", text_color)),
                 glow_size=1,
                 animations=[
                     {
@@ -596,8 +598,8 @@ class FlexiblePipeline:
                 text=title,
                 x=w // 2 - len(title) * 4,
                 y=30,
-                color=palette["primary"],
-                glow_color=palette["glow"],
+                color=tuple(palette["primary"]),
+                glow_color=tuple(palette["glow"]),
                 glow_size=2,
                 animations=[
                     {"type": "breathing", "amp": 0.03, "speed": 1.0},
@@ -609,15 +611,15 @@ class FlexiblePipeline:
     def _build_decoration_sprites(
         self,
         spec: SceneSpec,
-        palette: dict,
+        palette: dict[str, Any],
         w: int,
         h: int,
         rng: random.Random,
-    ) -> list:
+    ) -> list[Any]:
         """根据装饰风格生成装饰精灵 (含 box-drawing 边框/网格/电路风格)"""
-        decos = []
+        decos: list[Any] = []
         chars = spec.decoration_chars
-        color = palette.get("dim", palette.get("outline", (80, 80, 80)))
+        color = tuple(palette.get("dim", palette.get("outline", (80, 80, 80))))
         margin = 40
 
         if spec.decoration_style == "corners":
@@ -763,7 +765,7 @@ class FlexiblePipeline:
             grid_cols = rng.randint(2, 5)
             grid_rows = rng.randint(2, 5)
 
-            dim_color = tuple(max(0, c - 40) for c in color)
+            dim_color = tuple(max(0, int(c) - 40) for c in color)
 
             # 垂直网格线
             for c in range(grid_cols):
@@ -802,7 +804,7 @@ class FlexiblePipeline:
             bs = get_border_set(rng.choice(["light", "heavy"]))
 
             node_count = rng.randint(4, 10)
-            trace_color = tuple(max(0, c - 20) for c in color)
+            trace_color = tuple(max(0, int(c) - 20) for c in color)
 
             for _ in range(node_count):
                 # 节点位置
@@ -859,15 +861,15 @@ class FlexiblePipeline:
     def _build_particle_sprites(
         self,
         spec: SceneSpec,
-        palette: dict,
+        palette: dict[str, Any],
         w: int,
         h: int,
         rng: random.Random,
-    ) -> list:
+    ) -> list[Any]:
         """生成粒子字符精灵"""
-        particles = []
+        particles: list[Any] = []
         chars = spec.particle_chars
-        color = palette.get("dim", (60, 60, 60))
+        color = tuple(palette.get("dim", (60, 60, 60)))
         count = rng.randint(10, 25)
 
         for _ in range(count):
@@ -893,7 +895,7 @@ class FlexiblePipeline:
         width: int,
         height: int,
         rng: random.Random,
-    ) -> list:
+    ) -> list[Any]:
         """根据布局类型生成位置"""
         if layout_type == "random_scatter":
             return random_scatter(width, height, count, rng)
@@ -905,7 +907,7 @@ class FlexiblePipeline:
             return force_directed_layout(width, height, count, rng, iterations=30)
         elif layout_type == "preset":
             preset = rng.choice(LAYOUT_PRESETS)
-            return preset["positions"][:count]
+            return list(preset["positions"])[:count]
         else:
             return random_scatter(width, height, count, rng)
 
