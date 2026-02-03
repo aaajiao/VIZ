@@ -141,3 +141,29 @@ All exceed minimum visibility threshold (50 pixels).
 - ✅ Static image: 136KB PNG with seed=42
 - ✅ Video: 7.5MB GIF (20 frames, 2s @ 10fps) with sprites animated
 - ✅ Reproducibility: Identical file sizes (138826 bytes) for two runs with same seed
+
+## Task 5: Refactor emotional_market_viz.py to Use Procedural Engine (2026-02-03)
+
+### Changes Made
+1. **emotional_market_viz.py**: Added top-level imports for `Engine`, `KaomojiSprite`, `TextSprite` from procedural. Refactored `_generate_video()` from bare effect-only rendering to full sprite-based animation system.
+
+### Key Design Decisions
+- **Same pattern as Task 3**: Static `generate_emotional_viz()` untouched. Only `_generate_video()` was refactored to use sprites.
+- **Emotion-specific animation intensity**: Extreme emotions (euphoria, panic) get stronger floating amplitude (5.0 vs 3.0) and breathing amplitude (0.15 vs 0.08).
+- **Emotion-to-mood mapping**: Created `emotion_moods` dict mapping 5 emotions to appropriate kaomoji moods for sprite creation.
+- **Effect mapping preserved**: euphoria→plasma, excitement→moire, anxiety→noise_field, fear→wave, panic→flame.
+- **Glitch effect preserved**: Static rendering still applies inline glitch for euphoria/panic (intensity 150/200).
+- **`_generate_video` signature changed**: Added `market_data` parameter for emotion context. Updated caller in `__main__`.
+
+### Layout Strategy for Video
+- Reused 3 of the static layouts (subset) for sprite positioning.
+- 6 kaomoji positions derived from layout landmarks (symbol_a, symbol_b, badge offset, random corners).
+- Text sprites positioned relative to box coordinates from layout.
+
+### Verification Results
+- ✅ All 5 emotions generate static PNGs correctly with --seed 42
+- ✅ euphoria and panic apply glitch effect (inline pixel manipulation preserved)
+- ✅ CLI compatibility maintained (same argparse, same output paths)
+
+### Files Modified
+- `/workspace/viz/emotional_market_viz.py`: Lines 24-28 (imports), 645-808 (_generate_video refactored), 703 (caller updated)
