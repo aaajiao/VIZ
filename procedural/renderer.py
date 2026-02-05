@@ -39,9 +39,14 @@
     img_large.save('/workspace/media/test.png')
 """
 
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw
 from .types import Buffer, Cell
 from .palette import char_at_value
+
+try:
+    from lib.fonts import get_font
+except ImportError:
+    from viz.lib.fonts import get_font
 
 __all__ = [
     "buffer_to_image",
@@ -91,13 +96,7 @@ def buffer_to_image(
     img = Image.new("RGB", (width, height), (0, 0, 0))
     draw = ImageDraw.Draw(img)
 
-    # 尝试加载等宽字体
-    try:
-        font = ImageFont.truetype(
-            "/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf", char_size
-        )
-    except (IOError, OSError):
-        font = ImageFont.load_default()
+    font = get_font(char_size)
 
     # 逐字符渲染
     for y in range(rows):

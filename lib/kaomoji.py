@@ -12,7 +12,7 @@ Kaomoji Rendering Module
     3. 父类兜底: 通过 MOOD_CATEGORIES 解析到 bull/bear/neutral
 """
 
-from PIL import ImageDraw, ImageFont
+from PIL import ImageDraw
 import random
 
 from lib.kaomoji_data import (
@@ -20,9 +20,8 @@ from lib.kaomoji_data import (
     KAOMOJI_MULTILINE,
     MOOD_CATEGORIES,
 )
+from lib.fonts import get_font
 
-# ========== ASCII 颜文字数据（向后兼容引用）==========
-# 保留 ASCII_KAOMOJI 名称以兼容外部引用
 ASCII_KAOMOJI = KAOMOJI_MULTILINE
 
 
@@ -53,15 +52,8 @@ def draw_kaomoji(draw, x, y, mood, color, outline_color, size=1, rng=None):
     if isinstance(outline_color, str):
         outline_color = _hex_to_rgb(outline_color)
 
-    # 加载字体
-    font = None
-    try:
-        font_size = min(200, max(1, 10 * size))
-        font = ImageFont.truetype(
-            "/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf", font_size
-        )
-    except Exception:
-        font = ImageFont.load_default()
+    font_size = min(200, max(1, 10 * size))
+    font = get_font(font_size)
 
     # === 选择颜文字 ===
     mood_lower = str(mood).lower()
@@ -128,9 +120,7 @@ def _draw_multiline(draw, x, y, kaomoji_lines, color, outline_color, font, size)
         bold_range = min(size, 4)
         for dx in range(bold_range):
             for dy in range(bold_range):
-                draw.text(
-                    (x + dx, current_y + dy), line_text, fill=color, font=font
-                )
+                draw.text((x + dx, current_y + dy), line_text, fill=color, font=font)
 
 
 def get_moods_by_category(category):
