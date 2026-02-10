@@ -232,15 +232,48 @@ class Engine:
                     fx_kwargs["_time"] = ctx.time
                     fx_fn(buffer, **fx_kwargs)
 
-        # 5c. 低饱和度亮度衰减 (neutral/calm 等低唤醒情绪压暗效果纹理)
+        # 5c-pre. 去除 Cell 别名 (某些效果复用 Cell 对象，直接修改会导致多次缩放)
+        for _y in range(h):
+            for _x in range(w):
+                _c = buffer[_y][_x]
+                buffer[_y][_x] = Cell(_c.char_idx, _c.fg, _c.bg)
+
+        # 5c-fill. 第二渲染通道背景填充
+        from procedural.bg_fill import bg_fill
+        _bg_spec = params.get("_bg_fill_spec", {})
+        if not _bg_spec:
+            _bg_spec = {
+                "effect": "noise_field",
+                "effect_params": {},
+                "color_mode": "scheme",
+                "color_scheme": self.color_scheme,
+                "warmth": params.get("warmth", 0.5),
+                "saturation": params.get("saturation", 0.9),
+                "dim": 0.30,
+            }
+        _bg_spec.setdefault("color_scheme", self.color_scheme)
+        _bg_spec.setdefault("warmth", params.get("warmth", 0.5))
+        _bg_spec.setdefault("saturation", params.get("saturation", 0.9))
+        _bg_spec["_time"] = ctx.time
+        bg_fill(buffer, w, h, seed, _bg_spec)
+
+        # 5c. 情感亮度缩放 (brightness 从 emotion -> pipeline -> engine)
+        brightness = params.get("brightness", 1.0)
         saturation = params.get("saturation", 1.0)
-        if saturation < 0.8:
-            t = min(saturation / 0.8, 1.0)
-            base_factor = 0.35 + t * 0.65
-            # 随机抖动: 同一 seed 结果一致，不同 seed 亮度有变化
-            _jitter_rng = random.Random(seed ^ 0xB817)
-            dim_factor = base_factor + _jitter_rng.uniform(-0.25, 0.25)
-            dim_factor = max(0.20, min(1.0, dim_factor))
+
+        # saturation 仅提供轻微调节 (最多降 15%)，不再大幅压暗
+        sat_adjust = 1.0
+        if saturation < 0.6:
+            sat_adjust = 0.85 + (saturation / 0.6) * 0.15
+
+        base_factor = brightness * sat_adjust
+
+        # 随机抖动: 同一 seed 一致，不同 seed 有变化
+        _jitter_rng = random.Random(seed ^ 0xB817)
+        dim_factor = base_factor + _jitter_rng.uniform(-0.12, 0.12)
+        dim_factor = max(0.45, min(1.0, dim_factor))
+
+        if dim_factor < 0.98:
             for row in buffer:
                 for cell in row:
                     r, g, b = cell.fg

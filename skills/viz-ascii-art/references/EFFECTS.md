@@ -376,3 +376,5 @@ Effects use these color schemes based on emotion:
 | `fire` | Black → Dark Red → Orange → Bright Yellow | Intense/fiery |
 
 Color scheme is auto-selected from VAD, but gradient names also influence final palette.
+
+Color schemes also drive the **background fill** second render pass. Grammar selects a color scheme based on warmth/energy; the bg_fill pass maps char_idx intensity through this scheme to generate textured backgrounds (~320k unique combinations from 13 effects × variants × transforms × PostFX × masks × 8 color modes).

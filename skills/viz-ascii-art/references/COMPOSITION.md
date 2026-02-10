@@ -94,6 +94,23 @@ Grammar picks a named variant per effect and samples params from its ranges.
 | `radial_masked` | Center vs edges with radial mask |
 | `noise_masked` | Organic noise-based region blending |
 
+## Background Fill (auto-selected, ~320k combinations)
+
+After main rendering, a **second render pass** fills `bg=None` cells with textured backgrounds. Grammar auto-selects all dimensions:
+
+| Dimension | Options | Count |
+|-----------|---------|-------|
+| Effect | 13 lightweight candidates (excludes game_of_life/sand_game/slime_dish/dyna) | 13 |
+| Variants | Sampled from VARIANT_REGISTRY | ~4 per effect |
+| Transforms | 0-2 from mirror/tile/kaleidoscope/spiral_warp/polar_remap | ~15 combos |
+| PostFX | 0-1 from vignette/color_shift/scanlines/threshold | 4 |
+| Masks | 0-1 from radial/noise/diagonal | 3 |
+| Color mode | 7 named schemes + continuous (warmth/saturation) | 8 |
+
+Total: ~320,000 discrete background texture combinations × continuous parameters.
+
+Background fill is fully automatic — no user-facing fields needed. Dim factor ~30% ensures backgrounds stay subtle.
+
 ## Director Mode (precise control)
 
 **Delegate mode** (default): omit composition fields — grammar auto-selects optimal transforms, PostFX, masks, and variants from emotion+energy.

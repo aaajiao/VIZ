@@ -27,17 +27,25 @@ The composition system provides four composable layers of structural transformat
                                      │
                                      ▼
                         ┌─────────────────────────┐
+                        │   bg_fill 第二渲染通道    │
+                        │   procedural/bg_fill.py  │
+                        │   (~320k 纹理组合)       │
+                        └────────────┬────────────┘
+                                     │
+                                     ▼
+                        ┌─────────────────────────┐
                         │   160x160 Buffer         │
                         │   → buffer_to_image()    │
                         └─────────────────────────┘
 ```
 
-**四层架构 — Four-Layer Architecture:**
+**五层架构 — Five-Layer Architecture:**
 
 1. **Structural Variants** — 基础效果的命名参数预设，提供离散结构变化
 2. **Composition** — 双效果混合（BlendMode）或空间遮罩合成（MaskedCompositeEffect）
 3. **Domain Transforms** — UV 坐标变换链（镜像、平铺、万花筒等）
 4. **PostFX Chain** — 缓冲区级后处理（暗角、扫描线、边缘检测等）
+5. **Background Fill** — 第二渲染通道，在临时 buffer 上运行独立 effect + color scheme 着色 → 填充 `bg=None` cell
 
 每层独立概率启用，层间可自由组合。详见 [rendering.md](rendering.md) 管线概览和 [effects.md](effects.md) 基础效果列表。
 
@@ -423,7 +431,46 @@ VARIANT_REGISTRY = {
 
 ---
 
-## 5. Composition Modes（合成模式）
+## 5. Background Fill — 第二渲染通道
+
+`procedural/bg_fill.py`
+
+在主 buffer 渲染完成后（PostFX 链之后），对 `bg=None` 的 cell 执行第二渲染通道填充背景色。复用系统的全部组件：effects、variants、transforms、PostFX、masks、color schemes。
+
+### bg_fill 流程
+
+1. 从 13 个候选 effect 中选择（排除重量级：game_of_life / sand_game / slime_dish / dyna）
+2. （可选）用 TransformedEffect 包装 0~2 个 transform
+3. 创建临时 buffer + 临时 Context（seed ^ 0xBF11 确保与前景不同）
+4. 跑 effect.pre() + 逐像素 main() 填充临时 buffer
+5. （可选）施加 0~1 个 PostFX
+6. （可选）mask 空间调制
+7. char_idx → 归一化 → color scheme 着色 → dim (~30%) → 与 fg 暗色混合 → cell.bg
+
+### bg_fill_spec 结构
+
+```python
+{
+    "effect": str,          # 背景 effect 名称
+    "effect_params": dict,  # effect 参数
+    "transforms": list,     # 变换链 [{"type": ..., ...}]
+    "postfx": list,         # 后处理链 [{"type": ..., ...}]
+    "mask": dict | None,    # 遮罩规格 {"type": ..., ...}
+    "color_mode": str,      # "scheme" 或 "continuous"
+    "color_scheme": str,    # 颜色方案名称
+    "warmth": float,        # 色温
+    "saturation": float,    # 饱和度
+    "dim": float,           # 亮度衰减系数 (0.18~0.45)
+}
+```
+
+### 组合空间
+
+13 effect × ~4 variant × ~15 transform 组合 × 4 postfx × 3 mask × 8 color（7 named + continuous）≈ ~320,000 种离散背景纹理组合，加上连续参数。
+
+---
+
+## 6. Composition Modes（合成模式）
 
 `procedural/compositor.py`
 
@@ -483,7 +530,7 @@ VARIANT_REGISTRY = {
 
 ---
 
-## 6. Grammar Integration（文法集成）
+## 7. Grammar Integration（文法集成）
 
 `procedural/flexible/grammar.py`
 
@@ -558,13 +605,32 @@ overlay_chance = 0.45 + energy * 0.35   → 45-80%
 
 高能量情绪下叠加效果非常活跃。
 
+### 背景填充规格 — `_choose_bg_fill_spec(energy, structure, warmth)`
+
+| 维度 | 选项 | 概率影响 |
+|------|------|----------|
+| bg effect | 13 候选 (pop 主 effect) | energy/structure 加权 |
+| transforms | 0-2 个 (mirror 40%, tile 30%, kaleidoscope 20%, spiral_warp 12%, polar_remap 10%) | — |
+| postfx | 0-1 个 (40% 概率: vignette/color_shift/scanlines/threshold) | — |
+| mask | 0-1 个 (35% 概率: radial 40%/noise 35%/diagonal 25%) | — |
+| color_mode | 55% scheme / 45% continuous | — |
+| dim | 0.22-0.38 + energy*0.05 | energy 越高越亮 |
+
+### 颜色方案 — `_choose_color_scheme(warmth, energy)`
+
+| warmth 范围 | 偏好方案 |
+|-------------|----------|
+| > 0.7 | fire (35%), heat (30%), plasma (20%), rainbow (15%) |
+| 0.3-0.7 | plasma (28%), rainbow (25%), heat (20%), ocean (15%), cool (12%) |
+| < 0.3 | cool (30%), ocean (28%), matrix (22%), plasma (15%), rainbow (5%) |
+
 ### 导演模式覆盖（Director Mode Overrides）
 
 CLI 参数 `--transforms`、`--postfx`、`--composition`、`--mask`、`--variant` 可精确覆盖文法选择。`_apply_overrides()` 在文法生成 SceneSpec 后替换对应字段。当 `--composition` 为非 blend 模式但没有 overlay 时，自动创建一个叠加效果。
 
 ---
 
-## 7. Pipeline Flow（管线流程）
+## 8. Pipeline Flow（管线流程）
 
 `procedural/flexible/pipeline.py` — `FlexiblePipeline._build_effect()`
 
@@ -587,6 +653,10 @@ CLI 参数 `--transforms`、`--postfx`、`--composition`、`--mask`、`--variant
                 │
 4. postfx_chain → 写入 params["_postfx_chain"]
    └── Engine.render_frame() 中在 effect.post() 后执行
+5. bg_fill_spec → params["_bg_fill_spec"]
+   └── Engine.render_frame() 中在 PostFX 后执行 bg_fill(buffer, ...)
+6. color_scheme → Engine(color_scheme=spec.color_scheme)
+   └── 传给 bg_fill + buffer_to_image
 ```
 
 **参数传递路径：**
@@ -606,7 +676,7 @@ postfx_chain = params.get("_postfx_chain", [])
 
 ---
 
-## 8. Combinatorial Impact（组合影响）
+## 9. Combinatorial Impact（组合影响）
 
 ### 合成前基线
 
@@ -634,9 +704,12 @@ postfx_chain = params.get("_postfx_chain", [])
   x 5 布局算法
   x 67 ASCII 梯度
   x 8 装饰风格
-≈ 数亿种离散组合
+  x 13 bg_fill effect（含变体 + 连续参数）
+  x ~15 bg_fill transform 组合
+  x 8 color scheme（7 named + continuous）
+≈ 数百亿种离散组合
 ```
 
-加上每层的连续参数采样（变体范围内均匀采样、遮罩位置/半径/柔和度、变换角度/因子/扭曲度、PostFX 强度等），实际视觉变化空间是连续无限的。
+加上每层的连续参数采样（变体范围内均匀采样、遮罩位置/半径/柔和度、变换角度/因子/扭曲度、PostFX 强度、bg_fill dim 系数等），实际视觉变化空间是连续无限的。
 
 **实际约束：** 并非所有组合都等概率出现。Grammar 的概率产生式规则根据情感参数（energy, structure, intensity）调制各层启用概率，确保视觉输出与情感语义一致。高 structure 倾向对称和网格，高 energy 倾向螺旋扭曲和色相偏移，高 intensity 倾向暗角和强对比。

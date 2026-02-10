@@ -31,7 +31,7 @@ Run from the VIZ project root. Only dependency: `pillow`.
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `emotion` | string | One of 25 emotions (see references/EMOTIONS.md) |
+| `emotion` | string | One of 26 emotions (see references/EMOTIONS.md) |
 | `source` | string | `market` / `art` / `news` / `mood` — sets visual vocabulary |
 | `headline` | string | Main text |
 | `metrics` | list[str] | Data lines: `["BTC: $92k", "ETH: $4.2k"]` |
@@ -68,13 +68,13 @@ Run from the VIZ project root. Only dependency: `pillow`.
 
 ## Emotions at a Glance
 
-25 predefined VAD (Valence-Arousal-Dominance) emotions. Full values in **references/EMOTIONS.md**.
+26 predefined VAD (Valence-Arousal-Dominance) emotions. Full values in **references/EMOTIONS.md**.
 
 | Category | Emotions |
 |----------|----------|
 | High-energy positive | `euphoria` `excitement` `joy` `surprise` `awe` |
 | Low-energy positive | `calm` `serenity` `love` `hope` `trust` `nostalgia` |
-| High-energy negative | `panic` `fear` `anxiety` `anger` `volatile` |
+| High-energy negative | `panic` `fear` `anxiety` `anger` `rage` `volatile` |
 | Low-energy negative | `sadness` `despair` `melancholy` `boredom` |
 | Special | `bull` `bear` `neutral` `contempt` `disgust` |
 
@@ -102,7 +102,7 @@ Priority: `emotion` field > `vad` field > infer from text > `neutral`.
 | `mod_xor` | Mathematical, fractal |
 | `dyna` | Dynamic, energetic |
 
-VIZ auto-selects from emotion; override with `effect` field.
+VIZ auto-selects from emotion; override with `effect` field. Background is separately textured via a second render pass using another effect + transforms + color scheme (auto-selected by grammar).
 
 Effects support deformation params via `params` field (e.g. `{"params": {"surface_noise": 0.5}}`).
 
@@ -184,11 +184,11 @@ stdout JSON:
 {"status":"ok","results":[{"path":"media/viz_20260203_120000.png","seed":42,"format":"png"}],"emotion":"euphoria","source":"market"}
 ```
 
-Specs: 1080x1080 PNG (quality=95), GIF, or MP4. Internal 160x160 nearest-neighbor upscale. Files in `./media/`.
+Specs: 1080x1080 PNG (quality=95), GIF, or MP4. Internal 160x160 nearest-neighbor upscale. Background filled via second render pass (independent effect + color scheme, ~320k texture combinations). Files in `./media/`.
 
 ## References
 
-- **references/EMOTIONS.md** — Full VAD values for all 25 emotions and custom VAD usage
+- **references/EMOTIONS.md** — Full VAD values for all 26 emotions and custom VAD usage
 - **references/EFFECTS.md** — All 17 effects with parameters, ranges, and overlay/blend details
 - **references/COMPOSITION.md** — Composition system: transforms, PostFX, masks, variants, deformation params
 - **references/EXAMPLES.md** — Complete examples: market, art, news, mood, advanced techniques

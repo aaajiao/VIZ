@@ -1,6 +1,6 @@
 # VIZ Emotion Reference
 
-Complete VAD (Valence-Arousal-Dominance) values for all 25 emotions.
+Complete VAD (Valence-Arousal-Dominance) values for all 26 emotions.
 
 | Emotion | Valence | Arousal | Dominance | Category |
 |---------|---------|---------|-----------|----------|
@@ -19,6 +19,7 @@ Complete VAD (Valence-Arousal-Dominance) values for all 25 emotions.
 | **fear** | -0.64 | 0.6 | -0.43 | High-energy negative |
 | **anxiety** | -0.51 | 0.6 | -0.33 | High-energy negative |
 | **anger** | -0.51 | 0.59 | 0.25 | High-energy negative |
+| **rage** | -0.70 | 0.80 | 0.40 | High-energy negative |
 | **volatile** | -0.1 | 0.8 | -0.2 | High-energy negative |
 | **sadness** | -0.63 | -0.27 | -0.33 | Low-energy negative |
 | **despair** | -0.8 | -0.4 | -0.7 | Low-energy negative |

@@ -138,7 +138,7 @@ class EmotionVector:
         structure = _remap(d, -1, 1, 0.0, 1.0)
 
         # 派生参数 (交叉项产生更丰富的变化)
-        saturation = clamp(abs(v) * 0.7 + abs(a) * 0.3, 0.15, 1.0)
+        saturation = clamp(abs(v) * 0.7 + abs(a) * 0.3, 0.35, 1.0)
         turbulence = clamp(abs(v - 0.5) * 0.6 + a * 0.4, 0.0, 1.0)
         intensity = clamp(self.magnitude() / math.sqrt(3), 0.0, 1.0)
 
@@ -147,7 +147,7 @@ class EmotionVector:
             # 颜色空间
             "warmth": warmth,
             "saturation": saturation,
-            "brightness": _remap(v * 0.5 + a * 0.3 + d * 0.2, -1, 1, 0.3, 1.0),
+            "brightness": _remap(v * 0.3 + a * 0.5 + d * 0.2, -1, 1, 0.3, 1.0),
 
             # 效果参数
             "frequency": _remap(a, -1, 1, 0.01, 0.2),
@@ -196,6 +196,7 @@ VAD_ANCHORS: dict[str, EmotionVector] = {
     "fear":         EmotionVector(-0.64, +0.60, -0.43),
     "panic":        EmotionVector(-0.80, +0.90, -0.60),
     "anger":        EmotionVector(-0.51, +0.59, +0.25),
+    "rage":         EmotionVector(-0.70, +0.80, +0.40),
     "sadness":      EmotionVector(-0.63, -0.27, -0.33),
     "despair":      EmotionVector(-0.80, -0.40, -0.70),
     "boredom":      EmotionVector(-0.20, -0.60, -0.20),

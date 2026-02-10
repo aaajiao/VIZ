@@ -192,6 +192,7 @@ class FlexiblePipeline:
             internal_size=self.internal_size,
             output_size=self.output_size,
             gradient_name=spec.gradient_name,
+            color_scheme=spec.color_scheme,
             sharpen=spec.sharpen,
             contrast=spec.contrast,
         )
@@ -210,12 +211,17 @@ class FlexiblePipeline:
                 render_params["overlay_" + k] = v
         render_params["warmth"] = visual_params.get("warmth", 0.5)
         render_params["saturation"] = visual_params.get("saturation", 0.9)
+        render_params["brightness"] = visual_params.get("brightness", 0.8)
 
         # Pass postfx chain and mask params to engine
         if spec.postfx_chain:
             render_params["_postfx_chain"] = spec.postfx_chain
         if spec.mask_params:
             render_params.update(spec.mask_params)
+
+        # Pass bg_fill spec to engine
+        if spec.bg_fill_spec:
+            render_params["_bg_fill_spec"] = spec.bg_fill_spec
 
         img = engine.render_frame(
             effect=effect,
@@ -289,6 +295,7 @@ class FlexiblePipeline:
             internal_size=self.internal_size,
             output_size=self.output_size,
             gradient_name=spec.gradient_name,
+            color_scheme=spec.color_scheme,
             sharpen=spec.sharpen,
             contrast=spec.contrast,
         )
@@ -304,12 +311,17 @@ class FlexiblePipeline:
                 render_params["overlay_" + k] = v
         render_params["warmth"] = visual_params.get("warmth", 0.5)
         render_params["saturation"] = visual_params.get("saturation", 0.9)
+        render_params["brightness"] = visual_params.get("brightness", 0.8)
 
         # Pass postfx chain and mask params to engine
         if spec.postfx_chain:
             render_params["_postfx_chain"] = spec.postfx_chain
         if spec.mask_params:
             render_params.update(spec.mask_params)
+
+        # Pass bg_fill spec to engine
+        if spec.bg_fill_spec:
+            render_params["_bg_fill_spec"] = spec.bg_fill_spec
 
         # 渲染每帧 (带参数漂移)
         total_frames = int(duration * fps)
