@@ -89,11 +89,46 @@ cell = transformed.main(x, y, ctx, state)
 **执行流程：**
 
 1. 像素坐标 `(x, y)` 归一化为 `u = x / width`, `v = y / height`
-2. 按列表顺序依次应用变换函数：`u, v = fn(u, v, **kwargs)`
+2. 按列表顺序依次应用变换函数：`u, v = fn(u, v, **resolved_kwargs)`
 3. 结果钳位到 `[0, width-1]` / `[0, height-1]` 并转回整数坐标
 4. 用变换后的坐标调用内部效果的 `main(tx, ty, ctx, state)`
 
 `pre()` 和 `post()` 直接委托给内部效果，不做变换。
+
+### 动画 Kwargs — Animated Kwargs
+
+变换参数支持**时间驱动动画**，使 GIF/视频输出中的变换随时间变化。普通标量值（int/float）原样传递；动画规格 dict 在每帧根据 `ctx.time` 求值。
+
+**动画规格格式：**
+
+```python
+# 静态 kwargs（传统方式）
+{"angle": 0.5}
+
+# 动画 kwargs（GIF 模式下随时间变化）
+{"angle": {"base": 0.0, "speed": 0.5, "mode": "linear"}}
+```
+
+**三种动画模式：**
+
+| 模式 | 公式 | 用途 |
+|------|------|------|
+| `linear` | `base + time * speed` | 持续旋转/平移 |
+| `oscillate`（默认）| `base + amp * sin(time * speed * TAU)` | 呼吸/脉动 |
+| `ping_pong` | `base + amp * triangle(time * speed)` | 来回运动 |
+
+**规格字段：**
+
+| 字段 | 必填 | 默认 | 说明 |
+|------|------|------|------|
+| `base` | 是 | — | 基础值 |
+| `speed` | 是 | — | 速度乘数 |
+| `mode` | 否 | `oscillate` | 动画模式 |
+| `amp` | 否 | 1.0 | 振幅（oscillate/ping_pong） |
+
+`_resolve_animated_kwargs(kwargs, time)` 在 `TransformedEffect.main()` 中每像素调用，保证 time=0.0（静态 PNG）时输出与传统方式完全一致。
+
+**Grammar 自动生成动画 kwargs：** `_choose_domain_transforms()` 根据 `energy` 参数概率性地将 `rotate`（angle）、`zoom`（factor）、`spiral_warp`（twist）的固定值替换为动画规格。高能量情绪 → 更快动画速度。
 
 ---
 
@@ -126,8 +161,24 @@ cell = transformed.main(x, y, ctx, state)
 |------|--------|------|
 | `mask_split` | 0.5 | 分割位置 (用于 split/diagonal 类型) |
 | `mask_softness` | 0.05-0.15 | 过渡柔和度（smoothstep 宽度） |
+| `mask_anim_speed` | 0.0 | 动画速度（0 = 静态，>0 = 随时间变化） |
 
 所有遮罩在边界区域使用 `smoothstep()` 实现平滑过渡，`mask_softness` 控制过渡宽度。
+
+### 遮罩动画 — Mask Animation
+
+当 `mask_anim_speed > 0` 且 `ctx.time > 0` 时，各遮罩在 GIF/视频输出中产生帧间变化：
+
+| 遮罩 | 动画效果 | 公式 |
+|------|---------|------|
+| `horizontal_split` | 分割线上下扫动 | `split += 0.15 * sin(t * speed * 2π)` |
+| `vertical_split` | 分割线左右扫动 | `split += 0.15 * sin(t * speed * 2π)` |
+| `diagonal` | 对角线旋转 | `angle += t * speed * 0.5` |
+| `radial` | 径向边界脉动 | `radius += 0.1 * sin(t * speed * 2π)` |
+| `noise` | 有机形态漂移 | 噪声坐标加 `t * speed * 10.0` 偏移 |
+| `sdf` | 几何形状脉动 | `size += 0.08 * sin(t * speed * 2π)` |
+
+`mask_anim_speed=0`（默认）保持完全静态，向后兼容。Split 值自动钳位到 `[0.1, 0.9]`，radius/size 钳位到安全范围。
 
 ### MaskedCompositeEffect
 
@@ -199,17 +250,17 @@ PostFX 链通过 `params["_postfx_chain"]` 传递给 Engine，Engine 在 `render
 
 ### 后处理注册表 — POSTFX_REGISTRY
 
-| 名称 | 说明 | 参数 |
-|------|------|------|
-| `threshold` | 二值化 — Binary threshold on char_idx | `threshold=0.5` |
-| `invert` | 反转 — Invert char_idx and colors | 无 |
-| `edge_detect` | Sobel 边缘检测 — Edge outlines via Sobel operator | 无 |
-| `scanlines` | 水平扫描线 — Horizontal scanline darkening | `spacing=4`, `darkness=0.3` |
-| `vignette` | 暗角 — Darken edges | `strength=0.5` |
-| `pixelate` | 像素化 — Average blocks for lower resolution | `block_size=4` |
-| `color_shift` | 色相偏移 — Hue rotation via YIQ-like transform | `hue_shift=0.1` |
+| 名称 | 说明 | 参数 | 动画参数 |
+|------|------|------|----------|
+| `threshold` | 二值化 — Binary threshold on char_idx | `threshold=0.5` | — |
+| `invert` | 反转 — Invert char_idx and colors | 无 | — |
+| `edge_detect` | Sobel 边缘检测 — Edge outlines via Sobel operator | 无 | — |
+| `scanlines` | 水平扫描线 — Horizontal scanline darkening | `spacing=4`, `darkness=0.3` | `scroll_speed` |
+| `vignette` | 暗角 — Darken edges | `strength=0.5` | `pulse_speed`, `pulse_amp` |
+| `pixelate` | 像素化 — Average blocks for lower resolution | `block_size=4` | `pulse_speed`, `pulse_amp` |
+| `color_shift` | 色相偏移 — Hue rotation via YIQ-like transform | `hue_shift=0.1` | `drift_speed` |
 
-共 7 种后处理效果。
+共 7 种后处理效果，其中 4 种支持时间动画。
 
 **关键特征：**
 
@@ -217,6 +268,19 @@ PostFX 链通过 `params["_postfx_chain"]` 传递给 Engine，Engine 在 `render
 - 分辨率固定为 160x160（内部渲染分辨率）
 - 链内顺序有意义：先 `threshold` 再 `edge_detect` 与反序结果不同
 - 每个效果独立概率启用（参见 Grammar Integration 节），7 种效果理论上有 2^7 = 128 种开关组合
+
+### PostFX 动画参数 — Animation Parameters
+
+4 种 PostFX 支持时间驱动动画（GIF/视频模式下帧间变化）：
+
+| PostFX | 动画参数 | 默认 | 效果 |
+|--------|---------|------|------|
+| `scanlines` | `scroll_speed` | 0.0 | 扫描线随时间滚动（offset = time × speed × spacing） |
+| `vignette` | `pulse_speed`, `pulse_amp` | 0.0, 0.0 | 暗角强度正弦脉动 |
+| `pixelate` | `pulse_speed`, `pulse_amp` | 0.0, 0.0 | 块大小正弦脉动 |
+| `color_shift` | `drift_speed` | 0.0 | 色相随时间线性漂移 |
+
+动画参数默认为 0（静态），Grammar 根据 `energy` 参数概率性地注入动画值。所有函数通过 `**_kw` 容错未知 kwargs，`_time=None` 默认确保向后兼容。
 
 ### Engine 集成
 
@@ -230,6 +294,7 @@ if postfx_chain:
         fx_fn = POSTFX_REGISTRY.get(fx_type)
         if fx_fn:
             kwargs = {k: v for k, v in fx.items() if k != "type"}
+            kwargs["_time"] = ctx.time  # 注入当前时间
             fx_fn(buffer, **kwargs)
 ```
 
@@ -426,32 +491,36 @@ VARIANT_REGISTRY = {
 
 ### 域变换概率 — `_choose_domain_transforms(energy, structure)`
 
-| 变换类型 | 概率范围 | 影响因素 |
-|----------|----------|----------|
-| 镜像对称 (mirror_x/y/quad/kaleidoscope) | 30-55% | `+ structure * 0.25` |
-| 平铺 (tile) | 20-40% | `+ structure * 0.20` |
-| 螺旋扭曲 (spiral_warp) | 15-35% | `+ energy * 0.20` |
-| 旋转 (rotate) | 25% | 固定概率 |
-| 缩放 (zoom) | 18-30% | `+ energy * 0.12` |
-| 极坐标映射 (polar_remap) | 8-15% | `+ energy * 0.07` |
+| 变换类型 | 概率范围 | 影响因素 | 动画 |
+|----------|----------|----------|------|
+| 镜像对称 (mirror_x/y/quad/kaleidoscope) | 30-55% | `+ structure * 0.25` | — |
+| 平铺 (tile) | 20-40% | `+ structure * 0.20` | — |
+| 螺旋扭曲 (spiral_warp) | 15-35% | `+ energy * 0.20` | twist: linear (energy > 0.3) |
+| 旋转 (rotate) | 25% | 固定概率 | angle: linear (energy > 0.2) |
+| 缩放 (zoom) | 18-30% | `+ energy * 0.12` | factor: oscillate (50%) |
+| 极坐标映射 (polar_remap) | 8-15% | `+ energy * 0.07` | — |
 
 镜像类型内部子选择：mirror_x 30%, mirror_y 30%, mirror_quad 20%, kaleidoscope 20%。
 
 多个变换可同时启用并链式应用。目标：60-80% 的渲染至少有 1 个变换。
 
+**动画 kwargs 生成规则：** 当 energy 超过阈值时，Grammar 概率性地将固定参数替换为动画规格。动画速度与 energy 正相关（高能量情绪 → 更快旋转/缩放/扭曲）。
+
 ### 后处理链概率 — `_choose_postfx_chain(energy, structure, intensity)`
 
-| PostFX 类型 | 概率范围 | 影响因素 |
-|-------------|----------|----------|
-| vignette | 35-55% | `+ intensity * 0.20` |
-| scanlines | 22-35% | `+ energy * 0.13` |
-| threshold | 14-30% | `+ structure * 0.16` |
-| edge_detect | 10-22% | `+ structure * 0.12` |
-| invert | 8-16% | `+ energy * 0.08` |
-| color_shift | 18-30% | `+ energy * 0.12` |
-| pixelate | 9-19% | `+ (1-structure) * 0.10` |
+| PostFX 类型 | 概率范围 | 影响因素 | 动画参数 |
+|-------------|----------|----------|----------|
+| vignette | 35-55% | `+ intensity * 0.20` | `pulse_speed`, `pulse_amp` |
+| scanlines | 22-35% | `+ energy * 0.13` | `scroll_speed` |
+| threshold | 14-30% | `+ structure * 0.16` | — |
+| edge_detect | 10-22% | `+ structure * 0.12` | — |
+| invert | 8-16% | `+ energy * 0.08` | — |
+| color_shift | 18-30% | `+ energy * 0.12` | `drift_speed` |
+| pixelate | 9-19% | `+ (1-structure) * 0.10` | `pulse_speed`, `pulse_amp` |
 
 每种 PostFX 独立投骰，互不排斥。**保底机制**：若链为空，自动选择一个温和效果（vignette/color_shift/scanlines）。
+
+**动画参数注入：** Grammar 根据 energy 概率性地为 vignette、scanlines、color_shift、pixelate 注入动画参数。动画速度与 energy 正相关。
 
 ### 合成模式概率 — `_choose_composition_mode(energy, structure)`
 
@@ -463,6 +532,8 @@ VARIANT_REGISTRY = {
 | masked_split | 25-35% | `+ structure * 0.10` |
 | radial_masked | 22-30% | `+ (1-structure) * 0.08` |
 | noise_masked | 22-30% | `+ energy * 0.08` |
+
+**遮罩动画速度注入：** 当 energy > 0.25 时，Grammar 以 ~55% 概率为 `mask_anim_speed` 注入 0.3-2.0 范围的值。高能量情绪产生更动态的遮罩边界。
 
 ### 变体选择 — `_sample_variant_params(effect_name)`
 

@@ -541,8 +541,18 @@ masked = MaskedCompositeEffect(
 
 ---
 
+## 合成动画 — Composition Animation
+
+效果本身的 `main()` 方法通过 `ctx.time` 实现帧间动画。合成系统（transforms、PostFX、masks）现在也支持时间驱动动画，使 GIF/视频输出更加丰富：
+
+- **Domain Transforms** — rotate/zoom/spiral_warp 参数支持动画 kwargs 规格（linear/oscillate/ping_pong 三种模式）
+- **PostFX** — scanlines（scroll_speed）、vignette（pulse_speed/pulse_amp）、pixelate（pulse_speed/pulse_amp）、color_shift（drift_speed）
+- **Spatial Masks** — 所有 6 种遮罩通过 `mask_anim_speed` 参数控制边界动画
+
+Grammar 根据 energy 参数自动生成动画值。time=0（静态 PNG）时所有动画默认为静止，完全向后兼容。详见 [composition.md](composition.md)。
+
 ## See Also
 
-- [composition.md](composition.md) — 域变换、空间遮罩、PostFX 链、结构变体的完整参考
+- [composition.md](composition.md) — 域变换、空间遮罩、PostFX 链、结构变体、动画参数的完整参考
 - [rendering.md](rendering.md) — 渲染管线概览
 - [flexible.md](flexible.md) — 柔性输出系统（文法、管线、SceneSpec）

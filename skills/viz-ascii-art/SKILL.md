@@ -108,16 +108,16 @@ Effects support deformation params via `params` field (e.g. `{"params": {"surfac
 
 ## Director Mode
 
-Grammar auto-selects transforms, PostFX, masks, and variants from emotion; Director Mode fields override any dimension for precise control.
+Grammar auto-selects transforms, PostFX, masks, and variants from emotion; Director Mode fields override any dimension for precise control. In GIF/video mode, composition layers animate automatically (grammar injects animation params based on energy).
 
 | Field | Type | What it controls |
 |-------|------|------------------|
-| `transforms` | list[dict] | Domain transform chain (mirror, kaleidoscope, tile, etc.) |
-| `postfx` | list[dict] | Post-processing chain (vignette, scanlines, color_shift, etc.) |
+| `transforms` | list[dict] | Domain transform chain (mirror, kaleidoscope, tile, etc.); params can be animated kwargs |
+| `postfx` | list[dict] | Post-processing chain with optional animation (vignette pulse, scanline scroll, etc.) |
 | `composition` | string | How two effects merge: `blend` / `masked_split` / `radial_masked` / `noise_masked` |
 | `mask` | string | Spatial mask for composition: `radial`, `noise`, `diagonal`, etc. |
 | `variant` | string | Named structural variant per effect (e.g. `warped`, `alien`, `turbulent`) |
-| `params` | object | Effect-specific tuning: deformation, noise, twist (see references/COMPOSITION.md) |
+| `params` | object | Effect-specific tuning: deformation, noise, twist, `mask_anim_speed` (see references/COMPOSITION.md) |
 
 **Simple** — kaleidoscope symmetry + vignette:
 ```json
@@ -136,9 +136,20 @@ Grammar auto-selects transforms, PostFX, masks, and variants from emotion; Direc
   "effect": "plasma",
   "variant": "warped",
   "transforms": [{"type": "kaleidoscope", "segments": 6}],
-  "postfx": [{"type": "vignette", "strength": 0.5}, {"type": "color_shift", "hue_shift": 0.1}],
+  "postfx": [{"type": "vignette", "strength": 0.5, "pulse_speed": 0.5}, {"type": "color_shift", "hue_shift": 0.1, "drift_speed": 0.3}],
   "composition": "radial_masked",
   "seed": 100
+}
+```
+
+**Animated GIF** — rotating transform + scrolling scanlines + pulsing mask:
+```json
+{
+  "emotion": "euphoria",
+  "video": true,
+  "transforms": [{"type": "rotate", "angle": {"base": 0.0, "speed": 0.3, "mode": "linear"}}],
+  "postfx": [{"type": "scanlines", "spacing": 4, "scroll_speed": 2.0}],
+  "params": {"mask_anim_speed": 1.0}
 }
 ```
 

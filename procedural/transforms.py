@@ -29,7 +29,51 @@ try:
 except ImportError:
     from viz.procedural.core.mathx import clamp, fract, TAU, PI
 
+
+def _resolve_animated_kwargs(kwargs, time):
+    """
+    解析动画参数规格 - Resolve animated kwargs at current time
+
+    普通值原样传递。动画规格 dict 形如::
+
+        {"base": 0.0, "speed": 0.5, "mode": "linear"}
+
+    支持 3 种模式:
+        - linear: base + time * speed
+        - oscillate: base + amp * sin(time * speed * 2π)
+        - ping_pong: base + amp * triangle_wave(time * speed)
+
+    Args:
+        kwargs: 原始关键字参数字典
+        time: 当前时间 (秒)
+
+    Returns:
+        dict: 解析后的关键字参数
+    """
+    if not kwargs:
+        return kwargs
+    resolved = {}
+    for key, val in kwargs.items():
+        if isinstance(val, dict) and "base" in val and "speed" in val:
+            base = val["base"]
+            speed = val["speed"]
+            mode = val.get("mode", "oscillate")
+            amp = val.get("amp", 1.0)
+            if mode == "linear":
+                resolved[key] = base + time * speed
+            elif mode == "ping_pong":
+                # Triangle wave: rises 0→1 then falls 1→0
+                phase = (time * speed) % 2.0
+                t = phase if phase < 1.0 else 2.0 - phase
+                resolved[key] = base + amp * t
+            else:  # oscillate (default)
+                resolved[key] = base + amp * math.sin(time * speed * TAU)
+        else:
+            resolved[key] = val
+    return resolved
+
 __all__ = [
+    "_resolve_animated_kwargs",
     "mirror_x",
     "mirror_y",
     "mirror_quad",
@@ -187,7 +231,8 @@ class TransformedEffect:
         v = y / ctx.height if ctx.height > 0 else 0.0
 
         for fn, kwargs in self.transforms:
-            u, v = fn(u, v, **kwargs)
+            resolved = _resolve_animated_kwargs(kwargs, ctx.time)
+            u, v = fn(u, v, **resolved)
 
         # Clamp and convert back to pixel coords
         tx = int(clamp(u * ctx.width, 0, ctx.width - 1))

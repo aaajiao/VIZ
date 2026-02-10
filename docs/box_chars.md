@@ -26,7 +26,7 @@ Unicode 制图符号和半图形字符库，穿透整个管线——从底层 AS
 | 文件 | 职责 |
 |---|---|
 | `lib/box_chars.py` | 中央字符库：字符集、梯度、边框、情绪选取 API |
-| `procedural/palette.py` | ASCII 梯度定义（20 种，含 14 种新增） |
+| `procedural/palette.py` | ASCII 梯度定义（67 种） |
 | `procedural/flexible/grammar.py` | 文法规则中的字符选择（装饰、粒子、文字） |
 | `procedural/flexible/pipeline.py` | 装饰精灵渲染（frame、grid_lines、circuit） |
 | `lib/effects.py` | 粒子字符集（10 种命名集） |
@@ -589,7 +589,7 @@ bbox = font.getbbox("╔═╗")  # 如果返回非零尺寸，表示支持
 
 | 维度 | 旧 | 新 | 增长 |
 |---|---|---|---|
-| ASCII 梯度 | 5 种 | 20 种 | ×4 |
+| ASCII 梯度 | 5 种 | 67 种 | ×13 |
 | 装饰风格 | 5 种 | 8 种 | ×1.6 |
 | 装饰字符组 | 12 组 | 60+ 组 | ×5 |
 | 粒子字符组 | 9 组 | 25+ 组 | ×2.8 |

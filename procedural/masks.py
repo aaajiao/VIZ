@@ -21,6 +21,10 @@ class HorizontalSplitMask:
     def pre(self, ctx, buffer):
         split = ctx.params.get("mask_split", 0.5)
         softness = ctx.params.get("mask_softness", 0.1)
+        anim_speed = ctx.params.get("mask_anim_speed", 0.0)
+        if anim_speed > 0 and ctx.time > 0:
+            split += 0.15 * math.sin(ctx.time * anim_speed * math.pi * 2)
+            split = max(0.1, min(0.9, split))
         return {"split": split, "softness": softness}
 
     def main(self, x, y, ctx, state):
@@ -45,6 +49,10 @@ class VerticalSplitMask:
     def pre(self, ctx, buffer):
         split = ctx.params.get("mask_split", 0.5)
         softness = ctx.params.get("mask_softness", 0.1)
+        anim_speed = ctx.params.get("mask_anim_speed", 0.0)
+        if anim_speed > 0 and ctx.time > 0:
+            split += 0.15 * math.sin(ctx.time * anim_speed * math.pi * 2)
+            split = max(0.1, min(0.9, split))
         return {"split": split, "softness": softness}
 
     def main(self, x, y, ctx, state):
@@ -70,6 +78,9 @@ class DiagonalMask:
         split = ctx.params.get("mask_split", 0.5)
         softness = ctx.params.get("mask_softness", 0.15)
         angle = ctx.params.get("mask_angle", 0.0)
+        anim_speed = ctx.params.get("mask_anim_speed", 0.0)
+        if anim_speed > 0 and ctx.time > 0:
+            angle += ctx.time * anim_speed * 0.5
         return {"split": split, "softness": softness, "angle": angle}
 
     def main(self, x, y, ctx, state):
@@ -105,6 +116,10 @@ class RadialMask:
         radius = ctx.params.get("mask_radius", 0.5)
         softness = ctx.params.get("mask_softness", 0.15)
         invert = ctx.params.get("mask_invert", False)
+        anim_speed = ctx.params.get("mask_anim_speed", 0.0)
+        if anim_speed > 0 and ctx.time > 0:
+            radius += 0.1 * math.sin(ctx.time * anim_speed * math.pi * 2)
+            radius = max(0.05, min(0.9, radius))
         return {
             "cx": cx, "cy": cy, "radius": radius,
             "softness": softness, "invert": invert,
@@ -141,15 +156,20 @@ class NoiseMask:
         threshold = ctx.params.get("mask_threshold", 0.5)
         softness = ctx.params.get("mask_softness", 0.15)
         seed_offset = ctx.params.get("mask_seed_offset", 777)
+        anim_speed = ctx.params.get("mask_anim_speed", 0.0)
         noise = ValueNoise(seed=ctx.seed + seed_offset)
+        # Time offset for organic drifting
+        time_offset = ctx.time * anim_speed * 10.0 if anim_speed > 0 else 0.0
         return {
             "noise": noise, "scale": scale, "octaves": octaves,
             "threshold": threshold, "softness": softness,
+            "time_offset": time_offset,
         }
 
     def main(self, x, y, ctx, state):
         noise = state["noise"]
-        val = noise.fbm(x * state["scale"], y * state["scale"],
+        t_off = state["time_offset"]
+        val = noise.fbm(x * state["scale"] + t_off, y * state["scale"] + t_off * 0.7,
                         octaves=state["octaves"])
         threshold = state["threshold"]
         softness = state["softness"]
@@ -176,6 +196,10 @@ class SDFMask:
         softness = ctx.params.get("mask_softness", 0.05)
         invert = ctx.params.get("mask_invert", False)
         thickness = ctx.params.get("mask_sdf_thickness", 0.05)
+        anim_speed = ctx.params.get("mask_anim_speed", 0.0)
+        if anim_speed > 0 and ctx.time > 0:
+            size += 0.08 * math.sin(ctx.time * anim_speed * math.pi * 2)
+            size = max(0.05, min(0.8, size))
         return {
             "shape": shape, "cx": cx, "cy": cy, "size": size,
             "softness": softness, "invert": invert, "thickness": thickness,

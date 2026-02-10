@@ -122,8 +122,9 @@ def render_frame(self, effect, sprites, time, frame, seed, params) -> Image:
     # 5. 后处理
     effect.post(ctx, buffer, state)
 
-    # 5b. PostFX 链
+    # 5b. PostFX 链（注入 _time 实现动画）
     for fx in postfx_chain:
+        fx_kwargs["_time"] = ctx.time
         POSTFX_REGISTRY[fx["type"]](buffer, **fx_kwargs)
 
     # 5c. 低饱和度亮度衰减 (saturation < 0.8 时压暗 buffer，带随机抖动)
@@ -266,14 +267,14 @@ masked = MaskedCompositeEffect(
 渲染管线在基础效果之上增加了三层可选合成：
 
 1. **合成/遮罩** — `CompositeEffect` 或 `MaskedCompositeEffect` 混合两个效果
-2. **域变换** — `TransformedEffect` 包装效果，在 `main()` 调用前变换坐标
-3. **PostFX 链** — 7 种 buffer 级后处理效果，在 `effect.post()` 后执行
+2. **域变换** — `TransformedEffect` 包装效果，在 `main()` 调用前变换坐标（支持动画 kwargs）
+3. **PostFX 链** — 7 种 buffer 级后处理效果，在 `effect.post()` 后执行（注入 `_time` 实现帧间动画）
 
 ```
-Effect → [Composite/Masked] → [TransformedEffect] → PostFX chain → buffer_to_image
+Effect → [Composite/Masked] → [TransformedEffect] → PostFX chain(_time) → buffer_to_image
 ```
 
-所有合成参数由文法系统（`VisualGrammar`）自动选择，详见 [composition.md](composition.md)。
+所有合成参数由文法系统（`VisualGrammar`）自动选择。三层合成均支持时间驱动动画：transforms 使用动画 kwargs、PostFX 接收 `_time`、masks 读取 `mask_anim_speed`。详见 [composition.md](composition.md)。
 
 ---
 
