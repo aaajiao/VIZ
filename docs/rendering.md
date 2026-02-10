@@ -126,6 +126,11 @@ def render_frame(self, effect, sprites, time, frame, seed, params) -> Image:
     for fx in postfx_chain:
         POSTFX_REGISTRY[fx["type"]](buffer, **fx_kwargs)
 
+    # 5c. 低饱和度亮度衰减 (saturation < 0.8 时压暗 buffer，带随机抖动)
+    if saturation < 0.8:
+        dim_factor = (0.35 + sat/0.8 * 0.65) + uniform(-0.25, 0.25)
+        for cell in buffer: cell.fg *= dim_factor
+
     # 6. Buffer → Image
     img = buffer_to_image(buffer, ...)
 
