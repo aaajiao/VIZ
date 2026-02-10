@@ -163,7 +163,7 @@ class SlimeDishEffect(BaseEffect):
         w, h = ctx.width, ctx.height
 
         # Simulation steps
-        for _ in range(speed):
+        for _ in range(int(speed)):
             self._step_agents(ctx, sensor_distance, sensor_angle)
             self._diffuse_and_decay(w, h, decay_rate)
 

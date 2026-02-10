@@ -28,19 +28,29 @@ class BaseEffect:
 
 ```python
 EFFECT_REGISTRY = {
-    'plasma':      PlasmaEffect,
-    'flame':       DoomFlameEffect,
-    'sdf_shapes':  SDFShapesEffect,
-    'noise_field': NoiseFieldEffect,
-    'wave':        WaveEffect,
-    'moire':       MoireEffect,
-    'cppn':        CPPNEffect,
+    'plasma':          PlasmaEffect,
+    'flame':           DoomFlameEffect,
+    'sdf_shapes':      SDFShapesEffect,
+    'noise_field':     NoiseFieldEffect,
+    'wave':            WaveEffect,
+    'moire':           MoireEffect,
+    'cppn':            CPPNEffect,
+    'ten_print':       TenPrintEffect,
+    'game_of_life':    GameOfLifeEffect,
+    'donut':           DonutEffect,
+    'mod_xor':         ModXorEffect,
+    'wireframe_cube':  WireframeCubeEffect,
+    'chroma_spiral':   ChromaSpiralEffect,
+    'wobbly':          WobblyEffect,
+    'sand_game':       SandGameEffect,
+    'slime_dish':      SlimeDishEffect,
+    'dyna':            DynaEffect,
 }
 
 effect = get_effect('plasma')  # 工厂函数，返回实例
 ```
 
-## 七种核心效果
+## 基础效果（1-7）
 
 ### 1. PlasmaEffect (`procedural/effects/plasma.py`)
 
@@ -203,6 +213,236 @@ CPPN（组合模式生成网络）— 随机神经网络产生无限图案变化
 - 激活函数：sin, cos, tanh, abs, identity, gaussian, sigmoid, softplus, sin_abs（每层随机选择）
 
 不需要训练，纯函数映射 `(x, y) → 图案`。不同种子产生完全不同的视觉效果。
+
+---
+
+## 扩展效果（8-17）
+
+### 8. TenPrintEffect (`procedural/effects/ten_print.py`)
+
+经典 Commodore 64 迷宫 — `10 PRINT CHR$(205.5+RND(1)); : GOTO 10` 的 ASCII 实现。
+
+**算法：**
+1. 屏幕分割为 `cell_size × cell_size` 网格
+2. ValueNoise 为每个网格单元选择 `/` 或 `\` 对角线
+3. 逐像素计算到对角线距离，映射为亮度
+4. 列方向时间偏移实现滚动动画
+
+**参数：**
+
+| 参数 | 范围 | 默认值 | 说明 |
+|------|------|--------|------|
+| `cell_size` | 4-12 | 6 | 网格单元大小 |
+| `probability` | 0.3-0.7 | 0.5 | 选择 `\` 的概率 |
+| `speed` | 0.1-5.0 | 1.0 | 动画速度 |
+
+**默认配色：** `"matrix"`
+
+---
+
+### 9. GameOfLifeEffect (`procedural/effects/game_of_life.py`)
+
+Conway 生命游戏 — B3/S23 规则细胞自动机，追踪存活年龄映射颜色亮度。
+
+**算法：**
+1. ValueNoise 生成有机分布的初始种子（`density` 控制填充比例）
+2. 每帧按 `speed` 推进若干代（B3/S23 规则，环形拓扑）
+3. 存活细胞年龄递增 → 年龄越大字符越亮
+4. 死亡细胞周围有微弱辉光（基于邻居数）
+
+**参数：**
+
+| 参数 | 范围 | 默认值 | 说明 |
+|------|------|--------|------|
+| `density` | 0.3-0.7 | 0.4 | 初始填充比例 |
+| `speed` | 1.0-20.0 | 5.0 | 每秒代数 |
+| `wrap` | bool | True | 环形拓扑（边界环绕） |
+
+**默认配色：** `"matrix"`
+
+---
+
+### 10. DonutEffect (`procedural/effects/donut.py`)
+
+旋转甜甜圈 — 经典 `donut.c` 算法的 ASCII 缓冲区实现。
+
+**算法：**
+1. pre() 遍历环面参数空间 (theta × phi)
+2. 3D 旋转变换（绕 X、Z 轴）+ 透视投影到 2D
+3. Z-buffer 去遮挡，表面法线点积光源方向 → 亮度
+4. main() 查表输出字符和颜色
+
+**参数：**
+
+| 参数 | 范围 | 默认值 | 说明 |
+|------|------|--------|------|
+| `R1` | 0.5-3.0 | 1.0 | 小半径（截面半径） |
+| `R2` | 1.0-5.0 | 2.0 | 大半径（环心距） |
+| `rotation_speed` | 0.1-5.0 | 1.0 | 旋转速度 |
+| `light_x/y/z` | — | 0, 1, -1 | 光源方向分量 |
+
+**默认配色：** `"heat"`
+
+---
+
+### 11. ModXorEffect (`procedural/effects/mod_xor.py`)
+
+模运算/异或分形 — 整数位运算产生自相似分形图案（如 Sierpinski 三角形）。
+
+**算法：**
+- 核心：`(x OP y) % modulus`，OP 为 XOR/AND/OR
+- 多层叠加：每层不同模数偏移 `modulus + layer * 7`
+- 时间偏移坐标实现滚动动画
+
+**参数：**
+
+| 参数 | 范围 | 默认值 | 说明 |
+|------|------|--------|------|
+| `modulus` | 2-64 | 16 | 模数 |
+| `operation` | xor/and/or | xor | 位运算类型 |
+| `layers` | 1-3 | 1 | 叠加层数 |
+| `speed` | 0.1-5.0 | 0.5 | 动画速度 |
+| `zoom` | 0.5-3.0 | 1.0 | 缩放级别 |
+
+**默认配色：** `"rainbow"`
+
+---
+
+### 12. WireframeCubeEffect (`procedural/effects/wireframe_cube.py`)
+
+3D 线框立方体 — 距离场渲染旋转线框几何体。
+
+**算法：**
+1. 8 个顶点经三轴旋转 → 透视投影到 2D
+2. 逐像素计算到 12 条投影棱的最小 SDF 距离
+3. 距离 < thickness 为全亮，之后按距离衰减
+
+**参数：**
+
+| 参数 | 范围 | 默认值 | 说明 |
+|------|------|--------|------|
+| `rotation_speed_x` | 0.1-3.0 | 0.7 | X 轴旋转速度 |
+| `rotation_speed_y` | 0.1-3.0 | 1.0 | Y 轴旋转速度 |
+| `rotation_speed_z` | 0.1-3.0 | 0.3 | Z 轴旋转速度 |
+| `scale` | 0.1-0.6 | 0.3 | 立方体缩放 |
+| `edge_thickness` | 0.005-0.05 | 0.015 | 边线粗细 |
+
+**默认配色：** `"cool"`
+
+---
+
+### 13. ChromaSpiralEffect (`procedural/effects/chroma_spiral.py`)
+
+色差螺旋 — 极坐标螺旋加 RGB 通道色差分离。
+
+**算法：**
+1. 坐标转极坐标 `(radius, angle)`
+2. 螺旋值：`fract(angle/TAU * arms + radius * tightness + t)`
+3. RGB 三通道各施加不同半径/角度偏移 → 色差效果
+4. Smoothstep 曲线锐化过渡
+
+**参数：**
+
+| 参数 | 范围 | 默认值 | 说明 |
+|------|------|--------|------|
+| `arms` | 1-8 | 3 | 螺旋臂数 |
+| `tightness` | 0.1-2.0 | 0.5 | 螺旋紧密度 |
+| `speed` | 0.1-5.0 | 1.0 | 动画速度 |
+| `chroma_offset` | 0.0-0.3 | 0.1 | 色差偏移量 |
+
+**默认配色：** 直接 RGB（独立计算三通道）
+
+---
+
+### 14. WobblyEffect (`procedural/effects/wobbly.py`)
+
+域扭曲 — 迭代噪声位移产生有机流体扭曲（参考 Inigo Quilez warp 技术）。
+
+**算法：**
+1. 归一化坐标乘以 `warp_freq`
+2. 迭代 `iterations` 次：用两个独立噪声实例采样 (dx, dy) 位移
+3. 累加位移 `px += dx * warp_amount`
+4. 在扭曲后的坐标处采样 FBM 噪声（3 层）得到最终值
+
+**参数：**
+
+| 参数 | 范围 | 默认值 | 说明 |
+|------|------|--------|------|
+| `warp_amount` | 0.1-1.0 | 0.4 | 位移幅度 |
+| `warp_freq` | 0.01-0.1 | 0.03 | 扭曲噪声频率 |
+| `iterations` | 1-3 | 2 | 扭曲迭代次数 |
+| `speed` | 0.1-5.0 | 0.5 | 动画速度 |
+
+**默认配色：** `"ocean"`
+
+---
+
+### 15. SandGameEffect (`procedural/effects/sand_game.py`)
+
+落沙游戏 — 粒子下落与堆积模拟。
+
+**算法：**
+1. 每帧在顶行随机生成粒子（`spawn_rate` 概率）
+2. 从底向上扫描，随机化水平顺序避免方向偏差
+3. 物理规则：下方空 → 直落；下方占 → 尝试左下/右下滑落；全堵 → 静止
+4. 粒子类型决定颜色（暖沙/红沙/蓝灰三种）
+
+**参数：**
+
+| 参数 | 范围 | 默认值 | 说明 |
+|------|------|--------|------|
+| `spawn_rate` | 0.1-0.8 | 0.3 | 生成概率 |
+| `gravity_speed` | 1-5 | 2 | 每帧物理步数 |
+| `particle_types` | 1-3 | 2 | 颜色类型数量 |
+
+**默认配色：** 固定三种沙色（暖沙/红沙/蓝灰）
+
+---
+
+### 16. SlimeDishEffect (`procedural/effects/slime_dish.py`)
+
+黏菌模拟 — Physarum 多头绒泡菌的代理模拟，产生有机分支网络。
+
+**算法：**
+1. N 个代理各有位置和朝向角
+2. 每步：感知前方三方向（前、左前、右前）化学轨迹浓度 → 转向信号最强方向 → 前进 → 沉积
+3. 轨迹地图：3×3 均值模糊扩散 + 衰减率衰减
+4. 轨迹浓度映射到字符密度和颜色
+
+**参数：**
+
+| 参数 | 范围 | 默认值 | 说明 |
+|------|------|--------|------|
+| `agent_count` | 500-5000 | 2000 | 代理数量 |
+| `sensor_distance` | 3-15 | 9 | 感知距离 |
+| `sensor_angle` | 0.2-1.0 | 0.4 | 感知器张角（弧度） |
+| `decay_rate` | 0.9-0.99 | 0.95 | 轨迹衰减率 |
+| `speed` | 1-5 | 3 | 每帧模拟步数 |
+
+**默认配色：** `"cool"`
+
+---
+
+### 17. DynaEffect (`procedural/effects/dyna.py`)
+
+动态吸引子波干涉 — 多个运动吸引子产生正弦波叠加干涉图案。
+
+**算法：**
+1. N 个吸引子各有位置和速度，在画布内弹跳或环绕移动
+2. 每像素：计算到所有吸引子的距离
+3. 叠加 `sin(distance * frequency * TAU / width)` 得到干涉值
+4. 归一化到 [0, 1] 映射字符和颜色
+
+**参数：**
+
+| 参数 | 范围 | 默认值 | 说明 |
+|------|------|--------|------|
+| `attractor_count` | 2-8 | 4 | 吸引子数量 |
+| `frequency` | 0.1-2.0 | 0.5 | 波频率 |
+| `speed` | 0.1-5.0 | 1.0 | 吸引子移动速度 |
+| `bounce` | bool | True | 弹跳(true)或环绕(false) |
+
+**默认配色：** `"plasma"`
 
 ---
 

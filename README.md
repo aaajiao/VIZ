@@ -94,7 +94,7 @@ echo '{"source":"mood","emotion":"calm","title":"Sunday Morning"}' | python3 viz
 
 | 维度 | 变化数量 | 机制 |
 |------|---------|------|
-| 背景效果 | 7 种 (含 CPPN) | 文法概率选择 |
+| 背景效果 | 17 种 (含 CPPN) | 文法概率选择 |
 | 叠加效果 | 0-1 层 × 6 种 | 概率触发 |
 | 混合模式 | 4 种 | ADD/SCREEN/OVERLAY/MULTIPLY |
 | 布局算法 | 5 种 | scatter/grid/spiral/force/preset |
@@ -116,6 +116,16 @@ echo '{"source":"mood","emotion":"calm","title":"Sunday Morning"}' | python3 viz
 | `sdf_shapes` | 有符号距离场形状（圆、方、环、十字） |
 | `noise_field` | Perlin-like 噪声场 + FBM |
 | `cppn` | CPPN 神经网络图案（每个种子唯一） |
+| `ten_print` | Commodore 64 迷宫图案（`/\` 对角线随机网格） |
+| `game_of_life` | Conway 生命游戏细胞自动机（B3/S23 + 年龄追踪） |
+| `donut` | 旋转甜甜圈 3D 投影（经典 donut.c） |
+| `mod_xor` | 模运算/异或分形（XOR/AND/OR 位运算图案） |
+| `wireframe_cube` | 3D 线框立方体（SDF 距离场渲染） |
+| `chroma_spiral` | 色差螺旋（极坐标 + RGB 通道分离） |
+| `wobbly` | 域扭曲（迭代噪声位移，有机流体效果） |
+| `sand_game` | 落沙游戏粒子模拟（下落 + 堆积） |
+| `slime_dish` | 黏菌 Physarum 模拟（代理化学轨迹网络） |
+| `dyna` | 动态吸引子波干涉（运动点源正弦叠加） |
 
 ### 渲染管线
 
@@ -188,8 +198,10 @@ VIZ/
 │   ├── layouts.py                # 布局算法（scatter, grid, spiral, force）
 │   ├── params.py                 # ParamSpec, 可复现 RNG
 │   ├── palette.py                # 20 ASCII 梯度, 5 配色方案
-│   ├── effects/                  # 可插拔效果（7 种内置）
+│   ├── effects/                  # 可插拔效果（17 种内置）
 │   │   ├── plasma.py, flame.py, wave.py, moire.py, sdf_shapes.py, noise_field.py
+│   │   ├── ten_print.py, game_of_life.py, donut.py, mod_xor.py, wireframe_cube.py
+│   │   ├── chroma_spiral.py, wobbly.py, sand_game.py, slime_dish.py, dyna.py
 │   │   └── ...
 │   ├── core/                     # 数学原语（纯 Python，无 NumPy）
 │   │   ├── vec.py, sdf.py, noise.py, mathx.py
