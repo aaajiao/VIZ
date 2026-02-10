@@ -69,7 +69,7 @@ echo '{"source":"mood","emotion":"calm","title":"Sunday Morning"}' | python3 viz
 
 ### VAD 情感模型
 
-每种情绪是三维空间中的一个点（24 种预定义锚点），而非离散标签：
+每种情绪是三维空间中的一个点（25 种预定义锚点），而非离散标签：
 
 | 维度 | 范围 | 含义 |
 |------|------|------|
@@ -98,7 +98,7 @@ echo '{"source":"mood","emotion":"calm","title":"Sunday Morning"}' | python3 viz
 | 叠加效果 | 0-1 层 × 6 种 | 概率触发 |
 | 混合模式 | 4 种 | ADD/SCREEN/OVERLAY/MULTIPLY |
 | 布局算法 | 5 种 | scatter/grid/spiral/force/preset |
-| ASCII 梯度 | 20 种 | classic/blocks/smooth/matrix/plasma... |
+| ASCII 梯度 | 67 种 | classic/blocks/smooth/matrix/plasma... |
 | 装饰风格 | 8 种 × 60+ 字符组 | 概率选择 |
 | 域变换 | 9 种 | mirror/kaleidoscope/tile/rotate/zoom/spiral/polar |
 | 后处理链 | 7 种（独立概率） | vignette/scanlines/threshold/edge/invert/color_shift/pixelate |
@@ -168,7 +168,7 @@ composite = CompositeEffect(
 
 ## 颜文字系统
 
-20 个情绪分类，300+ 个独特颜文字，覆盖从狂喜到恐慌的完整情感光谱。
+22 个情绪分类，336 个独特颜文字，覆盖从狂喜到恐慌的完整情感光谱。
 
 **正面**: happy, euphoria, excitement, love, proud, relaxed
 **负面**: sad, angry, anxiety, fear, panic, disappointed, lonely
@@ -214,7 +214,7 @@ VIZ/
 │   ├── layers.py                 # 精灵：TextSprite, KaomojiSprite, 装饰
 │   ├── layouts.py                # 布局算法（scatter, grid, spiral, force）
 │   ├── params.py                 # ParamSpec, 可复现 RNG
-│   ├── palette.py                # 20 ASCII 梯度, 5 配色方案
+│   ├── palette.py                # 67 ASCII 梯度, 7 配色方案
 │   ├── effects/                  # 可插拔效果（17 种内置）
 │   │   ├── plasma.py, flame.py, wave.py, moire.py, sdf_shapes.py, noise_field.py
 │   │   ├── ten_print.py, game_of_life.py, donut.py, mod_xor.py, wireframe_cube.py
@@ -236,10 +236,22 @@ VIZ/
     ├── usage.md                  # CLI 使用指南
     ├── rendering.md              # 渲染管线
     ├── flexible.md               # 柔性输出系统
+    ├── composition.md            # 合成系统（变换/遮罩/后处理）
     ├── effects.md                # 效果参考
     ├── kaomoji.md                # 颜文字系统
     └── box_chars.md              # Box-drawing 字符系统
 ```
+
+## 文档
+
+- [AI 集成指南](docs/ai-integration.md) — 建议首先阅读，stdin JSON 协议与 capabilities 查询
+- [CLI 使用指南](docs/usage.md) — 所有命令与参数详解
+- [渲染管线](docs/rendering.md) — 160×160 → 1080×1080 渲染流程
+- [柔性输出系统](docs/flexible.md) — VAD 情感模型与概率文法
+- [合成系统](docs/composition.md) — 域变换、空间遮罩、PostFX 链
+- [效果参考](docs/effects.md) — 17 种内置效果详解
+- [颜文字系统](docs/kaomoji.md) — 22 个分类，336 个面孔
+- [Box-drawing 字符](docs/box_chars.md) — 37 种字符集
 
 ## 依赖
 
