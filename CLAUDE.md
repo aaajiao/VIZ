@@ -36,9 +36,11 @@ No build step. No requirements.txt. Only dependency is `Pillow>=9.0.0`. CI runs 
 **Rendering pipeline** (the critical path):
 1. `viz.py generate` parses CLI args + stdin JSON -> calls `FlexiblePipeline`
 2. `FlexiblePipeline` (`procedural/flexible/pipeline.py`) orchestrates: emotion -> VAD vector -> visual grammar -> effect selection -> sprite layout -> decoration
-3. `Engine` (`procedural/engine.py`) renders: creates 160x160 Buffer of Cells -> effect fills buffer -> PostFX chain -> `buffer_to_image()` -> sprites overlay -> upscale to 1080x1080 via NEAREST -> sharpen + contrast -> save
+3. `Engine` (`procedural/engine.py`) renders: creates 160x160 Buffer of Cells -> effect fills buffer -> PostFX chain -> **bg_fill second render pass** -> brightness scaling -> `buffer_to_image()` -> sprites overlay -> upscale to 1080x1080 via NEAREST -> sharpen + contrast -> save
 
 **Composition layer**: `procedural/transforms.py` (9 domain transforms + `TransformedEffect`), `procedural/postfx.py` (7 buffer-level post-FX), `procedural/masks.py` (6 spatial masks + `MaskedCompositeEffect`), `procedural/effects/variants.py` (32 structural variants). Grammar auto-selects all composition features; CLI also exposes them via `--transforms`, `--postfx`, `--composition`, `--mask`, `--variant` for precise control ("Director Mode"). All three composition layers support **time-aware animation** for GIF/video output: transforms use animated kwargs (`_resolve_animated_kwargs`), PostFX receive `_time` from Engine, masks read `mask_anim_speed` from params. Static PNG (time=0) is unaffected. See `docs/composition.md`.
+
+**Background fill** (`procedural/bg_fill.py`): Second render pass that fills `bg=None` cells. Runs a separate effect (with variant + transforms + postfx + mask + color scheme) on a temp buffer, extracts `char_idx` as intensity, maps through color scheme, dims to ~30%, and blends with fg. Grammar selects all layers independently via `_choose_bg_fill_spec()`. Combinatorial space: 13 effects x variants x transforms x postfx x masks x 7 color schemes = ~320k discrete combos. Excludes heavy simulation effects (game_of_life, sand_game, slime_dish, dyna).
 
 **Key types** (in `procedural/types.py`): `Context` (immutable by convention), `Cell` (char_idx 0-9, fg RGB, bg RGB|None), `Buffer` (2D Cell grid), `Effect` (Protocol: pre/main/post).
 
@@ -47,6 +49,8 @@ No build step. No requirements.txt. Only dependency is `Pillow>=9.0.0`. CI runs 
 **Content flow**: stdin JSON or CLI args -> `FlexiblePipeline` -> rendered image -> stdout JSON with path.
 
 **Director Mode**: CLI args `--transforms`, `--postfx`, `--blend-mode`, `--overlay`, `--overlay-mix`, `--composition`, `--mask`, `--variant` expose all composition dimensions for precise AI control. Grammar diversity jitter ensures varied output even in delegate mode.
+
+**Color scheme**: Grammar selects from 7 named schemes (`heat`, `rainbow`, `cool`, `matrix`, `plasma`, `ocean`, `fire`) via warmth-driven `_choose_color_scheme()`, or uses continuous `value_to_color_continuous(warmth, saturation)`. Stored in `SceneSpec.color_scheme` and passed to both Engine and bg_fill.
 
 ## Forbidden Patterns
 
@@ -86,6 +90,8 @@ No build step. No requirements.txt. Only dependency is `Pillow>=9.0.0`. CI runs 
 | New spatial mask | `procedural/masks.py` -> add class + MASK_REGISTRY |
 | New effect variant | `procedural/effects/variants.py` -> VARIANT_REGISTRY dict |
 | Composition mode | `procedural/flexible/grammar.py` -> `_choose_composition_mode()` |
+| Background fill logic | `procedural/bg_fill.py` -> `bg_fill()` |
+| Background fill grammar | `procedural/flexible/grammar.py` -> `_choose_bg_fill_spec()`, `_choose_color_scheme()` |
 
 ## Adding a New Effect
 
