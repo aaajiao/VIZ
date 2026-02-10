@@ -145,7 +145,7 @@ class ContinuousColorSpace:
         base_hue = self.warmth_to_hue(warmth)
 
         # 背景: 极暗，带有色温倾向
-        bg_v = mix(0.02, 0.08 + brightness * 0.15, 1.0 - contrast)
+        bg_v = mix(0.04, 0.10 + brightness * 0.15, 1.0 - contrast)
         bg_s = saturation * 0.3
         br, bg, bb = colorsys.hsv_to_rgb(base_hue, bg_s, bg_v)
         bg_color = (int(br * 255), int(bg * 255), int(bb * 255))
@@ -176,11 +176,11 @@ class ContinuousColorSpace:
         glow = (int(gr * 255), int(gg * 255), int(gb * 255))
 
         # 轮廓色: 主色的暗化版本
-        or_, og, ob = colorsys.hsv_to_rgb(base_hue, saturation * 0.6, 0.3)
+        or_, og, ob = colorsys.hsv_to_rgb(base_hue, saturation * 0.6, 0.35)
         outline = (int(or_ * 255), int(og * 255), int(ob * 255))
 
         # 暗色: 极暗参考色
-        dr, dg, db = colorsys.hsv_to_rgb(base_hue, saturation * 0.4, 0.15)
+        dr, dg, db = colorsys.hsv_to_rgb(base_hue, saturation * 0.4, 0.28)
         dim = (int(dr * 255), int(dg * 255), int(db * 255))
 
         return {
