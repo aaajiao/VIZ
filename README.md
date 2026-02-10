@@ -164,7 +164,7 @@ composite = CompositeEffect(
 - **空间遮罩** — 6 种遮罩按区域混合两个效果（径向、噪声、SDF 形状等）
 - **PostFX 链** — 7 种 buffer 级后处理（暗角、扫描线、边缘检测等）
 
-所有合成参数由文法系统根据情绪自动选择。详见 `docs/composition.md`。
+文法系统根据情绪自动选择合成参数，也可通过 CLI 导演模式（`--transforms`、`--postfx`、`--composition`、`--mask`、`--variant`）精确控制。详见 `docs/composition.md`。
 
 ## 颜文字系统
 
@@ -259,7 +259,7 @@ pytest tests/ -v
 pytest tests/test_emotion.py -v
 ```
 
-307 个测试覆盖所有核心模块，CI 通过 GitHub Actions 自动运行。
+500+ 个测试覆盖所有核心模块（含导演模式和多样性统计测试），CI 通过 GitHub Actions 自动运行。
 
 ## License
 

@@ -38,13 +38,15 @@ No build step. No requirements.txt. Only dependency is `Pillow>=9.0.0`. CI runs 
 2. `FlexiblePipeline` (`procedural/flexible/pipeline.py`) orchestrates: emotion -> VAD vector -> visual grammar -> effect selection -> sprite layout -> decoration
 3. `Engine` (`procedural/engine.py`) renders: creates 160x160 Buffer of Cells -> effect fills buffer -> PostFX chain -> `buffer_to_image()` -> sprites overlay -> upscale to 1080x1080 via NEAREST -> sharpen + contrast -> save
 
-**Composition layer**: `procedural/transforms.py` (9 domain transforms + `TransformedEffect`), `procedural/postfx.py` (7 buffer-level post-FX), `procedural/masks.py` (6 spatial masks + `MaskedCompositeEffect`), `procedural/effects/variants.py` (32 structural variants). Grammar auto-selects all composition features. See `docs/composition.md`.
+**Composition layer**: `procedural/transforms.py` (9 domain transforms + `TransformedEffect`), `procedural/postfx.py` (7 buffer-level post-FX), `procedural/masks.py` (6 spatial masks + `MaskedCompositeEffect`), `procedural/effects/variants.py` (32 structural variants). Grammar auto-selects all composition features; CLI also exposes them via `--transforms`, `--postfx`, `--composition`, `--mask`, `--variant` for precise control ("Director Mode"). See `docs/composition.md`.
 
 **Key types** (in `procedural/types.py`): `Context` (immutable by convention), `Cell` (char_idx 0-9, fg RGB, bg RGB|None), `Buffer` (2D Cell grid), `Effect` (Protocol: pre/main/post).
 
 **Emotion system**: VAD (Valence-Arousal-Dominance) continuous space with 25 anchors in `procedural/flexible/emotion.py`. Each axis -1 to +1. Drives all visual parameters.
 
 **Content flow**: stdin JSON or CLI args -> `FlexiblePipeline` -> rendered image -> stdout JSON with path.
+
+**Director Mode**: CLI args `--transforms`, `--postfx`, `--blend-mode`, `--overlay`, `--overlay-mix`, `--composition`, `--mask`, `--variant` expose all composition dimensions for precise AI control. Grammar diversity jitter ensures varied output even in delegate mode.
 
 ## Forbidden Patterns
 

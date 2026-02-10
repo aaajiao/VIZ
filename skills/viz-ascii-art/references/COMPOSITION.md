@@ -1,6 +1,6 @@
 # VIZ Composition System Reference
 
-Transforms, PostFX, masks, and variants are **auto-selected by grammar** — no manual specification needed. Use `params` to fine-tune deformation parameters that are passed directly to effects.
+Transforms, PostFX, masks, and variants are **auto-selected by grammar** by default. You can also **precisely control** them via Director Mode fields: `transforms`, `postfx`, `composition`, `mask`, `variant`. Use `params` to fine-tune deformation parameters that are passed directly to effects.
 
 ## Deformation Params (user-settable via `params`)
 
@@ -85,7 +85,7 @@ Grammar picks a named variant per effect and samples params from its ranges.
 | chroma_spiral (5) | classic, warped, multi, tight, loose |
 | mod_xor (4) | classic, distorted, fine, layered |
 
-## Composition Modes (4, auto-selected)
+## Composition Modes (4, auto-selected or via `composition` field)
 
 | Mode | Description |
 |------|-------------|
@@ -93,3 +93,20 @@ Grammar picks a named variant per effect and samples params from its ranges.
 | `masked_split` | Spatial split via horizontal/vertical/diagonal masks |
 | `radial_masked` | Center vs edges with radial mask |
 | `noise_masked` | Organic noise-based region blending |
+
+## Director Mode (precise control)
+
+Override any composition feature via JSON fields:
+
+```json
+{
+  "effect": "plasma",
+  "variant": "warped",
+  "transforms": [{"type": "kaleidoscope", "segments": 6}],
+  "postfx": [{"type": "vignette", "strength": 0.5}],
+  "composition": "radial_masked",
+  "mask": "radial:center_x=0.5,radius=0.3"
+}
+```
+
+Or via CLI: `--transforms kaleidoscope:segments=6 --postfx vignette:strength=0.5 --composition radial_masked --variant warped`

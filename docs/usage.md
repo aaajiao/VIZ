@@ -70,6 +70,14 @@ stdin JSON 字段全部可选，CLI 参数会覆盖 stdin 中的同名值。
 | `--layout` | str | 自动 | 布局算法名 |
 | `--decoration` | str | 自动 | 装饰风格 |
 | `--gradient` | str | 自动 | ASCII 梯度名 |
+| `--transforms` | list | 自动 | 域变换链，如 `kaleidoscope:segments=6 tile:cols=3` |
+| `--postfx` | list | 自动 | 后处理链，如 `vignette:strength=0.5 scanlines:spacing=4` |
+| `--blend-mode` | str | 自动 | 混合模式：`ADD` / `SCREEN` / `OVERLAY` / `MULTIPLY` |
+| `--overlay` | str | 自动 | 叠加效果名（如 `wave`、`plasma`） |
+| `--overlay-mix` | float | 自动 | 叠加混合比 0.0-1.0 |
+| `--composition` | str | 自动 | 合成模式：`blend` / `masked_split` / `radial_masked` / `noise_masked` |
+| `--mask` | str | 自动 | 遮罩类型+参数，如 `radial:center_x=0.5,radius=0.3` |
+| `--variant` | str | 自动 | 强制效果变体名（如 `warped`、`alien`） |
 | `--output-dir` | str | ./media | 输出目录 |
 | `--mp4` | flag | false | 同时输出 MP4（需要系统 FFmpeg） |
 
@@ -98,6 +106,27 @@ python3 viz.py generate --emotion calm --video --duration 3 --fps 15
 python3 viz.py generate --emotion euphoria --video --mp4
 # → media/viz_20260203_120000.gif + media/viz_20260203_120000.mp4
 ```
+
+### 导演模式（Director Mode）
+
+精确控制合成系统的所有维度——域变换、后处理链、合成模式、遮罩、变体：
+
+```bash
+# 万花筒 + 暗角后处理
+python3 viz.py generate --emotion joy --seed 42 \
+  --transforms kaleidoscope:segments=6 \
+  --postfx vignette:strength=0.5 scanlines:spacing=4
+
+# 完整导演模式：指定所有合成维度
+python3 viz.py generate --emotion euphoria --seed 100 \
+  --effect plasma --overlay wave --blend-mode SCREEN --overlay-mix 0.4 \
+  --composition radial_masked --mask radial:center_x=0.5,radius=0.3 \
+  --transforms mirror_quad --postfx color_shift:hue_shift=0.1 --variant warped
+```
+
+复合参数格式：`name:key=val,key=val`，如 `kaleidoscope:segments=6`。
+
+stdin JSON 同样支持：`transforms`、`postfx`、`composition`、`mask`、`variant` 字段。
 
 ### 内容来源词汇（Source Vocabulary）
 
@@ -152,12 +181,17 @@ python3 viz.py capabilities --format json  # 默认 JSON
 ```json
 {
   "emotions": {"joy": {"valence": 0.76, "arousal": 0.48, "dominance": 0.35}, "...": "..."},
-  "effects": ["cppn", "flame", "moire", "noise_field", "plasma", "sdf_shapes", "wave", "ten_print", "game_of_life", "donut", "mod_xor", "wireframe_cube", "chroma_spiral", "wobbly", "sand_game", "slime_dish", "dyna"],
+  "effects": ["cppn", "flame", "moire", "noise_field", "plasma", "sdf_shapes", "wave", "..."],
   "sources": ["art", "market", "mood", "news"],
   "layouts": ["random_scatter", "grid_jitter", "spiral", "force_directed", "preset"],
   "decorations": ["corners", "edges", "scattered", "minimal", "none", "frame", "grid_lines", "circuit"],
   "gradients": ["classic", "smooth", "matrix", "plasma", "default", "blocks", "..."],
-  "input_schema": {"emotion": "string", "source": "string", "...": "..."},
+  "transforms": ["mirror_x", "mirror_y", "mirror_quad", "kaleidoscope", "tile", "rotate", "zoom", "spiral_warp", "polar_remap"],
+  "postfx": ["threshold", "invert", "edge_detect", "scanlines", "vignette", "pixelate", "color_shift"],
+  "masks": ["horizontal_split", "vertical_split", "diagonal", "radial", "noise", "sdf"],
+  "composition_modes": ["blend", "masked_split", "radial_masked", "noise_masked"],
+  "variants": {"plasma": ["classic", "warped", "noisy", "turbulent", "slow_morph"], "...": "..."},
+  "input_schema": {"emotion": "string", "source": "string", "transforms": "list[{type, ...params}]", "postfx": "list[{type, ...params}]", "composition": "string", "mask": "string", "variant": "string", "...": "..."},
   "output_schema": {"status": "string", "results": "list[{path, seed, format}]", "...": "..."}
 }
 ```

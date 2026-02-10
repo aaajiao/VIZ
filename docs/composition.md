@@ -428,29 +428,30 @@ VARIANT_REGISTRY = {
 
 | 变换类型 | 概率范围 | 影响因素 |
 |----------|----------|----------|
-| 镜像对称 (mirror_x/y/quad/kaleidoscope) | 15-40% | `+ structure * 0.25` |
-| 平铺 (tile) | 10-25% | `+ structure * 0.15` |
-| 螺旋扭曲 (spiral_warp) | 8-20% | `+ energy * 0.12` |
-| 旋转 (rotate) | 15% | 固定概率 |
-| 缩放 (zoom) | 10-20% | `+ energy * 0.10` |
+| 镜像对称 (mirror_x/y/quad/kaleidoscope) | 30-55% | `+ structure * 0.25` |
+| 平铺 (tile) | 20-40% | `+ structure * 0.20` |
+| 螺旋扭曲 (spiral_warp) | 15-35% | `+ energy * 0.20` |
+| 旋转 (rotate) | 25% | 固定概率 |
+| 缩放 (zoom) | 18-30% | `+ energy * 0.12` |
+| 极坐标映射 (polar_remap) | 8-15% | `+ energy * 0.07` |
 
 镜像类型内部子选择：mirror_x 30%, mirror_y 30%, mirror_quad 20%, kaleidoscope 20%。
 
-多个变换可同时启用并链式应用。
+多个变换可同时启用并链式应用。目标：60-80% 的渲染至少有 1 个变换。
 
 ### 后处理链概率 — `_choose_postfx_chain(energy, structure, intensity)`
 
 | PostFX 类型 | 概率范围 | 影响因素 |
 |-------------|----------|----------|
-| vignette | 20-35% | `+ intensity * 0.15` |
-| scanlines | 12-20% | `+ energy * 0.08` |
-| threshold | 8-20% | `+ structure * 0.12` |
-| edge_detect | 6-14% | `+ structure * 0.08` |
-| invert | 5-10% | `+ energy * 0.05` |
-| color_shift | 10-18% | `+ energy * 0.08` |
-| pixelate | 5-12% | `+ (1-structure) * 0.07` |
+| vignette | 35-55% | `+ intensity * 0.20` |
+| scanlines | 22-35% | `+ energy * 0.13` |
+| threshold | 14-30% | `+ structure * 0.16` |
+| edge_detect | 10-22% | `+ structure * 0.12` |
+| invert | 8-16% | `+ energy * 0.08` |
+| color_shift | 18-30% | `+ energy * 0.12` |
+| pixelate | 9-19% | `+ (1-structure) * 0.10` |
 
-每种 PostFX 独立投骰，互不排斥。
+每种 PostFX 独立投骰，互不排斥。**保底机制**：若链为空，自动选择一个温和效果（vignette/color_shift/scanlines）。
 
 ### 合成模式概率 — `_choose_composition_mode(energy, structure)`
 
@@ -458,10 +459,10 @@ VARIANT_REGISTRY = {
 
 | 模式 | 概率权重 | 影响因素 |
 |------|----------|----------|
-| blend | 40% | 固定权重 |
-| masked_split | 20-35% | `+ structure * 0.15` |
-| radial_masked | 15-25% | `+ (1-structure) * 0.10` |
-| noise_masked | 15-30% | `+ energy * 0.15` |
+| blend | 25% | 固定权重 |
+| masked_split | 25-35% | `+ structure * 0.10` |
+| radial_masked | 22-30% | `+ (1-structure) * 0.08` |
+| noise_masked | 22-30% | `+ energy * 0.08` |
 
 ### 变体选择 — `_sample_variant_params(effect_name)`
 
@@ -470,6 +471,25 @@ VARIANT_REGISTRY = {
    - 整数类型 → `randint(min, max)`
    - 浮点类型 → `uniform(min, max)`
 3. 采样结果合并到效果参数字典（覆盖基础参数）
+
+### 多样性抖动 — `_weighted_choice()` Diversity Jitter
+
+所有加权随机选择在采样前对每个权重乘以 `uniform(0.7, 1.3)` 随机因子：
+- 同一 seed 仍完全可重现（抖动使用 `self.rng`）
+- 相邻 seed 不再总是选同一效果
+- 高权重项仍更可能被选中，但差距缩小
+
+### 叠加效果激活率
+
+```
+overlay_chance = 0.45 + energy * 0.35   → 45-80%
+```
+
+高能量情绪下叠加效果非常活跃。
+
+### 导演模式覆盖（Director Mode Overrides）
+
+CLI 参数 `--transforms`、`--postfx`、`--composition`、`--mask`、`--variant` 可精确覆盖文法选择。`_apply_overrides()` 在文法生成 SceneSpec 后替换对应字段。当 `--composition` 为非 blend 模式但没有 overlay 时，自动创建一个叠加效果。
 
 ---
 

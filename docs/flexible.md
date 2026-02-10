@@ -249,9 +249,9 @@ class SceneSpec:
 | `_choose_particle_chars()` | **25+ 组** (经典/几何/box 线段/方块/盲文) | **energy + warmth** |
 | `_choose_text_elements()` | 8 组情绪词池（中英 + **semigraphic 符号**） | valence × arousal |
 | `_choose_kaomoji_mood()` | 6 象限情绪 | valence × arousal |
-| `_choose_domain_transforms()` | mirror_x/y/quad, kaleidoscope, tile, rotate, zoom, spiral_warp | structure + energy |
-| `_choose_postfx_chain()` | vignette, scanlines, threshold, edge_detect, invert, color_shift, pixelate | energy + structure + intensity |
-| `_choose_composition_mode()` | blend, masked_split, radial_masked, noise_masked | energy + structure |
+| `_choose_domain_transforms()` | mirror_x/y/quad, kaleidoscope, tile, rotate, zoom, spiral_warp, **polar_remap** | structure + energy (概率提高至 30-55%) |
+| `_choose_postfx_chain()` | vignette, scanlines, threshold, edge_detect, invert, color_shift, pixelate | energy + structure + intensity (概率提高, 保底 ≥1) |
+| `_choose_composition_mode()` | blend, masked_split, radial_masked, noise_masked | energy + structure (blend 降至 25%) |
 
 详见 [box_chars.md](box_chars.md) 获取完整的字符集和梯度参考。
 
@@ -260,6 +260,10 @@ class SceneSpec:
 文法通过 `_sample_variant_params(effect_name)` 从 `VARIANT_REGISTRY`（`procedural/effects/variants.py`）采样结构变体参数。7 个效果共 32 个命名变体，每个变体定义参数范围预设（如 `surface_noise: (0.3, 0.8)`），文法按权重选择变体后在范围内均匀采样。
 
 辅助方法 `_jitter(base, amount, lo, hi)` 在基础值附近添加均匀随机偏移，用于所有连续参数的微调。
+
+**多样性抖动**：`_weighted_choice()` 在每次采样前对权重乘以 `uniform(0.7, 1.3)` 因子，让相邻 seed 产生不同结果，同时保持单 seed 可重现。
+
+**导演模式覆盖**：CLI 参数（`--transforms`、`--postfx`、`--composition`、`--mask`、`--variant`）可精确覆盖文法的自动选择。覆盖在 `_apply_overrides()` 中执行，完全替换文法选择的对应字段。
 
 详见 [composition.md](composition.md#structural-variants) 获取完整变体目录。
 
