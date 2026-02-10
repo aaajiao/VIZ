@@ -245,7 +245,7 @@ class SceneSpec:
 | `_choose_animations()` | floating, breathing, color_cycle | energy/arousal |
 | `_choose_decoration_style()` | corners, edges, scattered, minimal, none, **frame, grid_lines, circuit** | structure |
 | `_choose_decoration_chars()` | **60+ 组** (box 角/线/交叉/方块/点/经典) | **energy + warmth** |
-| `_choose_gradient()` | **20 种** (classic, blocks, box_density, braille_density, circuit, ...) | **energy + structure** |
+| `_choose_gradient()` | **67 种** (classic, blocks, vbar, hbar, box_thin, circles, punctuation, math, ...) | **energy + structure** |
 | `_choose_particle_chars()` | **25+ 组** (经典/几何/box 线段/方块/盲文) | **energy + warmth** |
 | `_choose_text_elements()` | 8 组情绪词池（中英 + **semigraphic 符号**） | valence × arousal |
 | `_choose_kaomoji_mood()` | 6 象限情绪 | valence × arousal |

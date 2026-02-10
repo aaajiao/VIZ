@@ -111,44 +111,119 @@ chars = get_charset("braille")     # → "⠀⠁⠂⠃⠄⠅⠆⠇⡀⡁..."
 
 ## 2. 密度梯度（GRADIENTS）
 
-从空/稀疏到密/实的字符序列，用于 `char_at_value()` 映射。
+从空/稀疏到密/实的字符序列，用于 `char_at_value()` 映射。共 67 种梯度，覆盖 428 个 Unicode 字符。
 
 ### 全部梯度一览
 
-| 名称 | 梯度 | 来源/风格 |
+#### 经典 ASCII (5)
+
+| 名称 | 梯度 | 风格 |
 |---|---|---|
 | `classic` | ` .:-=+*#%@` | 经典 ASCII |
 | `smooth` | ` .':;!>+*%@#█` | 细腻 (13 级) |
 | `matrix` | ` .:-=+*@#` | 黑客风 |
 | `plasma` | `$?01▄abc+-><:.` | Plasma 效果 |
+| `default` | ` .:-=+*#%@` | classic 别名 |
+
+#### 方块填充 (8)
+
+| 名称 | 梯度 | 风格 |
+|---|---|---|
 | `blocks` | ` ░▒▓█` | 方块 (5 级) |
 | `blocks_fine` | ` ·░▒▓█` | 方块精细 (6 级) |
-| `blocks_ultra` | ` ·⠁░▒▓▓█` | 方块+盲文 (8 级) |
+| `blocks_ultra` | ` ·⠁░▒▓▓█` | 方块+盲文 |
 | `glitch` | ` ·░▒▓█▀▄▌▐` | 故障 |
-| **`box_density`** | ` ·┄─┈━░▒▓█` | **Box-drawing 密度** |
-| **`box_vertical`** | ` ·┆│┊┃░▒▓█` | **垂直线密度** |
-| **`box_cross`** | ` ·+┼╋╬░▒▓█` | **交叉密度** |
-| **`dots_density`** | ` ·∙•◦○◎◉●█` | **圆点密度** |
-| **`geometric`** | ` ·▪□▫▮■▓█` | **几何密度** |
-| **`braille_density`** | ` ⠁⠃⠇⡇⣇⣧⣷⣿` | **盲文密度** |
-| **`tech`** | ` .·:;+*░▒▓█` | **技术风** |
-| **`cyber`** | ` ·-=≡░▒▓█` | **赛博风** |
-| **`organic`** | ` ·∙•○◎●▒▓█` | **有机风** |
-| **`noise`** | ` ·⠁⠃░▒▓▓█` | **噪点风** |
-| **`circuit`** | ` ·┄─├┼╋▒▓█` | **电路风** |
+| `vbar` | ` ▏▎▍▌▋▊▉█` | 垂直条填充 |
+| `hbar` | ` ▁▂▃▄▅▆▇█` | 水平条填充 |
+| `quadrant` | ` ▖▗▘▝▞▚▙▟█` | 四分块 |
+| `halves` | ` ▔▕▁▖▌▀▐▙▛▜█` | 半块混合 |
 
-（加粗为本次新增）
+#### Box-Drawing 线框 (20)
+
+| 名称 | 梯度 | 风格 |
+|---|---|---|
+| `box_density` | ` ·┄─┈━░▒▓█` | 水平线密度 |
+| `box_vertical` | ` ·┆│┊┃░▒▓█` | 垂直线密度 |
+| `box_cross` | ` ·+┼╋╬░▒▓█` | 交叉密度 |
+| `box_thin` | ` ╶╴╌─│├┤┬┴┼█` | 细线接头 |
+| `box_thin_corner` | ` ╵╷│┌┐└┘├┤█` | 细线角 |
+| `box_thick` | ` ╺╸╍━┃┣┫┳┻╋█` | 粗线接头 |
+| `box_thick_corner` | ` ╹╻┃┏┓┗┛┣┫█` | 粗线角 |
+| `box_double` | ` ═║╠╣╦╩╬╔╗█` | 双线接头 |
+| `box_double_corner` | ` ═║╚╝╠╣╦╩╬█` | 双线角 |
+| `box_rounded` | ` ·╭╮╯╰○◎●█` | 圆角 |
+| `box_mixed_dh` | ` ╘╒╛╕╪╞╡╧╤█` | 混合: 双横细纵 |
+| `box_mixed_dv` | ` ╙╓╜╖╫╟╢╨╥█` | 混合: 双纵细横 |
+| `box_mixed_a` | ` ┍┑┕┙┿┝┥┷┯█` | 混合: 粗细 A |
+| `box_mixed_b` | ` ┎┒┖┚╂┠┨┸┰█` | 混合: 粗细 B |
+| `box_complex_a` | ` ┽┾╀╁╃╄╅╆╇╈█` | 复杂交叉 A |
+| `box_complex_b` | ` ┞┟┡┢┦┧┩┪╉█` | 复杂交叉 B |
+| `box_complex_c` | ` ┭┮┱┲┵┶┹┺╊█` | 复杂交叉 C |
+| `box_ends` | ` ╼╾╽╿╌╍╎╏▒█` | 线端+混合粗细 |
+| `box_weight` | ` ╎│╏┃║░▒▓█` | 线重递增 |
+| `diagonal` | ` ╱╲╳▞▚░▒▓█` | 对角线 |
+
+#### 几何/点阵 (14)
+
+| 名称 | 梯度 | 风格 |
+|---|---|---|
+| `dots_density` | ` ·∙•◦○◎◉●█` | 圆点密度 |
+| `geometric` | ` ·▪□▫▮■▓█` | 几何密度 |
+| `braille_density` | ` ⠁⠃⠇⡇⣇⣧⣷⣿` | 盲文密度 |
+| `circles` | ` ·◦○◎◉●◕█` | 圆形填充 |
+| `circles_half` | ` ◜◝◞◟◐◑◒◓●` | 半圆弧 |
+| `circles_arc` | ` ·◠◡◚◛◙◕◖◗█` | 圆弧段 |
+| `squares` | ` ▫▪□▢▣▬▭▮▯■█` | 方形变体 |
+| `diamonds` | ` ·◇◆◊▪■▓█` | 菱形 |
+| `triangles` | ` ·◢◣◤◥▖▙▟█` | 三角形 |
+| `quarters_geo` | ` ◰◱◲◳◴◵◶◷◧◨◩◪◫█` | 几何四分 |
+| `squares_fill` | ` ◽◻▤▥▦▧▨▩◼◾█` | 填充方块 |
+| `arrows_sm` | ` ▵▴▹▸▿▾◃◂▰▱█` | 小三角/箭头 |
+| `arrows_lg` | ` △▷▽◁▻◅▲▶▼◀►◄█` | 大三角/箭头 |
+| `geo_misc` | ` ◌◍◈◔◘◬◭◮◯◸◹◺◿█` | 几何杂项 |
+
+#### 文字/排版 (15)
+
+| 名称 | 梯度 | 风格 |
+|---|---|---|
+| `punctuation` | ` .,;:¿?¡!"@#%‰&*'█` | 标点密度 |
+| `editorial` | ` ·†‡•−–_¯…█` | 编辑符号 |
+| `math` | ` ·+-×÷±≈∞∫√█` | 数学运算 |
+| `math_rel` | ` ·~≈≠=≤≥<>¬█` | 数学关系 |
+| `brackets` | ` ·()[]{}&#124;/⁄\█` | 括号/分隔 |
+| `greek` | ` ·μπ∂∆∑∏◊Ω█` | 希腊/学术 |
+| `currency` | ` ¢$€£¥¤▪■▓█` | 货币符号 |
+| `symbols` | ` ·¦¶§©®™°▓█` | 版权/排版 |
+| `superscript` | ` ·ªº¹²³¼½¾█` | 上标/分数 |
+| `quotes` | ` ''‚""„‹›«»█` | 引号 |
+| `ligature` | ` ·æœßøəﬁﬂÆŒ█` | 连字/特殊 |
+| `diacritics` | ` ·^¨`Əə°Øø█` | 变音符 |
+| `digits` | ` 0123456789` | 数字 |
+| `alpha_lower` | ` ijltrcfs...qmw█` | 小写字母 (按视觉重量) |
+| `alpha_upper` | ` IJLTCFSE...QMW█` | 大写字母 (按视觉重量) |
+
+#### 混合表现力 (5)
+
+| 名称 | 梯度 | 风格 |
+|---|---|---|
+| `tech` | ` .·:;+*░▒▓█` | 技术风 |
+| `cyber` | ` ·-=≡░▒▓█` | 赛博风 |
+| `organic` | ` ·∙•○◎●▒▓█` | 有机风 |
+| `noise` | ` ·⠁⠃░▒▓▓█` | 噪点风 |
+| `circuit` | ` ·┄─├┼╋▒▓█` | 电路风 |
 
 ### 在管线中的使用
 
-梯度名称通过 `grammar.py` 的 `_choose_gradient()` 选择，由 `energy` 和 `structure` 参数驱动权重：
+梯度名称通过 `grammar.py` 的 `_choose_gradient()` 选择（44 个进入自动选择池），由 `energy` 和 `structure` 参数驱动权重：
 
 ```
-高 energy + 高 structure → box_cross, circuit, blocks
-低 energy + 低 structure → organic, braille_density
-高 energy + 低 structure → glitch, cyber
-低 energy + 高 structure → dots_density, geometric
+高 energy + 高 structure → box_thick, box_cross, diagonal, blocks
+低 energy + 低 structure → organic, circles, editorial, braille_density
+高 energy + 低 structure → glitch, cyber, arrows_lg, quadrant
+低 energy + 高 structure → dots_density, geometric, vbar, hbar, box_double
 ```
+
+其余梯度可通过 Director Mode（CLI `--gradient` 或 JSON `gradient` 字段）精确指定。
 
 渲染时，`renderer.py` 的 `char_at_value(value, gradient_name)` 将 0.0–1.0 的值映射到梯度中的字符：
 

@@ -138,22 +138,70 @@ GRADIENTS = {
     "matrix": " .:-=+*@#",
     "plasma": "$?01▄abc+-><:.",
 
-    # --- Block-based ---
+    # --- Block fill ---
     "blocks": " ░▒▓█",
     "blocks_fine": " ·░▒▓█",
     "blocks_ultra": " ·⠁░▒▓▓█",
+    "glitch": " ·░▒▓█▀▄▌▐",
+    "vbar": " ▏▎▍▌▋▊▉█",
+    "hbar": " ▁▂▃▄▅▆▇█",
+    "quadrant": " ▖▗▘▝▞▚▙▟█",
+    "halves": " ▔▕▁▖▌▀▐▙▛▜█",
 
-    # --- Box-drawing density ---
+    # --- Box-drawing ---
     "box_density": " ·┄─┈━░▒▓█",
     "box_vertical": " ·┆│┊┃░▒▓█",
     "box_cross": " ·+┼╋╬░▒▓█",
+    "box_thin": " ╶╴╌─│├┤┬┴┼█",
+    "box_thin_corner": " ╵╷│┌┐└┘├┤█",
+    "box_thick": " ╺╸╍━┃┣┫┳┻╋█",
+    "box_thick_corner": " ╹╻┃┏┓┗┛┣┫█",
+    "box_double": " ═║╠╣╦╩╬╔╗█",
+    "box_double_corner": " ═║╚╝╠╣╦╩╬█",
+    "box_rounded": " ·╭╮╯╰○◎●█",
+    "box_mixed_dh": " ╘╒╛╕╪╞╡╧╤█",
+    "box_mixed_dv": " ╙╓╜╖╫╟╢╨╥█",
+    "box_mixed_a": " ┍┑┕┙┿┝┥┷┯█",
+    "box_mixed_b": " ┎┒┖┚╂┠┨┸┰█",
+    "box_complex_a": " ┽┾╀╁╃╄╅╆╇╈█",
+    "box_complex_b": " ┞┟┡┢┦┧┩┪╉█",
+    "box_complex_c": " ┭┮┱┲┵┶┹┺╊█",
+    "box_ends": " ╼╾╽╿╌╍╎╏▒█",
+    "box_weight": " ╎│╏┃║░▒▓█",
+    "diagonal": " ╱╲╳▞▚░▒▓█",
 
-    # --- Geometric density ---
+    # --- Geometric ---
     "dots_density": " ·∙•◦○◎◉●█",
     "geometric": " ·▪□▫▮■▓█",
-
-    # --- Braille density ---
     "braille_density": " ⠁⠃⠇⡇⣇⣧⣷⣿",
+    "circles": " ·◦○◎◉●◕█",
+    "circles_half": " ◜◝◞◟◐◑◒◓●",
+    "circles_arc": " ·◠◡◚◛◙◕◖◗█",
+    "squares": " ▫▪□▢▣▬▭▮▯■█",
+    "diamonds": " ·◇◆◊▪■▓█",
+    "triangles": " ·◢◣◤◥▖▙▟█",
+    "quarters_geo": " ◰◱◲◳◴◵◶◷◧◨◩◪◫█",
+    "squares_fill": " ◽◻▤▥▦▧▨▩◼◾█",
+    "arrows_sm": " ▵▴▹▸▿▾◃◂▰▱█",
+    "arrows_lg": " △▷▽◁▻◅▲▶▼◀►◄█",
+    "geo_misc": " ◌◍◈◔◘◬◭◮◯◸◹◺◿█",
+
+    # --- Typography ---
+    "punctuation": " .,;:¿?¡!\"@#%‰&*'█",
+    "editorial": " ·†‡•−–_¯…█",
+    "math": " ·+-×÷±≈∞∫√█",
+    "math_rel": " ·~≈≠=≤≥<>¬█",
+    "brackets": " ·()[]{}|/⁄\\█",
+    "greek": " ·μπ∂∆∑∏◊Ω█",
+    "currency": " ¢$€£¥¤▪■▓█",
+    "symbols": " ·¦¶§©®™°▓█",
+    "superscript": " ·ªº¹²³¼½¾█",
+    "quotes": " \u2018\u2019\u201a\u201c\u201d\u201e\u2039\u203a\u00ab\u00bb\u2588",
+    "ligature": " ·æœßøəﬁﬂÆŒ█",
+    "diacritics": " ·^¨`Əə°Øø█",
+    "digits": " 0123456789",
+    "alpha_lower": " ijltrcfszvxynoeaukhdpbgqmw█",
+    "alpha_upper": " IJLTCFSEZVXYNOADKHRPBGUQMW█",
 
     # --- Mixed expressive ---
     "tech": " .·:;+*░▒▓█",
@@ -161,7 +209,6 @@ GRADIENTS = {
     "organic": " ·∙•○◎●▒▓█",
     "noise": " ·⠁⠃░▒▓▓█",
     "circuit": " ·┄─├┼╋▒▓█",
-    "glitch": " ·░▒▓█▀▄▌▐",
 }
 
 

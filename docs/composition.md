@@ -561,7 +561,7 @@ postfx_chain = params.get("_postfx_chain", [])
   x 4 混合模式
   x 6 空间遮罩类型（含连续参数）
   x 5 布局算法
-  x 20 ASCII 梯度
+  x 67 ASCII 梯度
   x 8 装饰风格
 ≈ 数亿种离散组合
 ```
