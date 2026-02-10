@@ -28,6 +28,36 @@ class TestEffectRegistry:
     def test_sdf_shapes_registered(self):
         assert "sdf_shapes" in EFFECT_REGISTRY
 
+    def test_ten_print_registered(self):
+        assert "ten_print" in EFFECT_REGISTRY
+
+    def test_game_of_life_registered(self):
+        assert "game_of_life" in EFFECT_REGISTRY
+
+    def test_donut_registered(self):
+        assert "donut" in EFFECT_REGISTRY
+
+    def test_mod_xor_registered(self):
+        assert "mod_xor" in EFFECT_REGISTRY
+
+    def test_wireframe_cube_registered(self):
+        assert "wireframe_cube" in EFFECT_REGISTRY
+
+    def test_chroma_spiral_registered(self):
+        assert "chroma_spiral" in EFFECT_REGISTRY
+
+    def test_wobbly_registered(self):
+        assert "wobbly" in EFFECT_REGISTRY
+
+    def test_sand_game_registered(self):
+        assert "sand_game" in EFFECT_REGISTRY
+
+    def test_slime_dish_registered(self):
+        assert "slime_dish" in EFFECT_REGISTRY
+
+    def test_dyna_registered(self):
+        assert "dyna" in EFFECT_REGISTRY
+
 
 class TestGetEffect:
     def test_returns_effect_instance(self):
@@ -76,6 +106,56 @@ class TestEffectsRender:
 
     def test_sdf_shapes_renders(self, engine):
         effect = get_effect("sdf_shapes")
+        img = engine.render_frame(effect, time=0.5, seed=42)
+        assert isinstance(img, Image.Image)
+
+    def test_ten_print_renders(self, engine):
+        effect = get_effect("ten_print")
+        img = engine.render_frame(effect, time=0.5, seed=42)
+        assert isinstance(img, Image.Image)
+
+    def test_game_of_life_renders(self, engine):
+        effect = get_effect("game_of_life")
+        img = engine.render_frame(effect, time=0.5, seed=42)
+        assert isinstance(img, Image.Image)
+
+    def test_donut_renders(self, engine):
+        effect = get_effect("donut")
+        img = engine.render_frame(effect, time=0.5, seed=42)
+        assert isinstance(img, Image.Image)
+
+    def test_mod_xor_renders(self, engine):
+        effect = get_effect("mod_xor")
+        img = engine.render_frame(effect, time=0.5, seed=42)
+        assert isinstance(img, Image.Image)
+
+    def test_wireframe_cube_renders(self, engine):
+        effect = get_effect("wireframe_cube")
+        img = engine.render_frame(effect, time=0.5, seed=42)
+        assert isinstance(img, Image.Image)
+
+    def test_chroma_spiral_renders(self, engine):
+        effect = get_effect("chroma_spiral")
+        img = engine.render_frame(effect, time=0.5, seed=42)
+        assert isinstance(img, Image.Image)
+
+    def test_wobbly_renders(self, engine):
+        effect = get_effect("wobbly")
+        img = engine.render_frame(effect, time=0.5, seed=42)
+        assert isinstance(img, Image.Image)
+
+    def test_sand_game_renders(self, engine):
+        effect = get_effect("sand_game")
+        img = engine.render_frame(effect, time=0.5, seed=42)
+        assert isinstance(img, Image.Image)
+
+    def test_slime_dish_renders(self, engine):
+        effect = get_effect("slime_dish")
+        img = engine.render_frame(effect, time=0.5, seed=42)
+        assert isinstance(img, Image.Image)
+
+    def test_dyna_renders(self, engine):
+        effect = get_effect("dyna")
         img = engine.render_frame(effect, time=0.5, seed=42)
         assert isinstance(img, Image.Image)
 
@@ -144,6 +224,42 @@ class TestEffectsAnimation:
 
     def test_wave_animates(self, engine):
         effect = get_effect("wave")
+        img1 = engine.render_frame(effect, time=0.0, seed=42)
+        img2 = engine.render_frame(effect, time=1.0, seed=42)
+        assert list(img1.getdata()) != list(img2.getdata())
+
+    def test_game_of_life_animates(self, engine):
+        effect = get_effect("game_of_life")
+        img1 = engine.render_frame(effect, time=0.0, seed=42)
+        img2 = engine.render_frame(effect, time=1.0, seed=42)
+        assert list(img1.getdata()) != list(img2.getdata())
+
+    def test_donut_animates(self, engine):
+        effect = get_effect("donut")
+        img1 = engine.render_frame(effect, time=0.0, seed=42)
+        img2 = engine.render_frame(effect, time=1.0, seed=42)
+        assert list(img1.getdata()) != list(img2.getdata())
+
+    def test_wireframe_cube_animates(self, engine):
+        effect = get_effect("wireframe_cube")
+        img1 = engine.render_frame(effect, time=0.0, seed=42)
+        img2 = engine.render_frame(effect, time=1.0, seed=42)
+        assert list(img1.getdata()) != list(img2.getdata())
+
+    def test_ten_print_animates(self, engine):
+        effect = get_effect("ten_print")
+        img1 = engine.render_frame(effect, time=0.0, seed=42)
+        img2 = engine.render_frame(effect, time=1.0, seed=42)
+        assert list(img1.getdata()) != list(img2.getdata())
+
+    def test_dyna_animates(self, engine):
+        effect = get_effect("dyna")
+        img1 = engine.render_frame(effect, time=0.0, seed=42)
+        img2 = engine.render_frame(effect, time=1.0, seed=42)
+        assert list(img1.getdata()) != list(img2.getdata())
+
+    def test_sand_game_animates(self, engine):
+        effect = get_effect("sand_game")
         img1 = engine.render_frame(effect, time=0.0, seed=42)
         img2 = engine.render_frame(effect, time=1.0, seed=42)
         assert list(img1.getdata()) != list(img2.getdata())

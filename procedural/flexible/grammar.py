@@ -222,6 +222,17 @@ class VisualGrammar:
             "noise_field": 0.4 + (1 - energy) * 0.3,
             "sdf_shapes": 0.2 + structure * 0.4,
             "cppn": 0.3,  # CPPN 始终有机会
+            # 新增效果
+            "ten_print": 0.3 + structure * 0.5,
+            "game_of_life": 0.25 + energy * 0.3,
+            "donut": 0.15 + structure * 0.3,
+            "mod_xor": 0.2 + structure * 0.5,
+            "wireframe_cube": 0.1 + structure * 0.3,
+            "chroma_spiral": 0.2 + energy * 0.3,
+            "wobbly": 0.25 + (1 - structure) * 0.4,
+            "sand_game": 0.15 + (1 - energy) * 0.2,
+            "slime_dish": 0.1 + (1 - energy) * 0.3,
+            "dyna": 0.15 + energy * 0.4,
         }
         return self._weighted_choice(weights)
 
@@ -235,6 +246,12 @@ class VisualGrammar:
             "noise_field": 0.4,
             "moire": 0.2,
             "cppn": 0.3,
+            # 适合叠加的新效果
+            "ten_print": 0.25,
+            "mod_xor": 0.3,
+            "chroma_spiral": 0.25,
+            "wobbly": 0.2,
+            "dyna": 0.2,
         }
         # 移除与背景相同的效果
         candidates.pop(bg_effect, None)
@@ -576,6 +593,75 @@ class VisualGrammar:
                 "num_hidden": rng.randint(2, 5),
                 "layer_size": rng.choice([4, 6, 8, 10, 12]),
                 "seed": rng.randint(0, 100000),
+            }
+        elif effect_name == "ten_print":
+            return {
+                "cell_size": rng.randint(4, 8 + int(structure * 4)),
+                "probability": rng.uniform(0.3, 0.7),
+                "speed": rng.uniform(0.3, 1.0 + energy * 3.0),
+            }
+        elif effect_name == "game_of_life":
+            return {
+                "density": rng.uniform(0.3, 0.5 + energy * 0.2),
+                "speed": rng.uniform(2.0, 5.0 + energy * 10.0),
+                "wrap": True,
+            }
+        elif effect_name == "donut":
+            return {
+                "R1": rng.uniform(0.3, 0.5),
+                "R2": rng.uniform(0.1, 0.2),
+                "rotation_speed": rng.uniform(0.3, 1.0 + energy * 2.0),
+            }
+        elif effect_name == "mod_xor":
+            return {
+                "modulus": rng.choice([8, 16, 32, 64]),
+                "operation": rng.choice(["xor", "and", "or"]),
+                "layers": rng.randint(1, 2 + int(energy)),
+                "speed": rng.uniform(0.2, 0.5 + energy * 1.5),
+                "zoom": rng.uniform(0.5, 1.5 + structure * 0.5),
+            }
+        elif effect_name == "wireframe_cube":
+            return {
+                "rotation_speed_x": rng.uniform(0.2, 0.5 + energy * 1.0),
+                "rotation_speed_y": rng.uniform(0.3, 0.6 + energy * 1.0),
+                "rotation_speed_z": rng.uniform(0.1, 0.4 + energy * 0.8),
+                "scale": rng.uniform(0.3, 0.5),
+                "edge_thickness": rng.uniform(0.01, 0.03 + structure * 0.02),
+            }
+        elif effect_name == "chroma_spiral":
+            return {
+                "arms": rng.randint(1, 4 + int(energy * 4)),
+                "tightness": rng.uniform(0.1, 1.0 + structure * 1.0),
+                "speed": rng.uniform(0.3, 1.0 + energy * 3.0),
+                "chroma_offset": rng.uniform(0.0, 0.1 + energy * 0.2),
+            }
+        elif effect_name == "wobbly":
+            return {
+                "warp_amount": rng.uniform(0.1, 0.4 + energy * 0.6),
+                "warp_freq": rng.uniform(0.02, 0.04 + structure * 0.02),
+                "iterations": rng.randint(1, 2 + int(energy)),
+                "speed": rng.uniform(0.2, 0.5 + energy * 1.5),
+            }
+        elif effect_name == "sand_game":
+            return {
+                "spawn_rate": rng.uniform(0.1, 0.3 + energy * 0.5),
+                "gravity_speed": rng.randint(1, 2 + int(energy * 2)),
+                "particle_types": rng.randint(1, 2 + int(structure)),
+            }
+        elif effect_name == "slime_dish":
+            return {
+                "agent_count": rng.randint(500, 2000 + int(energy * 3000)),
+                "sensor_distance": rng.randint(3, 9 + int(structure * 6)),
+                "sensor_angle": rng.uniform(0.2, 0.6 + structure * 0.4),
+                "decay_rate": rng.uniform(0.9, 0.95 + (1 - energy) * 0.04),
+                "speed": rng.randint(1, 3 + int(energy * 3)),
+            }
+        elif effect_name == "dyna":
+            return {
+                "attractor_count": rng.randint(2, 4 + int(energy * 4)),
+                "frequency": rng.uniform(0.1, 0.5 + energy * 1.5),
+                "speed": rng.uniform(0.3, 1.0 + energy * 3.0),
+                "bounce": rng.random() < 0.7,
             }
         else:
             return {}
