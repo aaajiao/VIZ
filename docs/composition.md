@@ -474,7 +474,7 @@ VARIANT_REGISTRY = {
 
 ### 多样性抖动 — `_weighted_choice()` Diversity Jitter
 
-所有加权随机选择在采样前对每个权重乘以 `uniform(0.7, 1.3)` 随机因子：
+所有加权随机选择在采样前对每个权重乘以 `uniform(0.5, 1.5)` 随机因子：
 - 同一 seed 仍完全可重现（抖动使用 `self.rng`）
 - 相邻 seed 不再总是选同一效果
 - 高权重项仍更可能被选中，但差距缩小

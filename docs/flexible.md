@@ -259,9 +259,9 @@ class SceneSpec:
 
 文法通过 `_sample_variant_params(effect_name)` 从 `VARIANT_REGISTRY`（`procedural/effects/variants.py`）采样结构变体参数。7 个效果共 32 个命名变体，每个变体定义参数范围预设（如 `surface_noise: (0.3, 0.8)`），文法按权重选择变体后在范围内均匀采样。
 
-辅助方法 `_jitter(base, amount, lo, hi)` 在基础值附近添加均匀随机偏移，用于所有连续参数的微调。
+辅助方法 `_jitter(base, amount, lo, hi)` 在基础值附近添加高斯随机偏移（σ = amount × 0.6），用于所有连续参数的微调。
 
-**多样性抖动**：`_weighted_choice()` 在每次采样前对权重乘以 `uniform(0.7, 1.3)` 因子，让相邻 seed 产生不同结果，同时保持单 seed 可重现。
+**多样性抖动**：`_weighted_choice()` 在每次采样前对权重乘以 `uniform(0.5, 1.5)` 因子，让相邻 seed 产生不同结果，同时保持单 seed 可重现。
 
 **导演模式覆盖**：CLI 参数（`--transforms`、`--postfx`、`--composition`、`--mask`、`--variant`）可精确覆盖文法的自动选择。覆盖在 `_apply_overrides()` 中执行，完全替换文法选择的对应字段。
 
