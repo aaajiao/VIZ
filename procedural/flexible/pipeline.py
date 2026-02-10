@@ -192,6 +192,7 @@ class FlexiblePipeline:
             internal_size=self.internal_size,
             output_size=self.output_size,
             gradient_name=spec.gradient_name,
+            color_scheme=spec.color_scheme,
             sharpen=spec.sharpen,
             contrast=spec.contrast,
         )
@@ -217,6 +218,10 @@ class FlexiblePipeline:
             render_params["_postfx_chain"] = spec.postfx_chain
         if spec.mask_params:
             render_params.update(spec.mask_params)
+
+        # Pass bg_fill spec to engine
+        if spec.bg_fill_spec:
+            render_params["_bg_fill_spec"] = spec.bg_fill_spec
 
         img = engine.render_frame(
             effect=effect,
@@ -290,6 +295,7 @@ class FlexiblePipeline:
             internal_size=self.internal_size,
             output_size=self.output_size,
             gradient_name=spec.gradient_name,
+            color_scheme=spec.color_scheme,
             sharpen=spec.sharpen,
             contrast=spec.contrast,
         )
@@ -312,6 +318,10 @@ class FlexiblePipeline:
             render_params["_postfx_chain"] = spec.postfx_chain
         if spec.mask_params:
             render_params.update(spec.mask_params)
+
+        # Pass bg_fill spec to engine
+        if spec.bg_fill_spec:
+            render_params["_bg_fill_spec"] = spec.bg_fill_spec
 
         # 渲染每帧 (带参数漂移)
         total_frames = int(duration * fps)

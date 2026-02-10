@@ -116,6 +116,11 @@ class SceneSpec:
     mask_type: str | None = None
     mask_params: dict[str, Any] = field(default_factory=dict)
 
+    # 背景填充规格 (第二渲染通道)
+    bg_fill_spec: dict[str, Any] = field(default_factory=dict)
+    # 颜色方案
+    color_scheme: str = "heat"
+
 
 class VisualGrammar:
     """
@@ -226,6 +231,15 @@ class VisualGrammar:
 
         # === 颜文字情绪 ===
         spec.kaomoji_mood = self._choose_kaomoji_mood(valence, arousal)
+
+        # === 颜色方案 ===
+        spec.color_scheme = self._choose_color_scheme(warmth, energy)
+
+        # === 背景填充 (第二渲染通道) ===
+        spec.bg_fill_spec = self._choose_bg_fill_spec(
+            energy, structure, warmth, spec.bg_effect
+        )
+        spec.bg_fill_spec["color_scheme"] = spec.color_scheme
 
         return spec
 
@@ -1270,6 +1284,167 @@ class VisualGrammar:
             }
 
         return result
+
+    # === 背景填充 / 颜色方案 产生式规则 ===
+
+    def _choose_color_scheme(self, warmth: float, energy: float) -> str:
+        """选择颜色方案 - Choose color scheme based on warmth"""
+        if warmth > 0.7:
+            weights = {
+                "fire": 0.35, "heat": 0.30, "plasma": 0.20, "rainbow": 0.15,
+            }
+        elif warmth > 0.3:
+            weights = {
+                "plasma": 0.28, "rainbow": 0.25, "heat": 0.20,
+                "ocean": 0.15, "cool": 0.12,
+            }
+        else:
+            weights = {
+                "cool": 0.30, "ocean": 0.28, "matrix": 0.22,
+                "plasma": 0.15, "rainbow": 0.05,
+            }
+        return self._weighted_choice(weights)
+
+    def _choose_bg_fill_spec(
+        self, energy: float, structure: float, warmth: float,
+        main_effect: str,
+    ) -> dict[str, Any]:
+        """
+        选择背景填充规格 - Choose bg_fill spec (second render pass)
+
+        组装完整的 bg_fill 规格，grammar 用 rng 在各层独立随机。
+        """
+        rng = self.rng
+
+        # 1. 选择背景 effect (避开主 effect，排除重量级)
+        bg_candidates = {
+            "plasma": 0.25 + energy * 0.10,
+            "wave": 0.25 + (1 - energy) * 0.08,
+            "noise_field": 0.28 + (1 - energy) * 0.10,
+            "moire": 0.22 + structure * 0.12,
+            "mod_xor": 0.22 + structure * 0.10,
+            "chroma_spiral": 0.22 + energy * 0.10,
+            "wobbly": 0.22 + (1 - structure) * 0.10,
+            "ten_print": 0.20 + structure * 0.10,
+            "sdf_shapes": 0.22 + structure * 0.10,
+            "cppn": 0.22,
+            "flame": 0.15 + energy * 0.08,
+            "donut": 0.12 + structure * 0.08,
+            "wireframe_cube": 0.12 + structure * 0.08,
+        }
+        bg_candidates.pop(main_effect, None)
+        bg_effect_name = self._weighted_choice(bg_candidates)
+
+        # 2. 选择 variant (如果 VARIANT_REGISTRY 有该 effect)
+        effect_params = self._generate_effect_params(bg_effect_name, energy, structure)
+
+        # 3. 选择 transforms (0~2 个)
+        transforms: list[dict[str, Any]] = []
+        if rng.random() < 0.40:
+            mirror_type = rng.choice(["mirror_x", "mirror_y", "mirror_quad"])
+            transforms.append({"type": mirror_type})
+        if rng.random() < 0.30:
+            transforms.append({
+                "type": "tile",
+                "cols": rng.choice([2, 3]),
+                "rows": rng.choice([2, 3]),
+            })
+        if rng.random() < 0.20 and len(transforms) < 2:
+            transforms.append({
+                "type": "kaleidoscope",
+                "segments": rng.choice([4, 5, 6, 8]),
+            })
+        if rng.random() < 0.12 and len(transforms) < 2:
+            transforms.append({
+                "type": "spiral_warp",
+                "twist": rng.uniform(0.3, 1.0),
+            })
+        if rng.random() < 0.10 and len(transforms) < 2:
+            transforms.append({"type": "polar_remap"})
+        transforms = transforms[:2]
+
+        # 4. 选择 postfx (0~1 个，概率 40%)
+        postfx: list[dict[str, Any]] = []
+        if rng.random() < 0.40:
+            fx_type = self._weighted_choice({
+                "vignette": 0.35,
+                "color_shift": 0.25,
+                "scanlines": 0.25,
+                "threshold": 0.15,
+            })
+            if fx_type == "vignette":
+                postfx.append({
+                    "type": "vignette",
+                    "strength": rng.uniform(0.3, 0.6),
+                })
+            elif fx_type == "color_shift":
+                postfx.append({
+                    "type": "color_shift",
+                    "hue_shift": rng.uniform(0.05, 0.2),
+                })
+            elif fx_type == "scanlines":
+                postfx.append({
+                    "type": "scanlines",
+                    "spacing": rng.choice([3, 4, 5]),
+                    "darkness": rng.uniform(0.2, 0.3),
+                })
+            else:
+                postfx.append({
+                    "type": "threshold",
+                    "threshold": rng.uniform(0.3, 0.6),
+                })
+
+        # 5. 选择 mask (0~1 个，概率 35%)
+        mask: dict[str, Any] | None = None
+        if rng.random() < 0.35:
+            mask_type = self._weighted_choice({
+                "radial": 0.40,
+                "noise": 0.35,
+                "diagonal": 0.25,
+            })
+            if mask_type == "radial":
+                mask = {
+                    "type": "radial",
+                    "radius": rng.uniform(0.3, 0.6),
+                    "softness": rng.uniform(0.15, 0.35),
+                }
+            elif mask_type == "noise":
+                mask = {
+                    "type": "noise",
+                    "noise_scale": rng.uniform(0.03, 0.08),
+                    "noise_octaves": rng.randint(2, 4),
+                    "softness": rng.uniform(0.1, 0.25),
+                }
+            else:
+                mask = {
+                    "type": "diagonal",
+                    "softness": rng.uniform(0.1, 0.25),
+                    "angle": rng.uniform(-0.5, 0.5),
+                }
+
+        # 6. 选择调色板模式
+        if rng.random() < 0.55:
+            color_mode = "scheme"
+        else:
+            color_mode = "continuous"
+
+        # 7. dim 系数 (高能量稍亮)
+        dim_val = rng.uniform(0.22, 0.38) + energy * 0.05
+
+        spec: dict[str, Any] = {
+            "effect": bg_effect_name,
+            "effect_params": effect_params,
+            "transforms": transforms,
+            "postfx": postfx,
+            "color_mode": color_mode,
+            "warmth": warmth,
+            "saturation": _clamp(0.6 + energy * 0.4, 0.0, 1.0),
+            "dim": _clamp(dim_val, 0.18, 0.45),
+        }
+        if mask is not None:
+            spec["mask"] = mask
+
+        return spec
 
     # === 工具方法 ===
 

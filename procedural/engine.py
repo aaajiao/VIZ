@@ -238,23 +238,24 @@ class Engine:
                 _c = buffer[_y][_x]
                 buffer[_y][_x] = Cell(_c.char_idx, _c.fg, _c.bg)
 
-        # 5c-fill. 为 bg=None 的单元格填充背景色 (在亮度缩放之前)
-        # 根据 warmth 计算基底背景色，确保所有情绪都有可见背景
-        warmth = params.get("warmth", 0.5)
-        _bw = int(60 * warmth)
-        _bc = int(60 * (1.0 - warmth))
-        base_bg = (_bw + 25, min(_bw, _bc) + 18, _bc + 25)
-
-        for row in buffer:
-            for cell in row:
-                if cell.bg is None:
-                    r, g, b = cell.fg
-                    # 用 fg 派生色和 base_bg 中较亮者
-                    derived = (r >> 2, g >> 2, b >> 2)
-                    if sum(derived) > sum(base_bg):
-                        cell.bg = derived
-                    else:
-                        cell.bg = base_bg
+        # 5c-fill. 第二渲染通道背景填充
+        from procedural.bg_fill import bg_fill
+        _bg_spec = params.get("_bg_fill_spec", {})
+        if not _bg_spec:
+            _bg_spec = {
+                "effect": "noise_field",
+                "effect_params": {},
+                "color_mode": "scheme",
+                "color_scheme": self.color_scheme,
+                "warmth": params.get("warmth", 0.5),
+                "saturation": params.get("saturation", 0.9),
+                "dim": 0.30,
+            }
+        _bg_spec.setdefault("color_scheme", self.color_scheme)
+        _bg_spec.setdefault("warmth", params.get("warmth", 0.5))
+        _bg_spec.setdefault("saturation", params.get("saturation", 0.9))
+        _bg_spec["_time"] = ctx.time
+        bg_fill(buffer, w, h, seed, _bg_spec)
 
         # 5c. 情感亮度缩放 (brightness 从 emotion -> pipeline -> engine)
         brightness = params.get("brightness", 1.0)
