@@ -104,7 +104,45 @@ Priority: `emotion` field > `vad` field > infer from text > `neutral`.
 
 VIZ auto-selects from emotion; override with `effect` field.
 
-Effects support deformation params via `params` field (e.g. `{"params": {"surface_noise": 0.5}}`). Domain transforms, PostFX, spatial masks, and structural variants are auto-selected by grammar, but can also be precisely controlled via `transforms`, `postfx`, `composition`, `mask`, and `variant` fields (Director Mode). See **references/COMPOSITION.md** for details.
+Effects support deformation params via `params` field (e.g. `{"params": {"surface_noise": 0.5}}`).
+
+## Director Mode
+
+Grammar auto-selects transforms, PostFX, masks, and variants from emotion; Director Mode fields override any dimension for precise control.
+
+| Field | Type | What it controls |
+|-------|------|------------------|
+| `transforms` | list[dict] | Domain transform chain (mirror, kaleidoscope, tile, etc.) |
+| `postfx` | list[dict] | Post-processing chain (vignette, scanlines, color_shift, etc.) |
+| `composition` | string | How two effects merge: `blend` / `masked_split` / `radial_masked` / `noise_masked` |
+| `mask` | string | Spatial mask for composition: `radial`, `noise`, `diagonal`, etc. |
+| `variant` | string | Named structural variant per effect (e.g. `warped`, `alien`, `turbulent`) |
+| `params` | object | Effect-specific tuning: deformation, noise, twist (see references/COMPOSITION.md) |
+
+**Simple** — kaleidoscope symmetry + vignette:
+```json
+{
+  "emotion": "awe",
+  "effect": "chroma_spiral",
+  "transforms": [{"type": "kaleidoscope", "segments": 8}],
+  "postfx": [{"type": "vignette", "strength": 0.5}]
+}
+```
+
+**Full Director** — effect + variant + transforms + PostFX + composition:
+```json
+{
+  "emotion": "euphoria",
+  "effect": "plasma",
+  "variant": "warped",
+  "transforms": [{"type": "kaleidoscope", "segments": 6}],
+  "postfx": [{"type": "vignette", "strength": 0.5}, {"type": "color_shift", "hue_shift": 0.1}],
+  "composition": "radial_masked",
+  "seed": 100
+}
+```
+
+Omit any field to let grammar auto-select it. Full option lists in **references/COMPOSITION.md**.
 
 ## ASCII Gradients
 
