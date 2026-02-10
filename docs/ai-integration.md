@@ -59,6 +59,19 @@ echo '{"emotion":"panic","video":true}' | python3 viz.py generate
 | `overlay` | object | 叠加效果：`{"effect":"wave","blend":"SCREEN","mix":0.3}` |
 | `params` | object | 效果参数微调 |
 
+**关于合成系统（Composition System）：** 域变换（`transforms`）、后处理链（`postfx`）、空间遮罩（`masks`）和合成模式由文法系统自动选择，不在 `_apply_overrides()` 中暴露。无需手动指定——文法根据情绪参数自动做出最优组合。
+
+`params` 字段可用于微调效果的**变形参数**（deformation params），这些参数直接传递给效果：
+
+```json
+{"params": {"surface_noise": 0.5, "twist": 1.2}}
+{"params": {"self_warp": 0.3, "noise_injection": 0.4}}
+{"params": {"distortion": 0.6, "multi_center": 3}}
+{"params": {"vertex_noise": 0.4, "morph": 0.7}}
+```
+
+可用变形参数因效果而异，详见 [composition.md](composition.md#structural-variants)。
+
 ### 输出控制
 
 | 字段 | 类型 | 默认 | 说明 |
@@ -139,7 +152,7 @@ echo '{"emotion":"panic","video":true}' | python3 viz.py generate
 
 ---
 
-## 可用效果 (7 种)
+## 可用效果 (17 种)
 
 | 效果 | 描述 | 最佳场景 |
 |------|------|---------|
@@ -150,6 +163,16 @@ echo '{"emotion":"panic","video":true}' | python3 viz.py generate
 | `sdf_shapes` | 距离场几何形状 | 结构性、现代 |
 | `noise_field` | Perlin 噪声场 | 有机、自然 |
 | `cppn` | 神经网络图案 | 每个种子独特 |
+| `ten_print` | C64 迷宫图案 (10 PRINT) | 复古、怀旧 |
+| `game_of_life` | Conway 生命游戏 | 有机复杂性 |
+| `donut` | 旋转 3D 甜甜圈 | 未来感、技术 |
+| `mod_xor` | 位运算分形图案 | 数学、抽象 |
+| `wireframe_cube` | 3D 旋转线框立方体 | 几何、科技 |
+| `chroma_spiral` | 色差螺旋 | 迷幻、催眠 |
+| `wobbly` | 域扭曲流体 | 梦幻、柔和 |
+| `sand_game` | 落沙粒子模拟 | 冥想、平静 |
+| `slime_dish` | 黏菌智能体模拟 | 生物、有机 |
+| `dyna` | 动态吸引子干涉波 | 动感、活力 |
 
 VIZ 会根据情绪自动选择效果，也可用 `effect` 字段强制指定。
 
@@ -346,7 +369,7 @@ skills/viz-ascii-art/
 ├── README.md             # 安装说明
 └── references/           # 详细参考（按需加载）
     ├── EMOTIONS.md       # 25 种情绪的 VAD 值
-    ├── EFFECTS.md        # 7 种效果及参数
+    ├── EFFECTS.md        # 17 种效果及参数
     └── EXAMPLES.md       # 完整使用示例
 ```
 

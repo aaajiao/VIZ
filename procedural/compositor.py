@@ -25,6 +25,7 @@ from typing import Tuple, Dict, Any
 import math
 
 from procedural.types import Effect, Context, Buffer, Cell
+from procedural.core.mathx import smoothstep
 
 
 class BlendMode(Enum):
@@ -177,3 +178,94 @@ class CompositeEffect:
         """
         self.effect_a.post(ctx, buffer, state["a"])
         self.effect_b.post(ctx, buffer, state["b"])
+
+
+class MaskedCompositeEffect:
+    """
+    遮罩复合效果 - Masked Composite Effect
+
+    使用空间遮罩控制两个效果的区域混合。
+    遮罩值决定每个像素使用哪个效果。
+
+    Uses a spatial mask to control per-pixel blending between two effects.
+    The mask's char_idx (0-9) determines how much of each effect is visible.
+    """
+
+    def __init__(self, effect_a, effect_b, mask, threshold=0.5, softness=0.2):
+        """
+        初始化遮罩复合效果。
+
+        Args:
+            effect_a: 第一个效果 (遮罩值低的区域)
+            effect_b: 第二个效果 (遮罩值高的区域)
+            mask: 遮罩效果实例 (实现 Effect Protocol)
+            threshold: 遮罩阈值 (默认 0.5)
+            softness: 过渡柔和度 (默认 0.2)
+        """
+        self.effect_a = effect_a
+        self.effect_b = effect_b
+        self.mask = mask
+        self.threshold = threshold
+        self.softness = max(0.001, softness)
+
+    def pre(self, ctx: Context, buffer: Buffer) -> Dict[str, Any]:
+        """
+        预处理阶段：分别调用三个子效果的 pre 方法。
+        """
+        state_a = self.effect_a.pre(ctx, buffer)
+        state_b = self.effect_b.pre(ctx, buffer)
+        state_mask = self.mask.pre(ctx, buffer)
+        return {"a": state_a, "b": state_b, "mask": state_mask}
+
+    def main(self, x: int, y: int, ctx: Context, state: Dict[str, Any]) -> Cell:
+        """
+        主渲染阶段：根据遮罩值在两个效果之间插值。
+        """
+        cell_a = self.effect_a.main(x, y, ctx, state["a"])
+        cell_b = self.effect_b.main(x, y, ctx, state["b"])
+        mask_cell = self.mask.main(x, y, ctx, state["mask"])
+
+        # Mask value 0-9 normalized to 0-1
+        mask_val = mask_cell.char_idx / 9.0
+
+        # Smoothstep transition around threshold
+        t = smoothstep(
+            self.threshold - self.softness,
+            self.threshold + self.softness,
+            mask_val,
+        )
+
+        # Interpolate foreground color
+        final_fg = (
+            _lerp(cell_a.fg[0], cell_b.fg[0], t),
+            _lerp(cell_a.fg[1], cell_b.fg[1], t),
+            _lerp(cell_a.fg[2], cell_b.fg[2], t),
+        )
+
+        # Interpolate char index
+        final_char_idx = _lerp(cell_a.char_idx, cell_b.char_idx, t)
+
+        # Background handling
+        bg_a = cell_a.bg
+        bg_b = cell_b.bg
+        final_bg = None
+        if bg_a and bg_b:
+            final_bg = (
+                _lerp(bg_a[0], bg_b[0], t),
+                _lerp(bg_a[1], bg_b[1], t),
+                _lerp(bg_a[2], bg_b[2], t),
+            )
+        elif bg_a:
+            final_bg = bg_a
+        elif bg_b:
+            final_bg = bg_b
+
+        return Cell(char_idx=final_char_idx, fg=final_fg, bg=final_bg)
+
+    def post(self, ctx: Context, buffer: Buffer, state: Dict[str, Any]) -> None:
+        """
+        后处理阶段：按顺序调用三个子效果的 post 方法。
+        """
+        self.effect_a.post(ctx, buffer, state["a"])
+        self.effect_b.post(ctx, buffer, state["b"])
+        self.mask.post(ctx, buffer, state["mask"])

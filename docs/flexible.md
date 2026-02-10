@@ -220,6 +220,15 @@ class SceneSpec:
     warmth: float               # 色温
     saturation: float           # 饱和度
     brightness: float           # 亮度
+
+    # 域变换 (Domain transforms)
+    domain_transforms: list[dict]   # 变换链 [{"type": "kaleidoscope", "segments": 6}, ...]
+    postfx_chain: list[dict]        # 后处理链 [{"type": "vignette", "strength": 0.5}, ...]
+
+    # 合成模式 (Composition mode)
+    composition_mode: str           # "blend" / "masked_split" / "radial_masked" / "noise_masked"
+    mask_type: str | None           # 遮罩类型 (horizontal_split/vertical_split/diagonal/radial/noise/sdf)
+    mask_params: dict               # 遮罩参数
 ```
 
 ### 产生规则
@@ -240,12 +249,23 @@ class SceneSpec:
 | `_choose_particle_chars()` | **25+ 组** (经典/几何/box 线段/方块/盲文) | **energy + warmth** |
 | `_choose_text_elements()` | 8 组情绪词池（中英 + **semigraphic 符号**） | valence × arousal |
 | `_choose_kaomoji_mood()` | 6 象限情绪 | valence × arousal |
+| `_choose_domain_transforms()` | mirror_x/y/quad, kaleidoscope, tile, rotate, zoom, spiral_warp | structure + energy |
+| `_choose_postfx_chain()` | vignette, scanlines, threshold, edge_detect, invert, color_shift, pixelate | energy + structure + intensity |
+| `_choose_composition_mode()` | blend, masked_split, radial_masked, noise_masked | energy + structure |
 
 详见 [box_chars.md](box_chars.md) 获取完整的字符集和梯度参考。
 
+### 变体系统集成（Variant Integration）
+
+文法通过 `_sample_variant_params(effect_name)` 从 `VARIANT_REGISTRY`（`procedural/effects/variants.py`）采样结构变体参数。7 个效果共 32 个命名变体，每个变体定义参数范围预设（如 `surface_noise: (0.3, 0.8)`），文法按权重选择变体后在范围内均匀采样。
+
+辅助方法 `_jitter(base, amount, lo, hi)` 在基础值附近添加均匀随机偏移，用于所有连续参数的微调。
+
+详见 [composition.md](composition.md#structural-variants) 获取完整变体目录。
+
 ### 组合空间
 
-理论离散组合：7 bg × 5 overlay × 4 blend × 5 layout × 5 count × 3 text × 20 gradient × 8 deco_style × 60 deco_chars × 4 post ≈ **3,000,000+** 种。加上连续参数（warmth, saturation, ...）→ 无限变体。
+理论离散组合：17 bg × 32 variants × 7 overlay × 4 blend × 4 composition × 6 mask × 128 postfx × 9 transform × 5 layout × 20 gradient × 8 deco × 60 chars ≈ **数亿** 种。加上连续参数（warmth, saturation, deformation, ...）→ 无限变体。详见 [composition.md](composition.md#combinatorial-impact)。
 
 ---
 
@@ -291,8 +311,9 @@ class SceneSpec:
         ▼                 ▼
   _build_effect()    _build_sprites()
   (Effect 或          (Kaomoji + Text +
-   CompositeEffect)    Decoration + Particle +
-        │                Content Overlay)
+   Composite/Masked    Decoration + Particle +
+   → TransformedEffect  Content Overlay)
+   包装)
         ▼                 │
   ContinuousColorSpace.generate_palette()
         │

@@ -1,5 +1,5 @@
 """
-Moiré 干涉图案效果 - Moiré Pattern Effect
+Moire 干涉图案效果 - Moire Pattern Effect
 
 实现两个振荡场的乘法干涉，产生经典的莫尔纹图案。
 
@@ -38,6 +38,7 @@ from typing import Any
 
 from procedural.types import Context, Cell, Buffer
 from procedural.core.mathx import clamp
+from procedural.core.noise import ValueNoise
 from procedural.palette import value_to_color, value_to_color_continuous
 from .base import BaseEffect
 
@@ -46,7 +47,7 @@ __all__ = ["MoireEffect"]
 
 class MoireEffect(BaseEffect):
     """
-    Moiré 干涉图案效果
+    Moire 干涉图案效果
 
     通过两个不同频率的径向波场相乘产生莫尔纹。
 
@@ -58,6 +59,8 @@ class MoireEffect(BaseEffect):
         offset_a: 第一个波场中心偏移 (默认 0.0, 范围 -0.5-0.5)
         offset_b: 第二个波场中心偏移 (默认 0.0, 范围 -0.5-0.5)
         color_scheme: 颜色方案 (默认 'rainbow')
+        distortion: 极坐标噪声扭曲 (默认 0.0, 范围 0.0-1.0)
+        multi_center: 中心点数量 (默认 1, 范围 1-4)
 
     参数范围说明:
         - freq_a/freq_b: 1.0 (稀疏) 到 20.0 (密集辐射线)
@@ -115,6 +118,24 @@ class MoireEffect(BaseEffect):
         warmth = ctx.params.get("warmth", None)
         saturation = ctx.params.get("saturation", None)
 
+        # 变形参数 - Deformation params
+        distortion = ctx.params.get("distortion", 0.0)
+        multi_center = max(1, int(ctx.params.get("multi_center", 1)))
+
+        # 噪声源 (用于极坐标扭曲)
+        noise_fn = None
+        if distortion > 0:
+            noise_fn = ValueNoise(seed=ctx.seed + 77)
+
+        # 多中心点: 围绕画布中心均匀分布
+        extra_centers = []
+        if multi_center > 1:
+            for ci in range(multi_center):
+                angle = ci * (2.0 * math.pi / multi_center)
+                cx = 0.5 + 0.2 * math.cos(angle)
+                cy = 0.5 + 0.2 * math.sin(angle)
+                extra_centers.append((cx, cy))
+
         return {
             "freq_a": freq_a,
             "freq_b": freq_b,
@@ -125,6 +146,10 @@ class MoireEffect(BaseEffect):
             "color_scheme": color_scheme,
             "warmth": warmth,
             "saturation": saturation,
+            "distortion": distortion,
+            "noise_fn": noise_fn,
+            "multi_center": multi_center,
+            "extra_centers": extra_centers,
         }
 
     def main(self, x: int, y: int, ctx: Context, state: dict[str, Any]) -> Cell:
@@ -155,6 +180,10 @@ class MoireEffect(BaseEffect):
         center_a = state["center_a"]
         center_b = state["center_b"]
         color_scheme = state["color_scheme"]
+        distortion = state["distortion"]
+        noise_fn = state["noise_fn"]
+        multi_center = state["multi_center"]
+        extra_centers = state["extra_centers"]
 
         # 时间参数
         t = ctx.time
@@ -163,26 +192,59 @@ class MoireEffect(BaseEffect):
         u = x / ctx.width
         v = y / ctx.height
 
-        # === Moiré 核心算法 ===
+        # === Moire 核心算法 ===
 
-        # 波场 A: 计算相对于中心 A 的角度
-        dx_a = u - center_a[0]
-        dy_a = v - center_a[1]
-        angle_a = math.atan2(dy_a, dx_a)
-        # 使用角度和频率生成径向波 (加上时间旋转)
-        wave_a = math.cos(angle_a * freq_a + t * speed_a)
+        if multi_center > 1:
+            # 多中心模式: 叠加多个中心点的干涉
+            interference = 0.0
+            for ci in range(multi_center):
+                cx, cy = extra_centers[ci]
+                dx = u - cx
+                dy = v - cy
+                angle = math.atan2(dy, dx)
 
-        # 波场 B: 计算相对于中心 B 的角度
-        dx_b = u - center_b[0]
-        dy_b = v - center_b[1]
-        angle_b = math.atan2(dy_b, dx_b)
-        # 使用不同频率和速度生成第二个径向波
-        wave_b = math.cos(angle_b * freq_b + t * speed_b)
+                # 噪声扭曲极坐标
+                if noise_fn is not None and distortion > 0:
+                    angle += (noise_fn(u * 4.0 + ci * 10.0, v * 4.0) - 0.5) * distortion * 2.0
 
-        # 乘法干涉: 两个波相乘产生莫尔纹
-        # wave_a 和 wave_b 范围: [-1, 1]
-        # 乘积范围: [-1, 1]
-        interference = wave_a * wave_b
+                wave = math.cos(angle * freq_a + t * speed_a + ci * 1.7)
+                interference += wave
+            interference /= multi_center
+
+            # 第二层波场 (使用中心 b)
+            dx_b = u - center_b[0]
+            dy_b = v - center_b[1]
+            angle_b = math.atan2(dy_b, dx_b)
+            if noise_fn is not None and distortion > 0:
+                angle_b += (noise_fn(u * 4.0 + 50.0, v * 4.0 + 50.0) - 0.5) * distortion * 2.0
+            wave_b = math.cos(angle_b * freq_b + t * speed_b)
+
+            interference = interference * wave_b
+        else:
+            # 标准双中心模式
+
+            # 波场 A: 计算相对于中心 A 的角度
+            dx_a = u - center_a[0]
+            dy_a = v - center_a[1]
+            angle_a = math.atan2(dy_a, dx_a)
+
+            # 波场 B: 计算相对于中心 B 的角度
+            dx_b = u - center_b[0]
+            dy_b = v - center_b[1]
+            angle_b = math.atan2(dy_b, dx_b)
+
+            # 噪声扭曲极坐标
+            if noise_fn is not None and distortion > 0:
+                angle_a += (noise_fn(u * 4.0, v * 4.0) - 0.5) * distortion * 2.0
+                angle_b += (noise_fn(u * 4.0 + 50.0, v * 4.0 + 50.0) - 0.5) * distortion * 2.0
+
+            # 使用角度和频率生成径向波 (加上时间旋转)
+            wave_a = math.cos(angle_a * freq_a + t * speed_a)
+            # 使用不同频率和速度生成第二个径向波
+            wave_b = math.cos(angle_b * freq_b + t * speed_b)
+
+            # 乘法干涉: 两个波相乘产生莫尔纹
+            interference = wave_a * wave_b
 
         # 归一化到 0-1 范围
         value = (interference + 1.0) / 2.0
@@ -212,11 +274,11 @@ class MoireEffect(BaseEffect):
 
     def post(self, ctx: Context, buffer: Buffer, state: dict[str, Any]) -> None:
         """
-        后处理 - Moiré 不需要后处理
+        后处理 - Moire 不需要后处理
 
         Args:
             ctx: 渲染上下文
             buffer: 渲染后的缓冲区
             state: pre() 返回的状态字典
         """
-        pass  # Moiré 效果不需要后处理
+        pass  # Moire 效果不需要后处理

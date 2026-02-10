@@ -56,7 +56,9 @@ from PIL import Image
 
 from procedural.engine import Engine
 from procedural.effects import EFFECT_REGISTRY, get_effect
-from procedural.compositor import CompositeEffect, BlendMode
+from procedural.compositor import CompositeEffect, MaskedCompositeEffect, BlendMode
+from procedural.transforms import TransformedEffect, TRANSFORM_REGISTRY
+from procedural.masks import MASK_REGISTRY
 from procedural.layouts import (
     random_scatter,
     grid_with_jitter,
@@ -209,6 +211,12 @@ class FlexiblePipeline:
         render_params["warmth"] = visual_params.get("warmth", 0.5)
         render_params["saturation"] = visual_params.get("saturation", 0.9)
 
+        # Pass postfx chain and mask params to engine
+        if spec.postfx_chain:
+            render_params["_postfx_chain"] = spec.postfx_chain
+        if spec.mask_params:
+            render_params.update(spec.mask_params)
+
         img = engine.render_frame(
             effect=effect,
             sprites=sprites,
@@ -296,6 +304,12 @@ class FlexiblePipeline:
                 render_params["overlay_" + k] = v
         render_params["warmth"] = visual_params.get("warmth", 0.5)
         render_params["saturation"] = visual_params.get("saturation", 0.9)
+
+        # Pass postfx chain and mask params to engine
+        if spec.postfx_chain:
+            render_params["_postfx_chain"] = spec.postfx_chain
+        if spec.mask_params:
+            render_params.update(spec.mask_params)
 
         # 渲染每帧 (带参数漂移)
         total_frames = int(duration * fps)
@@ -420,7 +434,7 @@ class FlexiblePipeline:
         visual_params: dict[str, Any],
         seed: int,
     ) -> Any:
-        """根据 SceneSpec 构建效果 (可能是复合效果)"""
+        """根据 SceneSpec 构建效果 (可能是复合/变换/遮罩效果)"""
 
         # 构建主效果
         if spec.bg_effect == "cppn":
@@ -449,19 +463,63 @@ class FlexiblePipeline:
                 overlay_effect = None
 
             if overlay_effect is not None:
-                blend_map = {
-                    "ADD": BlendMode.ADD,
-                    "SCREEN": BlendMode.SCREEN,
-                    "OVERLAY": BlendMode.OVERLAY,
-                    "MULTIPLY": BlendMode.MULTIPLY,
-                }
-                blend_mode = blend_map.get(spec.overlay_blend, BlendMode.ADD)
+                # 选择合成方式: 传统混合 or 遮罩合成
+                if spec.composition_mode != "blend" and spec.mask_type:
+                    # 遮罩合成 - Masked composition
+                    mask_cls = MASK_REGISTRY.get(spec.mask_type)
+                    if mask_cls:
+                        mask_effect = mask_cls()
+                        bg_effect = MaskedCompositeEffect(
+                            effect_a=bg_effect,
+                            effect_b=overlay_effect,
+                            mask=mask_effect,
+                            threshold=spec.mask_params.get("mask_threshold", 0.5),
+                            softness=spec.mask_params.get("mask_softness", 0.2),
+                        )
+                    else:
+                        # Fallback to standard blend
+                        blend_map = {
+                            "ADD": BlendMode.ADD,
+                            "SCREEN": BlendMode.SCREEN,
+                            "OVERLAY": BlendMode.OVERLAY,
+                            "MULTIPLY": BlendMode.MULTIPLY,
+                        }
+                        blend_mode = blend_map.get(spec.overlay_blend, BlendMode.ADD)
+                        bg_effect = CompositeEffect(
+                            effect_a=bg_effect,
+                            effect_b=overlay_effect,
+                            mode=blend_mode,
+                            mix=spec.overlay_mix,
+                        )
+                else:
+                    # 传统混合 - Standard blend
+                    blend_map = {
+                        "ADD": BlendMode.ADD,
+                        "SCREEN": BlendMode.SCREEN,
+                        "OVERLAY": BlendMode.OVERLAY,
+                        "MULTIPLY": BlendMode.MULTIPLY,
+                    }
+                    blend_mode = blend_map.get(spec.overlay_blend, BlendMode.ADD)
+                    bg_effect = CompositeEffect(
+                        effect_a=bg_effect,
+                        effect_b=overlay_effect,
+                        mode=blend_mode,
+                        mix=spec.overlay_mix,
+                    )
 
-                bg_effect = CompositeEffect(
-                    effect_a=bg_effect,
-                    effect_b=overlay_effect,
-                    mode=blend_mode,
-                    mix=spec.overlay_mix,
+        # 域变换包装 - Wrap with domain transforms
+        if spec.domain_transforms:
+            transform_chain = []
+            for t in spec.domain_transforms:
+                t_type = t.get("type", "")
+                t_fn = TRANSFORM_REGISTRY.get(t_type)
+                if t_fn:
+                    kwargs = {k: v for k, v in t.items() if k != "type"}
+                    transform_chain.append((t_fn, kwargs))
+            if transform_chain:
+                bg_effect = TransformedEffect(
+                    inner_effect=bg_effect,
+                    transforms=transform_chain,
                 )
 
         return bg_effect

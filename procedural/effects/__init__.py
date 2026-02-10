@@ -119,3 +119,73 @@ try:
     EFFECT_REGISTRY["cppn"] = CPPNEffect
 except ImportError:
     pass
+
+try:
+    from .ten_print import TenPrintEffect
+
+    EFFECT_REGISTRY["ten_print"] = TenPrintEffect
+except ImportError:
+    pass
+
+try:
+    from .game_of_life import GameOfLifeEffect
+
+    EFFECT_REGISTRY["game_of_life"] = GameOfLifeEffect
+except ImportError:
+    pass
+
+try:
+    from .donut import DonutEffect
+
+    EFFECT_REGISTRY["donut"] = DonutEffect
+except ImportError:
+    pass
+
+try:
+    from .mod_xor import ModXorEffect
+
+    EFFECT_REGISTRY["mod_xor"] = ModXorEffect
+except ImportError:
+    pass
+
+try:
+    from .wireframe_cube import WireframeCubeEffect
+
+    EFFECT_REGISTRY["wireframe_cube"] = WireframeCubeEffect
+except ImportError:
+    pass
+
+try:
+    from .chroma_spiral import ChromaSpiralEffect
+
+    EFFECT_REGISTRY["chroma_spiral"] = ChromaSpiralEffect
+except ImportError:
+    pass
+
+try:
+    from .wobbly import WobblyEffect
+
+    EFFECT_REGISTRY["wobbly"] = WobblyEffect
+except ImportError:
+    pass
+
+try:
+    from .sand_game import SandGameEffect
+
+    EFFECT_REGISTRY["sand_game"] = SandGameEffect
+except ImportError:
+    pass
+
+try:
+    from .slime_dish import SlimeDishEffect
+
+    EFFECT_REGISTRY["slime_dish"] = SlimeDishEffect
+except ImportError:
+    pass
+
+try:
+    from .dyna import DynaEffect
+
+    EFFECT_REGISTRY["dyna"] = DynaEffect
+except ImportError:
+    pass

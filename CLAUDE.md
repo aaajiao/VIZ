@@ -36,7 +36,9 @@ No build step. No requirements.txt. Only dependency is `Pillow>=9.0.0`. CI runs 
 **Rendering pipeline** (the critical path):
 1. `viz.py generate` parses CLI args + stdin JSON -> calls `FlexiblePipeline`
 2. `FlexiblePipeline` (`procedural/flexible/pipeline.py`) orchestrates: emotion -> VAD vector -> visual grammar -> effect selection -> sprite layout -> decoration
-3. `Engine` (`procedural/engine.py`) renders: creates 160x160 Buffer of Cells -> effect fills buffer -> `buffer_to_image()` -> sprites overlay -> upscale to 1080x1080 via NEAREST -> sharpen + contrast -> save
+3. `Engine` (`procedural/engine.py`) renders: creates 160x160 Buffer of Cells -> effect fills buffer -> PostFX chain -> `buffer_to_image()` -> sprites overlay -> upscale to 1080x1080 via NEAREST -> sharpen + contrast -> save
+
+**Composition layer**: `procedural/transforms.py` (9 domain transforms + `TransformedEffect`), `procedural/postfx.py` (7 buffer-level post-FX), `procedural/masks.py` (6 spatial masks + `MaskedCompositeEffect`), `procedural/effects/variants.py` (32 structural variants). Grammar auto-selects all composition features. See `docs/composition.md`.
 
 **Key types** (in `procedural/types.py`): `Context` (immutable by convention), `Cell` (char_idx 0-9, fg RGB, bg RGB|None), `Buffer` (2D Cell grid), `Effect` (Protocol: pre/main/post).
 
@@ -77,6 +79,11 @@ No build step. No requirements.txt. Only dependency is `Pillow>=9.0.0`. CI runs 
 | Content integration | `procedural/flexible/pipeline.py` -> `FlexiblePipeline` |
 | Layout algorithms | `procedural/layouts.py` -> scatter, grid, spiral, force |
 | Sprite animation | `procedural/layers.py` -> breathing, floating, color_cycle |
+| New domain transform | `procedural/transforms.py` -> add function + TRANSFORM_REGISTRY |
+| New post-FX | `procedural/postfx.py` -> add function + POSTFX_REGISTRY |
+| New spatial mask | `procedural/masks.py` -> add class + MASK_REGISTRY |
+| New effect variant | `procedural/effects/variants.py` -> VARIANT_REGISTRY dict |
+| Composition mode | `procedural/flexible/grammar.py` -> `_choose_composition_mode()` |
 
 ## Adding a New Effect
 
@@ -101,4 +108,4 @@ MP4 uses FFmpeg subprocess (not a Python library). Gracefully degrades to GIF-on
 
 ## Further Reference
 
-Detailed docs in `docs/`: `ai-integration.md` (start here), `rendering.md`, `flexible.md`, `effects.md`, `kaomoji.md`, `box_chars.md`, `usage.md`.
+Detailed docs in `docs/`: `ai-integration.md` (start here), `rendering.md`, `flexible.md`, `effects.md`, `composition.md`, `kaomoji.md`, `box_chars.md`, `usage.md`.

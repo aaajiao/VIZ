@@ -152,7 +152,7 @@ python3 viz.py capabilities --format json  # 默认 JSON
 ```json
 {
   "emotions": {"joy": {"valence": 0.76, "arousal": 0.48, "dominance": 0.35}, "...": "..."},
-  "effects": ["cppn", "flame", "moire", "noise_field", "plasma", "sdf_shapes", "wave"],
+  "effects": ["cppn", "flame", "moire", "noise_field", "plasma", "sdf_shapes", "wave", "ten_print", "game_of_life", "donut", "mod_xor", "wireframe_cube", "chroma_spiral", "wobbly", "sand_game", "slime_dish", "dyna"],
   "sources": ["art", "market", "mood", "news"],
   "layouts": ["random_scatter", "grid_jitter", "spiral", "force_directed", "preset"],
   "decorations": ["corners", "edges", "scattered", "minimal", "none", "frame", "grid_lines", "circuit"],

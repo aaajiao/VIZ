@@ -61,6 +61,20 @@ from .mathx import (
 # noise.py - 值噪声
 from .noise import ValueNoise
 
+# projection.py - 3D 投影
+from .projection import (
+    Vec3,
+    vec3,
+    length3,
+    normalize3,
+    dot3,
+    cross3,
+    rotate_x,
+    rotate_y,
+    rotate_z,
+    project_perspective,
+)
+
 # sdf.py - 有符号距离场
 from .sdf import (
     sd_circle,
@@ -108,6 +122,17 @@ __all__ = [
     "HALF_PI",
     # noise
     "ValueNoise",
+    # projection
+    "Vec3",
+    "vec3",
+    "length3",
+    "normalize3",
+    "dot3",
+    "cross3",
+    "rotate_x",
+    "rotate_y",
+    "rotate_z",
+    "project_perspective",
     # sdf
     "sd_circle",
     "sd_box",
