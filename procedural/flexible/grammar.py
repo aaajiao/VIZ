@@ -170,7 +170,7 @@ class VisualGrammar:
                 spec.overlay_effect, energy * 0.7, structure
             )
             spec.overlay_blend = self._choose_blend_mode(energy)
-            spec.overlay_mix = self.rng.uniform(0.15, 0.5)
+            spec.overlay_mix = self.rng.uniform(0.10, 0.65)
 
         # === 域变换 ===
         spec.domain_transforms = self._choose_domain_transforms(energy, structure)
@@ -308,7 +308,7 @@ class VisualGrammar:
     def _choose_kaomoji_count(self, energy: float, structure: float) -> int:
         """选择颜文字数量"""
         base = 4 + int(energy * 4)
-        variation = self.rng.randint(-2, 2)
+        variation = self.rng.randint(-3, 3)
         return max(2, min(12, base + variation))
 
     def _choose_animations(self, energy: float, arousal: float) -> list[dict[str, Any]]:
@@ -1203,7 +1203,7 @@ class VisualGrammar:
         lo: float | None = None, hi: float | None = None,
     ) -> float:
         """添加高斯抖动 - Add Gaussian jitter to a base value"""
-        offset = self.rng.gauss(0, amount * 0.4)
+        offset = self.rng.gauss(0, amount * 0.6)
         result = base + offset
         if lo is not None:
             result = max(lo, result)
@@ -1250,8 +1250,8 @@ class VisualGrammar:
     def _weighted_choice(self, weights: dict[str, float]) -> str:
         """加权随机选择 (带多样性抖动) - Weighted choice with diversity jitter"""
         items = list(weights.items())
-        # Apply diversity jitter: multiply each weight by uniform(0.7, 1.3)
-        jittered = [(name, w * self.rng.uniform(0.7, 1.3)) for name, w in items]
+        # Apply diversity jitter: multiply each weight by uniform(0.5, 1.5)
+        jittered = [(name, w * self.rng.uniform(0.5, 1.5)) for name, w in items]
         total = sum(w for _, w in jittered)
         if total <= 0:
             return items[0][0]

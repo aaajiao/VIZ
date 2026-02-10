@@ -238,8 +238,8 @@ class Engine:
             base_factor = 0.35 + t * 0.65
             # 随机抖动: 同一 seed 结果一致，不同 seed 亮度有变化
             _jitter_rng = random.Random(seed ^ 0xB817)
-            dim_factor = base_factor + _jitter_rng.uniform(-0.15, 0.15)
-            dim_factor = max(0.25, min(1.0, dim_factor))
+            dim_factor = base_factor + _jitter_rng.uniform(-0.25, 0.25)
+            dim_factor = max(0.20, min(1.0, dim_factor))
             for row in buffer:
                 for cell in row:
                     r, g, b = cell.fg
