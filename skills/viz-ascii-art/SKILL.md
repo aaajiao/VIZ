@@ -123,10 +123,10 @@ Effects support deformation params via `params` field (e.g. `{"params": {"surfac
 
 | Source | Particles | Atmosphere |
 |--------|-----------|------------|
-| `market` | `$\u00a5\u20ac\u20bf\u2191\u2193\u25b2\u25bc` | HODL, PUMP / SELL, EXIT |
-| `art` | `\u2726\u25c6\u25cf\u25bd\u25b3\u25cb\u25c7` | CREATE, EXHIBIT |
-| `news` | `\u25ba\u25c6\u25a0\u25cf\u25b6` | BREAKING, ALERT |
-| `mood` | `\u00b7\u02da\u2727\u2218\u25cb\u25e6` | BREATHE, PEACE |
+| `market` | `0123456789$#%↑↓±` | BULL, RISE / BEAR, SELL / HOLD, WAIT |
+| `art` | `◆◇○●□■△▽✧✦` | CREATE, VISION / VOID, FADE / FORM, SHAPE |
+| `news` | `ABCDEFG!?#@&` | BREAKING, UPDATE / ALERT, WARN / NEWS, REPORT |
+| `mood` | `·˚✧♪♫∞~○◦` | FEEL, FLOW / EMPTY, LOST / THINK, DRIFT |
 
 ## Output
 
