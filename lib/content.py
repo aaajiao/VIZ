@@ -87,6 +87,12 @@ def make_content(data=None):
         "fps": fps,
         "variants": variants,
         "title": data.get("title", None),
+        # Director mode fields (Path A)
+        "transforms": data.get("transforms", None),
+        "postfx": data.get("postfx", None),
+        "composition": data.get("composition", None),
+        "mask": data.get("mask", None),
+        "variant": data.get("variant", None),
     }
 
 

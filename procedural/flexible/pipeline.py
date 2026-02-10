@@ -390,7 +390,9 @@ class FlexiblePipeline:
         """
         用户覆盖应用 - Apply user overrides to SceneSpec
 
-        Supported keys: effect, layout, decoration, gradient, overlay.
+        Supported keys: effect, layout, decoration, gradient, overlay,
+        domain_transforms, postfx_chain, composition_mode, mask_type,
+        mask_params, variant.
         """
         if overrides.get("effect"):
             spec.bg_effect = overrides["effect"]
@@ -412,6 +414,54 @@ class FlexiblePipeline:
                     spec.overlay_mix = mix
         if overrides.get("params"):
             spec.bg_params.update(overrides["params"])
+
+        # Domain transforms (replace grammar choice)
+        if overrides.get("domain_transforms"):
+            spec.domain_transforms = overrides["domain_transforms"]
+
+        # Post-FX chain (replace grammar choice)
+        if overrides.get("postfx_chain"):
+            spec.postfx_chain = overrides["postfx_chain"]
+
+        # Composition mode
+        if overrides.get("composition_mode"):
+            spec.composition_mode = overrides["composition_mode"]
+
+        # Mask type and params
+        if overrides.get("mask_type"):
+            spec.mask_type = overrides["mask_type"]
+        if overrides.get("mask_params"):
+            spec.mask_params.update(overrides["mask_params"])
+
+        # Variant override
+        if overrides.get("variant"):
+            from procedural.effects.variants import VARIANT_REGISTRY
+
+            variant_name = overrides["variant"]
+            variants = VARIANT_REGISTRY.get(spec.bg_effect, [])
+            for v in variants:
+                if v["name"] == variant_name:
+                    rng = random.Random(self.seed)
+                    for key, val in v["params"].items():
+                        if isinstance(val, tuple) and len(val) == 2:
+                            lo, hi = val
+                            if isinstance(lo, int) and isinstance(hi, int):
+                                spec.bg_params[key] = rng.randint(lo, hi)
+                            else:
+                                spec.bg_params[key] = rng.uniform(float(lo), float(hi))
+                        else:
+                            spec.bg_params[key] = val
+                    break
+
+        # Auto-create overlay when composition mode needs one
+        if spec.composition_mode != "blend" and spec.overlay_effect is None:
+            from procedural.effects import EFFECT_REGISTRY
+
+            overlay_candidates = [e for e in EFFECT_REGISTRY if e != spec.bg_effect]
+            if overlay_candidates:
+                rng2 = random.Random(self.seed + 999)
+                spec.overlay_effect = rng2.choice(overlay_candidates)
+                spec.overlay_mix = 0.3
 
     def _resolve_emotion(
         self,

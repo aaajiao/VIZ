@@ -53,6 +53,26 @@ _VALID_DECORATIONS = {
 _VALID_BLEND_MODES = {"ADD", "SCREEN", "OVERLAY", "MULTIPLY"}
 
 
+def _parse_compound_arg(arg_str):
+    """解析复合参数 - Parse 'name:key=val,key=val' into dict"""
+    if ":" not in arg_str:
+        return {"type": arg_str}
+    name, rest = arg_str.split(":", 1)
+    result = {"type": name}
+    for pair in rest.split(","):
+        if "=" in pair:
+            k, v = pair.split("=", 1)
+            try:
+                v = int(v)
+            except ValueError:
+                try:
+                    v = float(v)
+                except ValueError:
+                    pass
+            result[k.strip()] = v
+    return result
+
+
 def _validate_overrides(overrides):
     """
     覆盖参数白名单校验 - Validate override values against known whitelists
@@ -113,6 +133,45 @@ def _validate_overrides(overrides):
                         errors.append(f"overlay.mix = {mix} out of range [0, 1]")
                 except (TypeError, ValueError):
                     errors.append(f"overlay.mix must be a number, got '{ov['mix']}'")
+
+    if "domain_transforms" in overrides:
+        from procedural.transforms import TRANSFORM_REGISTRY
+
+        for t in overrides["domain_transforms"]:
+            t_type = t.get("type", "") if isinstance(t, dict) else str(t)
+            if t_type not in TRANSFORM_REGISTRY:
+                errors.append(
+                    f"Unknown transform '{t_type}', valid: {sorted(TRANSFORM_REGISTRY.keys())}"
+                )
+
+    if "postfx_chain" in overrides:
+        from procedural.postfx import POSTFX_REGISTRY
+
+        for p in overrides["postfx_chain"]:
+            p_type = p.get("type", "") if isinstance(p, dict) else str(p)
+            if p_type not in POSTFX_REGISTRY:
+                errors.append(
+                    f"Unknown postfx '{p_type}', valid: {sorted(POSTFX_REGISTRY.keys())}"
+                )
+
+    if "composition_mode" in overrides:
+        valid_modes = {"blend", "masked_split", "radial_masked", "noise_masked"}
+        if overrides["composition_mode"] not in valid_modes:
+            errors.append(
+                f"Unknown composition mode '{overrides['composition_mode']}', valid: {sorted(valid_modes)}"
+            )
+
+    if "mask_type" in overrides:
+        from procedural.masks import MASK_REGISTRY
+
+        if overrides["mask_type"] not in MASK_REGISTRY:
+            errors.append(
+                f"Unknown mask '{overrides['mask_type']}', valid: {sorted(MASK_REGISTRY.keys())}"
+            )
+
+    if "variant" in overrides:
+        if not isinstance(overrides["variant"], str):
+            errors.append(f"variant must be a string, got {type(overrides['variant']).__name__}")
 
     return errors
 
@@ -192,6 +251,36 @@ def cmd_generate(args):
     if args.mp4:
         content_data["mp4"] = True
         content_data["video"] = True  # MP4 implies video mode
+    if args.transforms:
+        content_data["transforms"] = [_parse_compound_arg(t) for t in args.transforms]
+    if args.postfx:
+        content_data["postfx"] = [_parse_compound_arg(p) for p in args.postfx]
+    if args.overlay_effect:
+        overlay = content_data.get("overlay", {})
+        if not isinstance(overlay, dict):
+            overlay = {}
+        overlay["effect"] = args.overlay_effect
+        if args.blend_mode:
+            overlay["blend"] = args.blend_mode
+        if args.overlay_mix is not None:
+            overlay["mix"] = args.overlay_mix
+        content_data["overlay"] = overlay
+    elif args.blend_mode or args.overlay_mix is not None:
+        overlay = content_data.get("overlay", {})
+        if not isinstance(overlay, dict):
+            overlay = {}
+        if args.blend_mode:
+            overlay["blend"] = args.blend_mode
+        if args.overlay_mix is not None:
+            overlay["mix"] = args.overlay_mix
+        if overlay:
+            content_data["overlay"] = overlay
+    if args.composition:
+        content_data["composition"] = args.composition
+    if args.mask:
+        content_data["mask"] = _parse_compound_arg(args.mask)
+    if args.variant:
+        content_data["variant"] = args.variant
 
     content = make_content(content_data)
 
@@ -283,6 +372,23 @@ def cmd_generate(args):
         overrides["overlay"] = content["overlay"]
     if content.get("params"):
         overrides["params"] = content["params"]
+    if content.get("transforms"):
+        overrides["domain_transforms"] = content["transforms"]
+    if content.get("postfx"):
+        overrides["postfx_chain"] = content["postfx"]
+    if content.get("composition"):
+        overrides["composition_mode"] = content["composition"]
+    if content.get("mask"):
+        mask_data = content["mask"]
+        if isinstance(mask_data, dict):
+            overrides["mask_type"] = mask_data.get("type", "radial")
+            mask_params = {k: v for k, v in mask_data.items() if k != "type"}
+            if mask_params:
+                overrides["mask_params"] = mask_params
+        else:
+            overrides["mask_type"] = str(mask_data)
+    if content.get("variant"):
+        overrides["variant"] = content["variant"]
 
     # Validate overrides against known values
     errors = _validate_overrides(overrides)
@@ -487,6 +593,10 @@ def cmd_capabilities(args):
     from procedural.effects import EFFECT_REGISTRY
     from procedural.flexible.emotion import VAD_ANCHORS
     from lib.vocabulary import VOCABULARIES
+    from procedural.transforms import TRANSFORM_REGISTRY
+    from procedural.postfx import POSTFX_REGISTRY
+    from procedural.masks import MASK_REGISTRY
+    from procedural.effects.variants import VARIANT_REGISTRY
 
     capabilities = {
         "version": "2.0.0",
@@ -546,6 +656,14 @@ def cmd_capabilities(args):
             "organic",
             "noise",
         ],
+        "transforms": sorted(TRANSFORM_REGISTRY.keys()),
+        "postfx": sorted(POSTFX_REGISTRY.keys()),
+        "masks": sorted(MASK_REGISTRY.keys()),
+        "composition_modes": ["blend", "masked_split", "radial_masked", "noise_masked"],
+        "variants": {
+            effect: [v["name"] for v in variants]
+            for effect, variants in sorted(VARIANT_REGISTRY.items())
+        },
         "charsets_convert": [
             "classic",
             "simple",
@@ -576,6 +694,13 @@ def cmd_capabilities(args):
             "fps": "int - frames per second (default 15)",
             "variants": "int - number of variants to generate",
             "title": "string - title overlay text",
+            "transforms": "list[str] - domain transform chain, e.g. ['kaleidoscope:segments=6']",
+            "postfx": "list[str] - post-FX chain, e.g. ['vignette:strength=0.5']",
+            "blend_mode": "string (ADD|SCREEN|OVERLAY|MULTIPLY) - blend mode for overlay",
+            "overlay_mix": "float 0.0-1.0 - overlay mix ratio",
+            "composition": "string (blend|masked_split|radial_masked|noise_masked)",
+            "mask": "string - mask type+params, e.g. 'radial:center_x=0.5,radius=0.3'",
+            "variant": "string - force effect variant name",
         },
         "output_schema": {
             "status": "string (ok|error)",
@@ -639,6 +764,14 @@ def build_parser():
     gen.add_argument("--layout", help="布局算法")
     gen.add_argument("--decoration", help="装饰风格")
     gen.add_argument("--gradient", help="ASCII 梯度")
+    gen.add_argument("--transforms", nargs="*", help="域变换链 (如 kaleidoscope:segments=6 tile:cols=3,rows=3)")
+    gen.add_argument("--postfx", nargs="*", help="后处理链 (如 vignette:strength=0.5 scanlines:spacing=4)")
+    gen.add_argument("--blend-mode", choices=["ADD", "SCREEN", "OVERLAY", "MULTIPLY"], help="混合模式")
+    gen.add_argument("--overlay", help="叠加效果名", dest="overlay_effect")
+    gen.add_argument("--overlay-mix", type=float, help="叠加混合比 0.0-1.0")
+    gen.add_argument("--composition", choices=["blend", "masked_split", "radial_masked", "noise_masked"], help="合成模式")
+    gen.add_argument("--mask", help="遮罩类型+参数 (如 radial:center_x=0.5,radius=0.3)")
+    gen.add_argument("--variant", help="强制效果变体名")
     gen.add_argument("--output-dir", help="输出目录")
     gen.add_argument("--mp4", action="store_true", help="同时输出 MP4 (需要 FFmpeg)")
 

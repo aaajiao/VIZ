@@ -163,7 +163,7 @@ class VisualGrammar:
         spec.bg_params = self._generate_effect_params(spec.bg_effect, energy, structure)
 
         # === 叠加效果 (概率性) ===
-        overlay_chance = 0.2 + energy * 0.4  # 高能量更可能叠加
+        overlay_chance = 0.45 + energy * 0.35  # 高能量更可能叠加
         if self.rng.random() < overlay_chance:
             spec.overlay_effect = self._choose_overlay_effect(spec.bg_effect, energy)
             spec.overlay_params = self._generate_effect_params(
@@ -239,24 +239,23 @@ class VisualGrammar:
         低能量偏向 noise_field/wave。
         """
         weights = {
-            "plasma": 0.5 + energy * 0.3,
-            "wave": 0.5 + (1 - energy) * 0.3,
-            "flame": 0.2 + energy * 0.6,
-            "moire": 0.3 + structure * 0.4,
-            "noise_field": 0.4 + (1 - energy) * 0.3,
-            "sdf_shapes": 0.2 + structure * 0.4,
-            "cppn": 0.3,  # CPPN 始终有机会
-            # 新增效果
-            "ten_print": 0.3 + structure * 0.5,
-            "game_of_life": 0.25 + energy * 0.3,
-            "donut": 0.15 + structure * 0.3,
-            "mod_xor": 0.2 + structure * 0.5,
-            "wireframe_cube": 0.1 + structure * 0.3,
-            "chroma_spiral": 0.2 + energy * 0.3,
-            "wobbly": 0.25 + (1 - structure) * 0.4,
-            "sand_game": 0.15 + (1 - energy) * 0.2,
-            "slime_dish": 0.1 + (1 - energy) * 0.3,
-            "dyna": 0.15 + energy * 0.4,
+            "plasma": 0.28 + energy * 0.12,
+            "wave": 0.28 + (1 - energy) * 0.12,
+            "flame": 0.25 + energy * 0.15,
+            "moire": 0.27 + structure * 0.13,
+            "noise_field": 0.28 + (1 - energy) * 0.12,
+            "sdf_shapes": 0.25 + structure * 0.13,
+            "cppn": 0.27,
+            "ten_print": 0.27 + structure * 0.13,
+            "game_of_life": 0.26 + energy * 0.12,
+            "donut": 0.25 + structure * 0.10,
+            "mod_xor": 0.26 + structure * 0.13,
+            "wireframe_cube": 0.25 + structure * 0.10,
+            "chroma_spiral": 0.26 + energy * 0.12,
+            "wobbly": 0.27 + (1 - structure) * 0.12,
+            "sand_game": 0.25 + (1 - energy) * 0.10,
+            "slime_dish": 0.25 + (1 - energy) * 0.10,
+            "dyna": 0.25 + energy * 0.12,
         }
         return self._weighted_choice(weights)
 
@@ -1022,8 +1021,8 @@ class VisualGrammar:
         """选择域变换 - Choose domain transforms"""
         transforms: list[dict[str, Any]] = []
 
-        # Mirror symmetry: 15-40% chance (higher with structure)
-        mirror_chance = 0.15 + structure * 0.25
+        # Mirror symmetry: 30-55% chance (higher with structure)
+        mirror_chance = 0.30 + structure * 0.25
         if self.rng.random() < mirror_chance:
             mirror_type = self._weighted_choice({
                 "mirror_x": 0.3,
@@ -1039,33 +1038,39 @@ class VisualGrammar:
             else:
                 transforms.append({"type": mirror_type})
 
-        # Tiling: 10-25%
-        if self.rng.random() < 0.10 + structure * 0.15:
+        # Tiling: 20-40%
+        if self.rng.random() < 0.20 + structure * 0.20:
             transforms.append({
                 "type": "tile",
                 "cols": self.rng.choice([2, 3, 4]),
                 "rows": self.rng.choice([2, 3, 4]),
             })
 
-        # Spiral warp: 8-20%
-        if self.rng.random() < 0.08 + energy * 0.12:
+        # Spiral warp: 15-35%
+        if self.rng.random() < 0.15 + energy * 0.20:
             transforms.append({
                 "type": "spiral_warp",
                 "twist": self.rng.uniform(0.3, 1.5),
             })
 
-        # Rotation: 15%
-        if self.rng.random() < 0.15:
+        # Rotation: 25%
+        if self.rng.random() < 0.25:
             transforms.append({
                 "type": "rotate",
                 "angle": self.rng.uniform(-0.5, 0.5),
             })
 
-        # Zoom: 10-20%
-        if self.rng.random() < 0.10 + energy * 0.10:
+        # Zoom: 18-30%
+        if self.rng.random() < 0.18 + energy * 0.12:
             transforms.append({
                 "type": "zoom",
                 "factor": self.rng.uniform(1.2, 3.0),
+            })
+
+        # Polar remap: 8-15%
+        if self.rng.random() < 0.08 + energy * 0.07:
+            transforms.append({
+                "type": "polar_remap",
             })
 
         return transforms
@@ -1076,49 +1081,69 @@ class VisualGrammar:
         """选择后处理链 - Choose post-FX chain"""
         chain: list[dict[str, Any]] = []
 
-        # Vignette: 20-35%
-        if self.rng.random() < 0.20 + intensity * 0.15:
+        # Vignette: 35-55%
+        if self.rng.random() < 0.35 + intensity * 0.20:
             chain.append({
                 "type": "vignette",
                 "strength": self.rng.uniform(0.3, 0.7),
             })
 
-        # Scanlines: 12-20%
-        if self.rng.random() < 0.12 + energy * 0.08:
+        # Scanlines: 22-35%
+        if self.rng.random() < 0.22 + energy * 0.13:
             chain.append({
                 "type": "scanlines",
                 "spacing": self.rng.choice([3, 4, 5, 6]),
                 "darkness": self.rng.uniform(0.2, 0.4),
             })
 
-        # Threshold: 8-20% (structure-dependent)
-        if self.rng.random() < 0.08 + structure * 0.12:
+        # Threshold: 14-30% (structure-dependent)
+        if self.rng.random() < 0.14 + structure * 0.16:
             chain.append({
                 "type": "threshold",
                 "threshold": self.rng.uniform(0.3, 0.7),
             })
 
-        # Edge detect: 6-14%
-        if self.rng.random() < 0.06 + structure * 0.08:
+        # Edge detect: 10-22%
+        if self.rng.random() < 0.10 + structure * 0.12:
             chain.append({"type": "edge_detect"})
 
-        # Invert: 5-10%
-        if self.rng.random() < 0.05 + energy * 0.05:
+        # Invert: 8-16%
+        if self.rng.random() < 0.08 + energy * 0.08:
             chain.append({"type": "invert"})
 
-        # Color shift: 10-18%
-        if self.rng.random() < 0.10 + energy * 0.08:
+        # Color shift: 18-30%
+        if self.rng.random() < 0.18 + energy * 0.12:
             chain.append({
                 "type": "color_shift",
                 "hue_shift": self.rng.uniform(0.05, 0.25),
             })
 
-        # Pixelate: 5-12%
-        if self.rng.random() < 0.05 + (1 - structure) * 0.07:
+        # Pixelate: 9-19%
+        if self.rng.random() < 0.09 + (1 - structure) * 0.10:
             chain.append({
                 "type": "pixelate",
                 "block_size": self.rng.choice([3, 4, 5, 6]),
             })
+
+        # Guarantee at least 1 postfx
+        if not chain:
+            fallback = self.rng.choice(["vignette", "color_shift", "scanlines"])
+            if fallback == "vignette":
+                chain.append({
+                    "type": "vignette",
+                    "strength": self.rng.uniform(0.3, 0.5),
+                })
+            elif fallback == "color_shift":
+                chain.append({
+                    "type": "color_shift",
+                    "hue_shift": self.rng.uniform(0.05, 0.15),
+                })
+            else:
+                chain.append({
+                    "type": "scanlines",
+                    "spacing": self.rng.choice([4, 5, 6]),
+                    "darkness": self.rng.uniform(0.15, 0.3),
+                })
 
         return chain
 
@@ -1127,10 +1152,10 @@ class VisualGrammar:
     ) -> dict[str, Any]:
         """选择合成模式 - Choose composition mode"""
         weights = {
-            "blend": 0.40,
-            "masked_split": 0.20 + structure * 0.15,
-            "radial_masked": 0.15 + (1 - structure) * 0.10,
-            "noise_masked": 0.15 + energy * 0.15,
+            "blend": 0.25,
+            "masked_split": 0.25 + structure * 0.10,
+            "radial_masked": 0.22 + (1 - structure) * 0.08,
+            "noise_masked": 0.22 + energy * 0.08,
         }
         mode = self._weighted_choice(weights)
 
@@ -1223,15 +1248,17 @@ class VisualGrammar:
         return params
 
     def _weighted_choice(self, weights: dict[str, float]) -> str:
-        """加权随机选择"""
+        """加权随机选择 (带多样性抖动) - Weighted choice with diversity jitter"""
         items = list(weights.items())
-        total = sum(w for _, w in items)
+        # Apply diversity jitter: multiply each weight by uniform(0.7, 1.3)
+        jittered = [(name, w * self.rng.uniform(0.7, 1.3)) for name, w in items]
+        total = sum(w for _, w in jittered)
         if total <= 0:
             return items[0][0]
 
         r = self.rng.random() * total
         cumulative = 0.0
-        for name, w in items:
+        for name, w in jittered:
             cumulative += w
             if r <= cumulative:
                 return name
