@@ -106,12 +106,20 @@ def buffer_to_image(
             px = x * char_size
             py = y * char_size
 
-            # 绘制背景色 (如果有)
+            # 绘制背景色
             if cell.bg is not None:
                 draw.rectangle(
                     [px, py, px + char_size, py + char_size],
                     fill=cell.bg,
                 )
+            else:
+                # bg=None 时用 fg 的暗色填充，避免纯黑
+                r, g, b = cell.fg
+                if r + g + b > 0:
+                    draw.rectangle(
+                        [px, py, px + char_size, py + char_size],
+                        fill=(r >> 3, g >> 3, b >> 3),
+                    )
 
             # 将 char_idx 映射到实际字符
             # char_idx 是梯度索引 (0-9)，需要通过 gradient 转换

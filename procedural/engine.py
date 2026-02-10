@@ -232,15 +232,47 @@ class Engine:
                     fx_kwargs["_time"] = ctx.time
                     fx_fn(buffer, **fx_kwargs)
 
-        # 5c. 低饱和度亮度衰减 (neutral/calm 等低唤醒情绪压暗效果纹理)
+        # 5c-pre. 去除 Cell 别名 (某些效果复用 Cell 对象，直接修改会导致多次缩放)
+        for _y in range(h):
+            for _x in range(w):
+                _c = buffer[_y][_x]
+                buffer[_y][_x] = Cell(_c.char_idx, _c.fg, _c.bg)
+
+        # 5c-fill. 为 bg=None 的单元格填充背景色 (在亮度缩放之前)
+        # 根据 warmth 计算基底背景色，确保所有情绪都有可见背景
+        warmth = params.get("warmth", 0.5)
+        _bw = int(60 * warmth)
+        _bc = int(60 * (1.0 - warmth))
+        base_bg = (_bw + 25, min(_bw, _bc) + 18, _bc + 25)
+
+        for row in buffer:
+            for cell in row:
+                if cell.bg is None:
+                    r, g, b = cell.fg
+                    # 用 fg 派生色和 base_bg 中较亮者
+                    derived = (r >> 2, g >> 2, b >> 2)
+                    if sum(derived) > sum(base_bg):
+                        cell.bg = derived
+                    else:
+                        cell.bg = base_bg
+
+        # 5c. 情感亮度缩放 (brightness 从 emotion -> pipeline -> engine)
+        brightness = params.get("brightness", 1.0)
         saturation = params.get("saturation", 1.0)
-        if saturation < 0.8:
-            t = min(saturation / 0.8, 1.0)
-            base_factor = 0.35 + t * 0.65
-            # 随机抖动: 同一 seed 结果一致，不同 seed 亮度有变化
-            _jitter_rng = random.Random(seed ^ 0xB817)
-            dim_factor = base_factor + _jitter_rng.uniform(-0.25, 0.25)
-            dim_factor = max(0.20, min(1.0, dim_factor))
+
+        # saturation 仅提供轻微调节 (最多降 15%)，不再大幅压暗
+        sat_adjust = 1.0
+        if saturation < 0.6:
+            sat_adjust = 0.85 + (saturation / 0.6) * 0.15
+
+        base_factor = brightness * sat_adjust
+
+        # 随机抖动: 同一 seed 一致，不同 seed 有变化
+        _jitter_rng = random.Random(seed ^ 0xB817)
+        dim_factor = base_factor + _jitter_rng.uniform(-0.12, 0.12)
+        dim_factor = max(0.45, min(1.0, dim_factor))
+
+        if dim_factor < 0.98:
             for row in buffer:
                 for cell in row:
                     r, g, b = cell.fg

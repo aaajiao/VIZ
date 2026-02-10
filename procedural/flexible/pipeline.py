@@ -210,6 +210,7 @@ class FlexiblePipeline:
                 render_params["overlay_" + k] = v
         render_params["warmth"] = visual_params.get("warmth", 0.5)
         render_params["saturation"] = visual_params.get("saturation", 0.9)
+        render_params["brightness"] = visual_params.get("brightness", 0.8)
 
         # Pass postfx chain and mask params to engine
         if spec.postfx_chain:
@@ -304,6 +305,7 @@ class FlexiblePipeline:
                 render_params["overlay_" + k] = v
         render_params["warmth"] = visual_params.get("warmth", 0.5)
         render_params["saturation"] = visual_params.get("saturation", 0.9)
+        render_params["brightness"] = visual_params.get("brightness", 0.8)
 
         # Pass postfx chain and mask params to engine
         if spec.postfx_chain:
