@@ -229,6 +229,10 @@ class SceneSpec:
     composition_mode: str           # "blend" / "masked_split" / "radial_masked" / "noise_masked"
     mask_type: str | None           # 遮罩类型 (horizontal_split/vertical_split/diagonal/radial/noise/sdf)
     mask_params: dict               # 遮罩参数
+
+    # 背景填充 (第二渲染通道)
+    bg_fill_spec: dict[str, Any]    # bg_fill 完整规格 (effect/transforms/postfx/mask/color)
+    color_scheme: str               # 颜色方案 (heat/rainbow/cool/matrix/plasma/ocean/fire)
 ```
 
 ### 产生规则
@@ -252,6 +256,8 @@ class SceneSpec:
 | `_choose_domain_transforms()` | mirror_x/y/quad, kaleidoscope, tile, rotate, zoom, spiral_warp, **polar_remap** | structure + energy (概率提高至 30-55%); rotate/zoom/spiral_warp 支持动画 kwargs |
 | `_choose_postfx_chain()` | vignette, scanlines, threshold, edge_detect, invert, color_shift, pixelate | energy + structure + intensity (概率提高, 保底 ≥1); 4 种支持动画参数 |
 | `_choose_composition_mode()` | blend, masked_split, radial_masked, noise_masked | energy + structure (blend 降至 25%); masks 注入 `mask_anim_speed` |
+| `_choose_color_scheme()` | heat, rainbow, cool, matrix, plasma, ocean, fire | warmth + energy |
+| `_choose_bg_fill_spec()` | 13 个候选 effect × variant × 0-2 transform × 0-1 postfx × 0-1 mask × color_mode | energy + structure + warmth |
 
 详见 [box_chars.md](box_chars.md) 获取完整的字符集和梯度参考。
 
@@ -269,7 +275,7 @@ class SceneSpec:
 
 ### 组合空间
 
-理论离散组合：17 bg × 32 variants × 7 overlay × 4 blend × 4 composition × 6 mask × 128 postfx × 9 transform × 5 layout × 20 gradient × 8 deco × 60 chars ≈ **数亿** 种。加上连续参数（warmth, saturation, deformation, ...）→ 无限变体。详见 [composition.md](composition.md#combinatorial-impact)。
+理论离散组合：17 bg × 32 variants × 7 overlay × 4 blend × 4 composition × 6 mask × 128 postfx × 9 transform × 5 layout × 20 gradient × 8 deco × 60 chars × 13 bg_fill effect × ~4 variant × ~15 transform × 7 postfx × 6 mask × 8 color ≈ **数百亿** 种。加上连续参数（warmth, saturation, deformation, ...）→ 无限变体。详见 [composition.md](composition.md#combinatorial-impact)。
 
 ---
 
@@ -307,6 +313,9 @@ class SceneSpec:
         ▼
   VisualGrammar.generate() → SceneSpec
         │
+        ├── bg_fill_spec (第二渲染通道规格)
+        ├── color_scheme (颜色方案)
+        │
         ▼
   grammar.place_content(spec, content, visual_params)
   ← 放置 headline / metrics / timestamp / ambient words
@@ -322,7 +331,12 @@ class SceneSpec:
   ContinuousColorSpace.generate_palette()
         │
         ▼
+  Engine(color_scheme=spec.color_scheme)
+  render_params["_bg_fill_spec"] = spec.bg_fill_spec
+        │
+        ▼
   Engine.render_frame(effect, sprites, params)
+  └── PostFX → bg_fill(buffer, ...) → brightness → buffer_to_image
         │
         ▼
   PIL Image / GIF

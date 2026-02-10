@@ -102,7 +102,7 @@ Priority: `emotion` field > `vad` field > infer from text > `neutral`.
 | `mod_xor` | Mathematical, fractal |
 | `dyna` | Dynamic, energetic |
 
-VIZ auto-selects from emotion; override with `effect` field.
+VIZ auto-selects from emotion; override with `effect` field. Background is separately textured via a second render pass using another effect + transforms + color scheme (auto-selected by grammar).
 
 Effects support deformation params via `params` field (e.g. `{"params": {"surface_noise": 0.5}}`).
 
@@ -184,7 +184,7 @@ stdout JSON:
 {"status":"ok","results":[{"path":"media/viz_20260203_120000.png","seed":42,"format":"png"}],"emotion":"euphoria","source":"market"}
 ```
 
-Specs: 1080x1080 PNG (quality=95), GIF, or MP4. Internal 160x160 nearest-neighbor upscale. Files in `./media/`.
+Specs: 1080x1080 PNG (quality=95), GIF, or MP4. Internal 160x160 nearest-neighbor upscale. Background filled via second render pass (independent effect + color scheme, ~320k texture combinations). Files in `./media/`.
 
 ## References
 

@@ -23,6 +23,12 @@
 4b. [可选] PostFX 链（buffer 级后处理）
         │
         ▼
+4c. Cell 去别名 + bg_fill 第二渲染通道（背景填充）
+        │
+        ▼
+4d. 情感亮度缩放（brightness + saturation → dim_factor）
+        │
+        ▼
 5. buffer_to_image(buffer) → 低分辨率 PIL Image
         │
         ▼
@@ -96,7 +102,7 @@ Buffer = list[list[Cell]]   # buffer[y][x] → Cell
 | `output_size` | (1080, 1080) | 最终输出分辨率 |
 | `char_size` | 1 | 像素/字符 |
 | `gradient_name` | — | ASCII 字符梯度选择 |
-| `color_scheme` | — | 颜色映射方案 |
+| `color_scheme` | `"heat"` | 颜色方案（传给 bg_fill + buffer_to_image） |
 | `sharpen` | — | 是否锐化 |
 | `contrast` | — | 对比度增强 |
 
@@ -127,10 +133,18 @@ def render_frame(self, effect, sprites, time, frame, seed, params) -> Image:
         fx_kwargs["_time"] = ctx.time
         POSTFX_REGISTRY[fx["type"]](buffer, **fx_kwargs)
 
-    # 5c. 低饱和度亮度衰减 (saturation < 0.8 时压暗 buffer，带随机抖动)
-    if saturation < 0.8:
-        dim_factor = (0.35 + sat/0.8 * 0.65) + uniform(-0.25, 0.25)
-        for cell in buffer: cell.fg *= dim_factor
+    # 5c-pre. Cell 去别名（防止共享引用导致多次缩放）
+    for y, x: buffer[y][x] = Cell(cell.char_idx, cell.fg, cell.bg)
+
+    # 5c-fill. bg_fill 第二渲染通道
+    #   在临时 buffer 上跑独立 effect（可带 transform/postfx/mask），
+    #   提取 char_idx 强度 → color scheme 着色 → dim → 写入 cell.bg
+    from procedural.bg_fill import bg_fill
+    bg_fill(buffer, w, h, seed, bg_fill_spec)
+
+    # 5c. 情感亮度缩放
+    dim_factor = brightness * sat_adjust + jitter
+    for cell in buffer: cell.fg *= dim_factor; cell.bg *= dim_factor
 
     # 6. Buffer → Image
     img = buffer_to_image(buffer, ...)
@@ -264,17 +278,18 @@ masked = MaskedCompositeEffect(
 
 ### Composition Layer（合成层）
 
-渲染管线在基础效果之上增加了三层可选合成：
+渲染管线在基础效果之上增加了四层可选合成：
 
 1. **合成/遮罩** — `CompositeEffect` 或 `MaskedCompositeEffect` 混合两个效果
 2. **域变换** — `TransformedEffect` 包装效果，在 `main()` 调用前变换坐标（支持动画 kwargs）
 3. **PostFX 链** — 7 种 buffer 级后处理效果，在 `effect.post()` 后执行（注入 `_time` 实现帧间动画）
+4. **bg_fill 第二渲染通道** — 在独立临时 buffer 上运行另一个 effect（含 variant/transform/postfx/mask/color scheme），填充 `bg=None` 的 cell 背景色（~320k 种纹理组合）
 
 ```
-Effect → [Composite/Masked] → [TransformedEffect] → PostFX chain(_time) → buffer_to_image
+Effect → [Composite/Masked] → [TransformedEffect] → PostFX chain(_time) → bg_fill → brightness → buffer_to_image
 ```
 
-所有合成参数由文法系统（`VisualGrammar`）自动选择。三层合成均支持时间驱动动画：transforms 使用动画 kwargs、PostFX 接收 `_time`、masks 读取 `mask_anim_speed`。详见 [composition.md](composition.md)。
+所有合成参数由文法系统（`VisualGrammar`）自动选择。三层合成均支持时间驱动动画：transforms 使用动画 kwargs、PostFX 接收 `_time`、masks 读取 `mask_anim_speed`。bg_fill 规格由 `_choose_bg_fill_spec()` 独立产生。详见 [composition.md](composition.md)。
 
 ---
 
