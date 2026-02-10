@@ -460,29 +460,59 @@ class VisualGrammar:
         return self.rng.choice(selected_pool)
 
     def _choose_gradient(self, energy: float, structure: float) -> str:
-        """选择 ASCII 梯度 (含 box-drawing 和几何梯度)"""
+        """选择 ASCII 梯度 (含 box-drawing、几何、排版梯度)"""
         weights = {
             # 经典
-            "classic": 0.10,
-            "smooth": 0.12,
-            "matrix": 0.10 + energy * 0.10,
-            "plasma": 0.08 + energy * 0.15,
-            # 方块
-            "blocks": 0.10 + structure * 0.15,
-            "blocks_fine": 0.08 + structure * 0.10,
-            "glitch": 0.05 + energy * 0.15,
+            "classic": 0.06,
+            "smooth": 0.06,
+            "matrix": 0.04 + energy * 0.06,
+            "plasma": 0.03 + energy * 0.08,
+            # 方块填充
+            "blocks": 0.05 + structure * 0.08,
+            "blocks_fine": 0.04 + structure * 0.06,
+            "blocks_ultra": 0.02 + structure * 0.04,
+            "glitch": 0.03 + energy * 0.10,
+            "vbar": 0.04 + structure * 0.06,
+            "hbar": 0.04 + structure * 0.06,
+            "quadrant": 0.03 + energy * 0.05,
+            "halves": 0.02 + energy * 0.04,
             # Box-drawing
-            "box_density": 0.06 + structure * 0.12,
-            "box_cross": 0.04 + structure * 0.08 + energy * 0.08,
-            "circuit": 0.04 + structure * 0.10 + energy * 0.06,
+            "box_density": 0.03 + structure * 0.06,
+            "box_vertical": 0.02 + structure * 0.05,
+            "box_cross": 0.02 + structure * 0.05 + energy * 0.04,
+            "box_thin": 0.02 + structure * 0.05,
+            "box_thick": 0.02 + structure * 0.04 + energy * 0.04,
+            "box_double": 0.02 + structure * 0.06,
+            "box_rounded": 0.02 + (1 - energy) * 0.04,
+            "box_weight": 0.02 + structure * 0.04,
+            "diagonal": 0.03 + energy * 0.06,
+            "circuit": 0.02 + structure * 0.06 + energy * 0.04,
             # 几何/点阵
-            "dots_density": 0.06 + (1 - energy) * 0.08,
-            "geometric": 0.05 + structure * 0.08,
-            "braille_density": 0.04 + (1 - structure) * 0.06,
+            "dots_density": 0.03 + (1 - energy) * 0.05,
+            "geometric": 0.03 + structure * 0.05,
+            "braille_density": 0.02 + (1 - structure) * 0.04,
+            "circles": 0.03 + (1 - structure) * 0.05,
+            "circles_half": 0.02 + (1 - structure) * 0.03,
+            "circles_arc": 0.02 + (1 - energy) * 0.03,
+            "squares": 0.02 + structure * 0.04,
+            "diamonds": 0.02 + structure * 0.03,
+            "triangles": 0.02 + energy * 0.03,
+            "quarters_geo": 0.02 + structure * 0.03,
+            "squares_fill": 0.02 + structure * 0.04,
+            "arrows_sm": 0.02 + energy * 0.04,
+            "arrows_lg": 0.02 + energy * 0.05,
+            # 文字/排版
+            "punctuation": 0.02 + (1 - energy) * 0.03,
+            "editorial": 0.02 + (1 - energy) * 0.04,
+            "math": 0.02 + energy * 0.03,
+            "greek": 0.02 + energy * 0.03,
+            "quotes": 0.02 + (1 - structure) * 0.03,
+            "digits": 0.02 + energy * 0.03,
             # 混合
-            "tech": 0.06 + energy * 0.06,
-            "cyber": 0.04 + energy * 0.08,
-            "organic": 0.05 + (1 - structure) * 0.08,
+            "tech": 0.03 + energy * 0.04,
+            "cyber": 0.02 + energy * 0.05,
+            "organic": 0.03 + (1 - structure) * 0.05,
+            "noise": 0.02 + energy * 0.04,
         }
         return self._weighted_choice(weights)
 
