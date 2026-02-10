@@ -46,7 +46,7 @@ Run from the VIZ project root. Only dependency: `pillow`.
 | `vad` | str/list | Direct VAD vector `[0.8, 0.5, 0.3]` — bypasses emotion name |
 | `layout` | string | `random_scatter` / `grid_jitter` / `spiral` / `force_directed` / `preset` |
 | `decoration` | string | `corners` / `edges` / `scattered` / `minimal` / `none` / `frame` / `grid_lines` / `circuit` |
-| `gradient` | string | `classic` / `smooth` / `matrix` / `plasma` / `blocks` / `glitch` / `circuit` / `cyber` / `organic` |
+| `gradient` | string | See gradient list below (20 options) |
 | `seed` | int | Reproducible output |
 | `overlay` | object | `{"effect":"wave","blend":"SCREEN","mix":0.3}` — layer two effects |
 | `params` | object | Effect-specific tuning, including deformation params (see references/COMPOSITION.md) |
@@ -105,6 +105,32 @@ Priority: `emotion` field > `vad` field > infer from text > `neutral`.
 VIZ auto-selects from emotion; override with `effect` field.
 
 Effects support deformation params via `params` field (e.g. `{"params": {"surface_noise": 0.5}}`). Domain transforms, PostFX, spatial masks, and structural variants are auto-selected by grammar, but can also be precisely controlled via `transforms`, `postfx`, `composition`, `mask`, and `variant` fields (Director Mode). See **references/COMPOSITION.md** for details.
+
+## ASCII Gradients
+
+20 gradient presets controlling character density ramps. Set via `gradient` field.
+
+| Category | Gradients | Characters |
+|----------|-----------|------------|
+| Classic ASCII | `classic` / `default` | ` .:-=+*#%@` |
+| | `smooth` | ` .':;!>+*%@#█` |
+| | `matrix` | ` .:-=+*@#` |
+| | `plasma` | `$?01▄abc+-><:.` |
+| Block/Shade | `blocks` | ` ░▒▓█` |
+| | `blocks_fine` | ` ·░▒▓█` |
+| | `blocks_ultra` | ` ·⠁░▒▓▓█` |
+| | `glitch` | ` ·░▒▓█▀▄▌▐` |
+| Box-drawing | `box_density` | ` ·┄─┈━░▒▓█` |
+| | `box_vertical` | ` ·┆│┊┃░▒▓█` |
+| | `box_cross` | ` ·+┼╋╬░▒▓█` |
+| Geometric/Dots | `dots_density` | ` ·∙•◦○◎◉●█` |
+| | `geometric` | ` ·▪□▫▮■▓█` |
+| | `braille_density` | ` ⠁⠃⠇⡇⣇⣧⣷⣿` |
+| Mixed | `tech` | ` .·:;+*░▒▓█` |
+| | `cyber` | ` ·-=≡░▒▓█` |
+| | `organic` | ` ·∙•○◎●▒▓█` |
+| | `noise` | ` ·⠁⠃░▒▓▓█` |
+| | `circuit` | ` ·┄─├┼╋▒▓█` |
 
 ## Content Sources
 
