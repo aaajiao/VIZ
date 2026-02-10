@@ -114,7 +114,7 @@ Source determines visual vocabulary (particles, kaomoji style, atmosphere):
 | `news` | `►◆■●▶` | surprised/thinking | BREAKING, ALERT |
 | `mood` | `·˚✧∘○◦` | all emotions | BREATHE, PEACE |
 
-## Effects (7 types)
+## Effects (17 types)
 
 | Effect | Description | Best For |
 |--------|-------------|----------|
@@ -125,6 +125,16 @@ Source determines visual vocabulary (particles, kaomoji style, atmosphere):
 | `sdf_shapes` | Distance field geometry | Structural, modern |
 | `noise_field` | Perlin-like noise | Organic, natural |
 | `cppn` | Neural network patterns | Unique per seed |
+| `ten_print` | C64 maze pattern (10 PRINT) | Retro, nostalgic |
+| `game_of_life` | Conway's cellular automaton | Organic complexity |
+| `donut` | Rotating 3D torus with lighting | Futuristic, technical |
+| `mod_xor` | Bitwise fractal patterns | Mathematical, abstract |
+| `wireframe_cube` | 3D rotating wireframe cube | Geometric, tech |
+| `chroma_spiral` | Chromatic aberration spiral | Psychedelic, hypnotic |
+| `wobbly` | Domain-warped fluid distortion | Dreamy, soft |
+| `sand_game` | Falling sand particle sim | Meditative, calm |
+| `slime_dish` | Physarum slime mold agents | Biological, organic |
+| `dyna` | Moving attractor wave interference | Dynamic, energetic |
 
 ## Other Options
 

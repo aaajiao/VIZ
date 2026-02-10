@@ -139,7 +139,7 @@ echo '{"emotion":"panic","video":true}' | python3 viz.py generate
 
 ---
 
-## 可用效果 (7 种)
+## 可用效果 (17 种)
 
 | 效果 | 描述 | 最佳场景 |
 |------|------|---------|
@@ -150,6 +150,16 @@ echo '{"emotion":"panic","video":true}' | python3 viz.py generate
 | `sdf_shapes` | 距离场几何形状 | 结构性、现代 |
 | `noise_field` | Perlin 噪声场 | 有机、自然 |
 | `cppn` | 神经网络图案 | 每个种子独特 |
+| `ten_print` | C64 迷宫图案 (10 PRINT) | 复古、怀旧 |
+| `game_of_life` | Conway 生命游戏 | 有机复杂性 |
+| `donut` | 旋转 3D 甜甜圈 | 未来感、技术 |
+| `mod_xor` | 位运算分形图案 | 数学、抽象 |
+| `wireframe_cube` | 3D 旋转线框立方体 | 几何、科技 |
+| `chroma_spiral` | 色差螺旋 | 迷幻、催眠 |
+| `wobbly` | 域扭曲流体 | 梦幻、柔和 |
+| `sand_game` | 落沙粒子模拟 | 冥想、平静 |
+| `slime_dish` | 黏菌智能体模拟 | 生物、有机 |
+| `dyna` | 动态吸引子干涉波 | 动感、活力 |
 
 VIZ 会根据情绪自动选择效果，也可用 `effect` 字段强制指定。
 
@@ -346,7 +356,7 @@ skills/viz-ascii-art/
 ├── README.md             # 安装说明
 └── references/           # 详细参考（按需加载）
     ├── EMOTIONS.md       # 25 种情绪的 VAD 值
-    ├── EFFECTS.md        # 7 种效果及参数
+    ├── EFFECTS.md        # 17 种效果及参数
     └── EXAMPLES.md       # 完整使用示例
 ```
 

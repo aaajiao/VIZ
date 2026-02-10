@@ -157,6 +157,132 @@ Complete examples for common use cases.
 
 ---
 
+## New Effects Showcase
+
+### Retro Maze (10 PRINT)
+
+```json
+{
+  "source": "art",
+  "headline": "RETRO COMPUTING",
+  "emotion": "nostalgia",
+  "effect": "ten_print",
+  "params": {"cell_size": 8, "probability": 0.5}
+}
+```
+
+### Game of Life
+
+```json
+{
+  "source": "mood",
+  "headline": "EMERGENCE",
+  "emotion": "awe",
+  "effect": "game_of_life",
+  "video": true,
+  "duration": 5
+}
+```
+
+### 3D Donut
+
+```json
+{
+  "source": "art",
+  "headline": "DIGITAL SCULPTURE",
+  "emotion": "excitement",
+  "effect": "donut",
+  "video": true
+}
+```
+
+### Fractal Math
+
+```json
+{
+  "source": "art",
+  "headline": "ALGORITHMIC BEAUTY",
+  "emotion": "surprise",
+  "effect": "mod_xor",
+  "params": {"modulus": 32, "operation": "xor"}
+}
+```
+
+### Wireframe Geometry
+
+```json
+{
+  "source": "news",
+  "headline": "TECH FORWARD",
+  "emotion": "trust",
+  "effect": "wireframe_cube",
+  "video": true
+}
+```
+
+### Psychedelic Spiral
+
+```json
+{
+  "source": "mood",
+  "emotion": "euphoria",
+  "effect": "chroma_spiral",
+  "params": {"arms": 5, "chroma_offset": 0.2},
+  "video": true
+}
+```
+
+### Dreamy Fluid
+
+```json
+{
+  "source": "mood",
+  "headline": "DRIFTING",
+  "emotion": "serenity",
+  "effect": "wobbly",
+  "gradient": "organic"
+}
+```
+
+### Falling Sand Meditation
+
+```json
+{
+  "source": "mood",
+  "emotion": "calm",
+  "effect": "sand_game",
+  "video": true,
+  "duration": 5,
+  "fps": 15
+}
+```
+
+### Slime Mold Network
+
+```json
+{
+  "source": "art",
+  "headline": "LIVING SYSTEMS",
+  "emotion": "awe",
+  "effect": "slime_dish",
+  "video": true
+}
+```
+
+### Dynamic Energy
+
+```json
+{
+  "source": "market",
+  "headline": "MOMENTUM",
+  "emotion": "excitement",
+  "effect": "dyna",
+  "params": {"attractor_count": 6}
+}
+```
+
+---
+
 ## Advanced Techniques
 
 ### Custom VAD (Fine-tuned Emotion)

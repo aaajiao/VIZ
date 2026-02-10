@@ -55,7 +55,7 @@ viz-ascii-art/
 ├── README.md             # This file (not loaded by AI)
 └── references/           # Detailed docs (loaded on-demand)
     ├── EMOTIONS.md       # Full VAD values for 25 emotions
-    ├── EFFECTS.md        # All 7 effects with parameters
+    ├── EFFECTS.md        # All 17 effects with parameters
     └── EXAMPLES.md       # Complete usage examples
 ```
 
