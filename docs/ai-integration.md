@@ -59,6 +59,19 @@ echo '{"emotion":"panic","video":true}' | python3 viz.py generate
 | `overlay` | object | 叠加效果：`{"effect":"wave","blend":"SCREEN","mix":0.3}` |
 | `params` | object | 效果参数微调 |
 
+**关于合成系统（Composition System）：** 域变换（`transforms`）、后处理链（`postfx`）、空间遮罩（`masks`）和合成模式由文法系统自动选择，不在 `_apply_overrides()` 中暴露。无需手动指定——文法根据情绪参数自动做出最优组合。
+
+`params` 字段可用于微调效果的**变形参数**（deformation params），这些参数直接传递给效果：
+
+```json
+{"params": {"surface_noise": 0.5, "twist": 1.2}}
+{"params": {"self_warp": 0.3, "noise_injection": 0.4}}
+{"params": {"distortion": 0.6, "multi_center": 3}}
+{"params": {"vertex_noise": 0.4, "morph": 0.7}}
+```
+
+可用变形参数因效果而异，详见 [composition.md](composition.md#structural-variants)。
+
 ### 输出控制
 
 | 字段 | 类型 | 默认 | 说明 |

@@ -8,6 +8,9 @@
 1. Engine 创建 Context + Buffer
         │
         ▼
+1b. [可选] TransformedEffect 包装效果（域变换）
+        │
+        ▼
 2. Effect.pre(ctx, buffer) → state
         │
         ▼
@@ -15,6 +18,9 @@
         │
         ▼
 4. Effect.post(ctx, buffer, state)
+        │
+        ▼
+4b. [可选] PostFX 链（buffer 级后处理）
         │
         ▼
 5. buffer_to_image(buffer) → 低分辨率 PIL Image
@@ -115,6 +121,10 @@ def render_frame(self, effect, sprites, time, frame, seed, params) -> Image:
 
     # 5. 后处理
     effect.post(ctx, buffer, state)
+
+    # 5b. PostFX 链
+    for fx in postfx_chain:
+        POSTFX_REGISTRY[fx["type"]](buffer, **fx_kwargs)
 
     # 6. Buffer → Image
     img = buffer_to_image(buffer, ...)
@@ -218,6 +228,47 @@ def main(x, y, ctx, state):
     blended_idx = int(mix_func(cell_a.char_idx, cell_b.char_idx, mix))
     return Cell(blended_idx, blended_fg, None)
 ```
+
+### MaskedCompositeEffect（遮罩合成）
+
+`procedural/compositor.py`
+
+在传统混合之外，支持基于空间遮罩的区域性合成：
+
+```python
+from procedural.compositor import MaskedCompositeEffect
+from procedural.masks import RadialMask
+
+masked = MaskedCompositeEffect(
+    effect_a=PlasmaEffect(),
+    effect_b=WaveEffect(),
+    mask=RadialMask(),
+    threshold=0.5,
+    softness=0.2,
+)
+```
+
+遮罩的 `char_idx` 值 (0-9) 控制混合权重：0 = 完全 effect_a，9 = 完全 effect_b。
+
+6 种遮罩类型：`horizontal_split`, `vertical_split`, `diagonal`, `radial`, `noise`, `sdf`。
+
+详见 [composition.md](composition.md) 获取完整的合成系统参考。
+
+---
+
+### Composition Layer（合成层）
+
+渲染管线在基础效果之上增加了三层可选合成：
+
+1. **合成/遮罩** — `CompositeEffect` 或 `MaskedCompositeEffect` 混合两个效果
+2. **域变换** — `TransformedEffect` 包装效果，在 `main()` 调用前变换坐标
+3. **PostFX 链** — 7 种 buffer 级后处理效果，在 `effect.post()` 后执行
+
+```
+Effect → [Composite/Masked] → [TransformedEffect] → PostFX chain → buffer_to_image
+```
+
+所有合成参数由文法系统（`VisualGrammar`）自动选择，详见 [composition.md](composition.md)。
 
 ---
 

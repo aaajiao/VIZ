@@ -100,8 +100,12 @@ echo '{"source":"mood","emotion":"calm","title":"Sunday Morning"}' | python3 viz
 | 布局算法 | 5 种 | scatter/grid/spiral/force/preset |
 | ASCII 梯度 | 20 种 | classic/blocks/smooth/matrix/plasma... |
 | 装饰风格 | 8 种 × 60+ 字符组 | 概率选择 |
-| 连续参数 | ∞ | 情绪驱动 + 噪声调制 |
-| **组合总数** | **3,000,000+ 离散 × ∞ 连续** | |
+| 域变换 | 9 种 | mirror/kaleidoscope/tile/rotate/zoom/spiral/polar |
+| 后处理链 | 7 种（独立概率） | vignette/scanlines/threshold/edge/invert/color_shift/pixelate |
+| 空间遮罩 | 6 种 | horizontal/vertical/diagonal/radial/noise/sdf |
+| 结构变体 | 32 种（7 个效果） | 命名参数预设（alien donut, warped plasma, ...） |
+| 连续参数 | ∞ | 情绪驱动 + 噪声调制 + 变形参数 |
+| **组合总数** | **数亿离散 × ∞ 连续** | |
 
 ## 程序化生成引擎
 
@@ -152,6 +156,16 @@ composite = CompositeEffect(
 )
 ```
 
+### 效果合成（Composition）
+
+在基础效果混合之上，合成系统提供三层可选增强：
+
+- **域变换** — 9 种坐标变换（镜像、万花筒、平铺、旋转等）包装任意效果
+- **空间遮罩** — 6 种遮罩按区域混合两个效果（径向、噪声、SDF 形状等）
+- **PostFX 链** — 7 种 buffer 级后处理（暗角、扫描线、边缘检测等）
+
+所有合成参数由文法系统根据情绪自动选择。详见 `docs/composition.md`。
+
 ## 颜文字系统
 
 20 个情绪分类，300+ 个独特颜文字，覆盖从狂喜到恐慌的完整情感光谱。
@@ -193,7 +207,10 @@ VIZ/
 │   ├── engine.py                 # 渲染编排器
 │   ├── types.py                  # 核心类型（Context, Cell, Buffer, Effect）
 │   ├── renderer.py               # buffer_to_image(), upscale_image()
-│   ├── compositor.py             # 效果混合（ADD/MULTIPLY/SCREEN/OVERLAY）
+│   ├── compositor.py             # 效果混合（ADD/MULTIPLY/SCREEN/OVERLAY + MaskedComposite）
+│   ├── transforms.py            # 域变换（9 种坐标变换 + TransformedEffect）
+│   ├── postfx.py                # 后处理链（7 种 buffer 级效果）
+│   ├── masks.py                 # 空间遮罩（6 种区域混合遮罩）
 │   ├── layers.py                 # 精灵：TextSprite, KaomojiSprite, 装饰
 │   ├── layouts.py                # 布局算法（scatter, grid, spiral, force）
 │   ├── params.py                 # ParamSpec, 可复现 RNG
@@ -202,6 +219,7 @@ VIZ/
 │   │   ├── plasma.py, flame.py, wave.py, moire.py, sdf_shapes.py, noise_field.py
 │   │   ├── ten_print.py, game_of_life.py, donut.py, mod_xor.py, wireframe_cube.py
 │   │   ├── chroma_spiral.py, wobbly.py, sand_game.py, slime_dish.py, dyna.py
+│   │   ├── variants.py          # 结构变体注册表（32 种命名变体）
 │   │   └── ...
 │   ├── core/                     # 数学原语（纯 Python，无 NumPy）
 │   │   ├── vec.py, sdf.py, noise.py, mathx.py
