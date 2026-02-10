@@ -134,10 +134,10 @@ stdin JSON 同样支持：`transforms`、`postfx`、`composition`、`mask`、`va
 
 | 来源 | 粒子 | 颜文字风格 | 氛围词 |
 |------|------|-----------|--------|
-| `market` | `$¥€₿↑↓▲▼` | bull/bear 情绪 | HODL, PUMP, APE IN / SELL, EXIT |
-| `art` | `✦◆●▽△○◇` | love/思考 | CREATE, EXHIBIT / SILENCE |
-| `news` | `►◆■●▶` | surprised/thinking | BREAKING, ALERT / UNCLEAR |
-| `mood` | `·˚✧∘○◦` | 全情绪 | BREATHE, PEACE / ALONE |
+| `market` | `0123456789$#%↑↓±` | euphoria/anxiety/panic | BULL, RISE / BEAR, SELL / HOLD, WAIT |
+| `art` | `◆◇○●□■△▽✧✦` | love/thinking/proud | CREATE, VISION / VOID, FADE / FORM, SHAPE |
+| `news` | `ABCDEFG!?#@&` | neutral/surprised/confused | BREAKING, UPDATE / ALERT, WARN / NEWS, REPORT |
+| `mood` | `·˚✧♪♫∞~○◦` | happy/sad/love/relaxed | FEEL, FLOW / EMPTY, LOST / THINK, DRIFT |
 
 ---
 

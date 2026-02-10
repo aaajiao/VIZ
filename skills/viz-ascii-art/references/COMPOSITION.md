@@ -96,17 +96,56 @@ Grammar picks a named variant per effect and samples params from its ranges.
 
 ## Director Mode (precise control)
 
-Override any composition feature via JSON fields:
+**Delegate mode** (default): omit composition fields — grammar auto-selects optimal transforms, PostFX, masks, and variants from emotion+energy.
 
+**Director mode**: specify any subset of fields — each specified field overrides grammar; unspecified fields are still auto-selected.
+
+### Examples
+
+**Single override** — force a variant, let grammar handle everything else:
+```json
+{"effect": "donut", "variant": "alien"}
+```
+
+**Transform + PostFX** — kaleidoscope symmetry with vignette and hue rotation:
 ```json
 {
-  "effect": "plasma",
-  "variant": "warped",
-  "transforms": [{"type": "kaleidoscope", "segments": 6}],
-  "postfx": [{"type": "vignette", "strength": 0.5}],
-  "composition": "radial_masked",
-  "mask": "radial:center_x=0.5,radius=0.3"
+  "emotion": "awe",
+  "effect": "chroma_spiral",
+  "transforms": [{"type": "kaleidoscope", "segments": 8}],
+  "postfx": [{"type": "vignette", "strength": 0.5}, {"type": "color_shift", "hue_shift": 0.15}]
 }
 ```
 
-Or via CLI: `--transforms kaleidoscope:segments=6 --postfx vignette:strength=0.5 --composition radial_masked --variant warped`
+**Full Director** — all composition dimensions specified:
+```json
+{
+  "emotion": "euphoria",
+  "effect": "plasma",
+  "variant": "warped",
+  "transforms": [{"type": "kaleidoscope", "segments": 6}],
+  "postfx": [{"type": "vignette", "strength": 0.5}, {"type": "color_shift", "hue_shift": 0.1}],
+  "composition": "radial_masked",
+  "mask": "radial:center_x=0.5,radius=0.3",
+  "seed": 100
+}
+```
+
+### Common Combos
+
+| Transforms | PostFX | Visual Character |
+|------------|--------|------------------|
+| `kaleidoscope` (6-8 segments) | `vignette` | Mandala, spiritual |
+| `mirror_quad` | `scanlines` | Retro symmetry |
+| `spiral_warp` | `color_shift` | Psychedelic swirl |
+| `tile` (3x3) | `edge_detect` | Grid wireframe |
+| `polar_remap` | `vignette` + `scanlines` | Tunnel / portal |
+
+### CLI equivalent
+
+```bash
+python3 viz.py generate --effect plasma --variant warped \
+  --transforms kaleidoscope:segments=6 \
+  --postfx vignette:strength=0.5 color_shift:hue_shift=0.1 \
+  --composition radial_masked --mask radial:center_x=0.5,radius=0.3
+```

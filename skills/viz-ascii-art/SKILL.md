@@ -104,7 +104,45 @@ Priority: `emotion` field > `vad` field > infer from text > `neutral`.
 
 VIZ auto-selects from emotion; override with `effect` field.
 
-Effects support deformation params via `params` field (e.g. `{"params": {"surface_noise": 0.5}}`). Domain transforms, PostFX, spatial masks, and structural variants are auto-selected by grammar, but can also be precisely controlled via `transforms`, `postfx`, `composition`, `mask`, and `variant` fields (Director Mode). See **references/COMPOSITION.md** for details.
+Effects support deformation params via `params` field (e.g. `{"params": {"surface_noise": 0.5}}`).
+
+## Director Mode
+
+Grammar auto-selects transforms, PostFX, masks, and variants from emotion; Director Mode fields override any dimension for precise control.
+
+| Field | Type | What it controls |
+|-------|------|------------------|
+| `transforms` | list[dict] | Domain transform chain (mirror, kaleidoscope, tile, etc.) |
+| `postfx` | list[dict] | Post-processing chain (vignette, scanlines, color_shift, etc.) |
+| `composition` | string | How two effects merge: `blend` / `masked_split` / `radial_masked` / `noise_masked` |
+| `mask` | string | Spatial mask for composition: `radial`, `noise`, `diagonal`, etc. |
+| `variant` | string | Named structural variant per effect (e.g. `warped`, `alien`, `turbulent`) |
+| `params` | object | Effect-specific tuning: deformation, noise, twist (see references/COMPOSITION.md) |
+
+**Simple** — kaleidoscope symmetry + vignette:
+```json
+{
+  "emotion": "awe",
+  "effect": "chroma_spiral",
+  "transforms": [{"type": "kaleidoscope", "segments": 8}],
+  "postfx": [{"type": "vignette", "strength": 0.5}]
+}
+```
+
+**Full Director** — effect + variant + transforms + PostFX + composition:
+```json
+{
+  "emotion": "euphoria",
+  "effect": "plasma",
+  "variant": "warped",
+  "transforms": [{"type": "kaleidoscope", "segments": 6}],
+  "postfx": [{"type": "vignette", "strength": 0.5}, {"type": "color_shift", "hue_shift": 0.1}],
+  "composition": "radial_masked",
+  "seed": 100
+}
+```
+
+Omit any field to let grammar auto-select it. Full option lists in **references/COMPOSITION.md**.
 
 ## ASCII Gradients
 
@@ -123,10 +161,10 @@ Effects support deformation params via `params` field (e.g. `{"params": {"surfac
 
 | Source | Particles | Atmosphere |
 |--------|-----------|------------|
-| `market` | `$\u00a5\u20ac\u20bf\u2191\u2193\u25b2\u25bc` | HODL, PUMP / SELL, EXIT |
-| `art` | `\u2726\u25c6\u25cf\u25bd\u25b3\u25cb\u25c7` | CREATE, EXHIBIT |
-| `news` | `\u25ba\u25c6\u25a0\u25cf\u25b6` | BREAKING, ALERT |
-| `mood` | `\u00b7\u02da\u2727\u2218\u25cb\u25e6` | BREATHE, PEACE |
+| `market` | `0123456789$#%↑↓±` | BULL, RISE / BEAR, SELL / HOLD, WAIT |
+| `art` | `◆◇○●□■△▽✧✦` | CREATE, VISION / VOID, FADE / FORM, SHAPE |
+| `news` | `ABCDEFG!?#@&` | BREAKING, UPDATE / ALERT, WARN / NEWS, REPORT |
+| `mood` | `·˚✧♪♫∞~○◦` | FEEL, FLOW / EMPTY, LOST / THINK, DRIFT |
 
 ## Output
 
