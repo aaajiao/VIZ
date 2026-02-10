@@ -108,29 +108,16 @@ Effects support deformation params via `params` field (e.g. `{"params": {"surfac
 
 ## ASCII Gradients
 
-20 gradient presets controlling character density ramps. Set via `gradient` field.
+67 gradient presets (428 unique characters) controlling character density ramps. Set via `gradient` field.
 
-| Category | Gradients | Characters |
-|----------|-----------|------------|
-| Classic ASCII | `classic` / `default` | ` .:-=+*#%@` |
-| | `smooth` | ` .':;!>+*%@#█` |
-| | `matrix` | ` .:-=+*@#` |
-| | `plasma` | `$?01▄abc+-><:.` |
-| Block/Shade | `blocks` | ` ░▒▓█` |
-| | `blocks_fine` | ` ·░▒▓█` |
-| | `blocks_ultra` | ` ·⠁░▒▓▓█` |
-| | `glitch` | ` ·░▒▓█▀▄▌▐` |
-| Box-drawing | `box_density` | ` ·┄─┈━░▒▓█` |
-| | `box_vertical` | ` ·┆│┊┃░▒▓█` |
-| | `box_cross` | ` ·+┼╋╬░▒▓█` |
-| Geometric/Dots | `dots_density` | ` ·∙•◦○◎◉●█` |
-| | `geometric` | ` ·▪□▫▮■▓█` |
-| | `braille_density` | ` ⠁⠃⠇⡇⣇⣧⣷⣿` |
-| Mixed | `tech` | ` .·:;+*░▒▓█` |
-| | `cyber` | ` ·-=≡░▒▓█` |
-| | `organic` | ` ·∙•○◎●▒▓█` |
-| | `noise` | ` ·⠁⠃░▒▓▓█` |
-| | `circuit` | ` ·┄─├┼╋▒▓█` |
+| Category | Gradients |
+|----------|-----------|
+| Classic ASCII (5) | `classic` / `default` / `smooth` / `matrix` / `plasma` |
+| Block Fill (8) | `blocks` / `blocks_fine` / `blocks_ultra` / `glitch` / `vbar` / `hbar` / `quadrant` / `halves` |
+| Box-Drawing (20) | `box_density` / `box_vertical` / `box_cross` / `box_thin` / `box_thin_corner` / `box_thick` / `box_thick_corner` / `box_double` / `box_double_corner` / `box_rounded` / `box_mixed_dh` / `box_mixed_dv` / `box_mixed_a` / `box_mixed_b` / `box_complex_a` / `box_complex_b` / `box_complex_c` / `box_ends` / `box_weight` / `diagonal` |
+| Geometric (14) | `dots_density` / `geometric` / `braille_density` / `circles` / `circles_half` / `circles_arc` / `squares` / `diamonds` / `triangles` / `quarters_geo` / `squares_fill` / `arrows_sm` / `arrows_lg` / `geo_misc` |
+| Typography (15) | `punctuation` / `editorial` / `math` / `math_rel` / `brackets` / `greek` / `currency` / `symbols` / `superscript` / `quotes` / `ligature` / `diacritics` / `digits` / `alpha_lower` / `alpha_upper` |
+| Mixed (5) | `tech` / `cyber` / `organic` / `noise` / `circuit` |
 
 ## Content Sources
 

@@ -208,9 +208,19 @@ VIZ 会根据情绪自动选择效果，也可用 `effect` 字段强制指定。
 
 ---
 
-## ASCII 梯度 (20 种)
+## ASCII 梯度 (67 种)
 
-`classic` / `smooth` / `matrix` / `plasma` / `blocks` / `blocks_fine` / `blocks_ultra` / `glitch` / `box_density` / `box_vertical` / `box_cross` / `circuit` / `dots_density` / `geometric` / `braille_density` / `tech` / `cyber` / `organic` / `noise` / `default`
+**经典 ASCII:** `classic` / `smooth` / `matrix` / `plasma` / `default`
+
+**方块填充:** `blocks` / `blocks_fine` / `blocks_ultra` / `glitch` / `vbar` / `hbar` / `quadrant` / `halves`
+
+**Box-Drawing 线框:** `box_density` / `box_vertical` / `box_cross` / `box_thin` / `box_thin_corner` / `box_thick` / `box_thick_corner` / `box_double` / `box_double_corner` / `box_rounded` / `box_mixed_dh` / `box_mixed_dv` / `box_mixed_a` / `box_mixed_b` / `box_complex_a` / `box_complex_b` / `box_complex_c` / `box_ends` / `box_weight` / `diagonal`
+
+**几何/点阵:** `dots_density` / `geometric` / `braille_density` / `circles` / `circles_half` / `circles_arc` / `squares` / `diamonds` / `triangles` / `quarters_geo` / `squares_fill` / `arrows_sm` / `arrows_lg` / `geo_misc`
+
+**文字/排版:** `punctuation` / `editorial` / `math` / `math_rel` / `brackets` / `greek` / `currency` / `symbols` / `superscript` / `quotes` / `ligature` / `diacritics` / `digits` / `alpha_lower` / `alpha_upper`
+
+**混合表现力:** `tech` / `cyber` / `organic` / `noise` / `circuit`
 
 ---
 
