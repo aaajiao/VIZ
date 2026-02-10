@@ -34,12 +34,13 @@
 
 ### 预定义锚点（VAD_ANCHORS）
 
-系统预定义 25 种情绪：
+系统预定义 26 种情绪：
 
 ```
 joy         (+0.8, +0.5, +0.5)    fear        (-0.8, +0.8, -0.7)
 euphoria    (+1.0, +0.9, +0.8)    panic       (-0.9, +1.0, -0.9)
 calm        (+0.3, -0.7, +0.3)    anger       (-0.6, +0.8, +0.5)
+                                   rage        (-0.7, +0.8, +0.4)
 love        (+0.85, +0.35, +0.25)    sadness     (-0.7, -0.3, -0.5)
 bull        (+0.7, +0.6, +0.7)    bear        (-0.6, +0.5, -0.4)
 neutral     ( 0.0,  0.0,  0.0)    ...
@@ -65,7 +66,7 @@ ev = text_to_emotion("市场暴跌 恐慌蔓延")
 |------|----------|
 | `warmth` | valence 越高越暖 |
 | `saturation` | arousal 越高越饱和 |
-| `brightness` | valence 偏正越亮 |
+| `brightness` | arousal 主导，valence 辅助 |
 | `frequency` | arousal 越高频率越高 |
 | `speed` | arousal 越高速度越快 |
 | `complexity` | |arousal| 越大越复杂 |

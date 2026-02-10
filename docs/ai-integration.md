@@ -97,7 +97,7 @@ echo '{"emotion":"panic","video":true}' | python3 viz.py generate
 
 ---
 
-## 情绪系统 (25 种预定义)
+## 情绪系统 (26 种预定义)
 
 情绪不是离散标签，而是 VAD 三维空间中的点：
 
@@ -129,6 +129,7 @@ echo '{"emotion":"panic","video":true}' | python3 viz.py generate
 - `fear` — 恐惧 (−0.64, 0.6, −0.43)
 - `anxiety` — 焦虑 (−0.51, 0.6, −0.33)
 - `anger` — 愤怒 (−0.51, 0.59, 0.25)
+- `rage` — 狂怒 (−0.70, 0.80, 0.40)
 - `volatile` — 动荡 (−0.1, 0.8, −0.2)
 
 **低能量负面** (V-, A-):

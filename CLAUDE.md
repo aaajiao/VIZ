@@ -44,7 +44,7 @@ No build step. No requirements.txt. Only dependency is `Pillow>=9.0.0`. CI runs 
 
 **Key types** (in `procedural/types.py`): `Context` (immutable by convention), `Cell` (char_idx 0-9, fg RGB, bg RGB|None), `Buffer` (2D Cell grid), `Effect` (Protocol: pre/main/post).
 
-**Emotion system**: VAD (Valence-Arousal-Dominance) continuous space with 25 anchors in `procedural/flexible/emotion.py`. Each axis -1 to +1. Drives all visual parameters.
+**Emotion system**: VAD (Valence-Arousal-Dominance) continuous space with 26 anchors in `procedural/flexible/emotion.py`. Each axis -1 to +1. Drives all visual parameters.
 
 **Content flow**: stdin JSON or CLI args -> `FlexiblePipeline` -> rendered image -> stdout JSON with path.
 
