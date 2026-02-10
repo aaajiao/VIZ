@@ -47,7 +47,7 @@ __all__ = [
 # ==================== 后处理效果函数 ====================
 
 
-def postfx_threshold(buffer, threshold=0.5):
+def postfx_threshold(buffer, threshold=0.5, **_kw):
     """二值化 - Binary threshold on char_idx"""
     h = len(buffer)
     if h == 0:
@@ -63,7 +63,7 @@ def postfx_threshold(buffer, threshold=0.5):
             buffer[y][x] = Cell(char_idx=new_idx, fg=cell.fg, bg=cell.bg)
 
 
-def postfx_invert(buffer):
+def postfx_invert(buffer, **_kw):
     """反转 - Invert char_idx and colors"""
     h = len(buffer)
     if h == 0:
@@ -82,7 +82,7 @@ def postfx_invert(buffer):
             buffer[y][x] = Cell(char_idx=new_idx, fg=inv_fg, bg=inv_bg)
 
 
-def postfx_edge_detect(buffer):
+def postfx_edge_detect(buffer, **_kw):
     """边缘检测 - Sobel on char_idx for edge outlines"""
     h = len(buffer)
     if h < 3:
@@ -104,17 +104,21 @@ def postfx_edge_detect(buffer):
             buffer[y][x] = Cell(char_idx=mag, fg=cell.fg, bg=cell.bg)
 
 
-def postfx_scanlines(buffer, spacing=4, darkness=0.3):
-    """扫描线 - Horizontal scanline darkening"""
+def postfx_scanlines(buffer, spacing=4, darkness=0.3, scroll_speed=0.0, _time=None, **_kw):
+    """扫描线 - Horizontal scanline darkening (with optional scroll)"""
     h = len(buffer)
     if h == 0:
         return
     w = len(buffer[0])
     if w == 0:
         return
+    # Scrolling offset: shift scanline pattern over time
+    offset = 0
+    if _time is not None and scroll_speed != 0.0:
+        offset = int(_time * scroll_speed * spacing) % spacing
     factor = 1.0 - darkness
     for y in range(h):
-        if y % spacing == 0:
+        if (y + offset) % spacing == 0:
             for x in range(w):
                 cell = buffer[y][x]
                 dim_fg = (
@@ -126,14 +130,18 @@ def postfx_scanlines(buffer, spacing=4, darkness=0.3):
                 buffer[y][x] = Cell(char_idx=new_idx, fg=dim_fg, bg=cell.bg)
 
 
-def postfx_vignette(buffer, strength=0.5):
-    """暗角 - Darken edges"""
+def postfx_vignette(buffer, strength=0.5, pulse_speed=0.0, pulse_amp=0.0, _time=None, **_kw):
+    """暗角 - Darken edges (with optional pulsing)"""
     h = len(buffer)
     if h == 0:
         return
     w = len(buffer[0])
     if w == 0:
         return
+    # Pulsing: modulate strength over time
+    if _time is not None and pulse_speed != 0.0:
+        strength = strength + pulse_amp * math.sin(_time * pulse_speed * 2 * math.pi)
+        strength = max(0.0, strength)
     cx = w / 2.0
     cy = h / 2.0
     max_dist = math.sqrt(cx * cx + cy * cy)
@@ -156,14 +164,17 @@ def postfx_vignette(buffer, strength=0.5):
             buffer[y][x] = Cell(char_idx=new_idx, fg=dim_fg, bg=cell.bg)
 
 
-def postfx_pixelate(buffer, block_size=4):
-    """像素化 - Average blocks for lower resolution effect"""
+def postfx_pixelate(buffer, block_size=4, pulse_speed=0.0, pulse_amp=0.0, _time=None, **_kw):
+    """像素化 - Average blocks for lower resolution effect (with optional pulsing)"""
     h = len(buffer)
     if h == 0:
         return
     w = len(buffer[0])
     if w == 0:
         return
+    # Pulsing: modulate block_size over time
+    if _time is not None and pulse_speed != 0.0:
+        block_size = max(2, int(block_size + pulse_amp * math.sin(_time * pulse_speed * 2 * math.pi)))
     for by in range(0, h, block_size):
         for bx in range(0, w, block_size):
             total_idx = 0
@@ -186,14 +197,17 @@ def postfx_pixelate(buffer, block_size=4):
                         buffer[by + dy][bx + dx] = avg_cell
 
 
-def postfx_color_shift(buffer, hue_shift=0.1):
-    """色相偏移 - Shift hue channel via YIQ-like rotation"""
+def postfx_color_shift(buffer, hue_shift=0.1, drift_speed=0.0, _time=None, **_kw):
+    """色相偏移 - Shift hue channel via YIQ-like rotation (with optional drift)"""
     h = len(buffer)
     if h == 0:
         return
     w = len(buffer[0])
     if w == 0:
         return
+    # Drift: accumulate hue offset over time
+    if _time is not None and drift_speed != 0.0:
+        hue_shift = hue_shift + _time * drift_speed
     angle = hue_shift * 2 * math.pi
     cos_a = math.cos(angle)
     sin_a = math.sin(angle)

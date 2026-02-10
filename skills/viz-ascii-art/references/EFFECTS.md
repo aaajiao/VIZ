@@ -372,5 +372,7 @@ Effects use these color schemes based on emotion:
 | `cool` | Blue → Cyan → White | Low arousal |
 | `matrix` | Dark Green → Bright Green | Neutral/tech |
 | `plasma` | Multi-color with brightness pulse | Mixed |
+| `ocean` | Deep Blue → Cyan → Sea White | Calm/oceanic |
+| `fire` | Black → Dark Red → Orange → Bright Yellow | Intense/fiery |
 
 Color scheme is auto-selected from VAD, but gradient names also influence final palette.

@@ -30,46 +30,46 @@ Example:
 
 ## Domain Transforms (9, auto-selected)
 
-Grammar selects 0-3 transforms per render based on energy/structure.
+Grammar selects 0-3 transforms per render based on energy/structure. Params can be static values or animated kwargs for GIF/video (e.g. `{"base": 0.0, "speed": 0.5, "mode": "linear"}`).
 
-| Transform | Params | Description |
-|-----------|--------|-------------|
-| `mirror_x` | — | Horizontal mirror |
-| `mirror_y` | — | Vertical mirror |
-| `mirror_quad` | — | Four-fold symmetry |
-| `kaleidoscope` | segments (3-8) | N-fold rotational symmetry |
-| `tile` | cols, rows (2-4) | Repeat/tile |
-| `rotate` | angle | Rotation |
-| `zoom` | factor (1.2-3.0) | Zoom in/out |
-| `spiral_warp` | twist (0.3-1.5) | Spiral domain warp |
-| `polar_remap` | — | Cartesian to polar |
+| Transform | Params | Animatable | Description |
+|-----------|--------|-----------|-------------|
+| `mirror_x` | — | — | Horizontal mirror |
+| `mirror_y` | — | — | Vertical mirror |
+| `mirror_quad` | — | — | Four-fold symmetry |
+| `kaleidoscope` | segments (3-8) | — | N-fold rotational symmetry |
+| `tile` | cols, rows (2-4) | — | Repeat/tile |
+| `rotate` | angle | angle (linear) | Rotation |
+| `zoom` | factor (1.2-3.0) | factor (oscillate) | Zoom in/out |
+| `spiral_warp` | twist (0.3-1.5) | twist (linear) | Spiral domain warp |
+| `polar_remap` | — | — | Cartesian to polar |
 
 ## PostFX Chain (7, auto-selected)
 
-Independent probability per effect. Applied to 160x160 buffer after rendering.
+Independent probability per effect. Applied to 160x160 buffer after rendering. 4 effects support time-driven animation for GIF/video.
 
-| PostFX | Params | Description |
-|--------|--------|-------------|
-| `vignette` | strength (0.3-0.7) | Darken edges |
-| `scanlines` | spacing (3-6), darkness (0.2-0.4) | Horizontal lines |
-| `threshold` | threshold (0.3-0.7) | Binary contrast |
-| `edge_detect` | — | Sobel edge outlines |
-| `invert` | — | Invert colors + density |
-| `color_shift` | hue_shift (0.05-0.25) | Hue rotation |
-| `pixelate` | block_size (3-6) | Lower resolution blocks |
+| PostFX | Params | Animation Params | Description |
+|--------|--------|-----------------|-------------|
+| `vignette` | strength (0.3-0.7) | `pulse_speed`, `pulse_amp` | Darken edges (pulsing) |
+| `scanlines` | spacing (3-6), darkness (0.2-0.4) | `scroll_speed` | Horizontal lines (scrolling) |
+| `threshold` | threshold (0.3-0.7) | — | Binary contrast |
+| `edge_detect` | — | — | Sobel edge outlines |
+| `invert` | — | — | Invert colors + density |
+| `color_shift` | hue_shift (0.05-0.25) | `drift_speed` | Hue rotation (drifting) |
+| `pixelate` | block_size (3-6) | `pulse_speed`, `pulse_amp` | Lower resolution blocks (pulsing) |
 
 ## Spatial Masks (6, auto-selected)
 
-Control how two effects blend across different regions.
+Control how two effects blend across different regions. All masks support `mask_anim_speed` param for GIF/video animation (0 = static, >0 = animated boundaries).
 
-| Mask | Description |
-|------|-------------|
-| `horizontal_split` | Top vs bottom |
-| `vertical_split` | Left vs right |
-| `diagonal` | Diagonal split with angle |
-| `radial` | Center vs edges gradient |
-| `noise` | Organic blobs via fractal noise |
-| `sdf` | Circle/box/ring geometric shapes |
+| Mask | Description | Animation |
+|------|-------------|-----------|
+| `horizontal_split` | Top vs bottom | Split oscillates |
+| `vertical_split` | Left vs right | Split oscillates |
+| `diagonal` | Diagonal split with angle | Angle rotates |
+| `radial` | Center vs edges gradient | Radius pulses |
+| `noise` | Organic blobs via fractal noise | Pattern drifts |
+| `sdf` | Circle/box/ring geometric shapes | Size pulses |
 
 ## Structural Variants (32 named, auto-selected)
 

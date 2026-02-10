@@ -229,6 +229,7 @@ class Engine:
                 fx_fn = POSTFX_REGISTRY.get(fx_type)
                 if fx_fn:
                     fx_kwargs = {k: v for k, v in fx.items() if k != "type"}
+                    fx_kwargs["_time"] = ctx.time
                     fx_fn(buffer, **fx_kwargs)
 
         # 5c. 低饱和度亮度衰减 (neutral/calm 等低唤醒情绪压暗效果纹理)

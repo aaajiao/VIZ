@@ -1078,23 +1078,46 @@ class VisualGrammar:
 
         # Spiral warp: 15-35%
         if self.rng.random() < 0.15 + energy * 0.20:
+            twist_base = self.rng.uniform(0.3, 1.5)
+            twist_val: Any = twist_base
+            if energy > 0.3 and self.rng.random() < 0.6:
+                twist_val = {
+                    "base": twist_base, "speed": 0.1 + energy * 0.3,
+                    "mode": "linear",
+                }
             transforms.append({
                 "type": "spiral_warp",
-                "twist": self.rng.uniform(0.3, 1.5),
+                "twist": twist_val,
             })
 
         # Rotation: 25%
         if self.rng.random() < 0.25:
+            angle_base = self.rng.uniform(-0.5, 0.5)
+            angle_val: Any = angle_base
+            if energy > 0.2 and self.rng.random() < 0.65:
+                angle_val = {
+                    "base": angle_base, "speed": 0.15 + energy * 0.4,
+                    "mode": "linear",
+                }
             transforms.append({
                 "type": "rotate",
-                "angle": self.rng.uniform(-0.5, 0.5),
+                "angle": angle_val,
             })
 
         # Zoom: 18-30%
         if self.rng.random() < 0.18 + energy * 0.12:
+            factor_base = self.rng.uniform(1.2, 3.0)
+            factor_val: Any = factor_base
+            if self.rng.random() < 0.5:
+                factor_val = {
+                    "base": factor_base,
+                    "speed": 0.3 + energy * 0.7,
+                    "amp": self.rng.uniform(0.2, 0.6),
+                    "mode": "oscillate",
+                }
             transforms.append({
                 "type": "zoom",
-                "factor": self.rng.uniform(1.2, 3.0),
+                "factor": factor_val,
             })
 
         # Polar remap: 8-15%
@@ -1113,18 +1136,25 @@ class VisualGrammar:
 
         # Vignette: 35-55%
         if self.rng.random() < 0.35 + intensity * 0.20:
-            chain.append({
+            vignette_params: dict[str, Any] = {
                 "type": "vignette",
                 "strength": self.rng.uniform(0.3, 0.7),
-            })
+            }
+            if energy > 0.3 and self.rng.random() < 0.5:
+                vignette_params["pulse_speed"] = 0.3 + energy * 0.7
+                vignette_params["pulse_amp"] = self.rng.uniform(0.1, 0.25)
+            chain.append(vignette_params)
 
         # Scanlines: 22-35%
         if self.rng.random() < 0.22 + energy * 0.13:
-            chain.append({
+            scanline_params: dict[str, Any] = {
                 "type": "scanlines",
                 "spacing": self.rng.choice([3, 4, 5, 6]),
                 "darkness": self.rng.uniform(0.2, 0.4),
-            })
+            }
+            if energy > 0.25 and self.rng.random() < 0.55:
+                scanline_params["scroll_speed"] = 0.5 + energy * 2.0
+            chain.append(scanline_params)
 
         # Threshold: 14-30% (structure-dependent)
         if self.rng.random() < 0.14 + structure * 0.16:
@@ -1143,17 +1173,24 @@ class VisualGrammar:
 
         # Color shift: 18-30%
         if self.rng.random() < 0.18 + energy * 0.12:
-            chain.append({
+            cs_params: dict[str, Any] = {
                 "type": "color_shift",
                 "hue_shift": self.rng.uniform(0.05, 0.25),
-            })
+            }
+            if energy > 0.3 and self.rng.random() < 0.5:
+                cs_params["drift_speed"] = self.rng.uniform(0.02, 0.1 + energy * 0.1)
+            chain.append(cs_params)
 
         # Pixelate: 9-19%
         if self.rng.random() < 0.09 + (1 - structure) * 0.10:
-            chain.append({
+            pix_params: dict[str, Any] = {
                 "type": "pixelate",
                 "block_size": self.rng.choice([3, 4, 5, 6]),
-            })
+            }
+            if energy > 0.4 and self.rng.random() < 0.4:
+                pix_params["pulse_speed"] = 0.3 + energy * 0.5
+                pix_params["pulse_amp"] = self.rng.uniform(1.0, 2.0)
+            chain.append(pix_params)
 
         # Guarantee at least 1 postfx
         if not chain:
@@ -1191,6 +1228,11 @@ class VisualGrammar:
 
         result: dict[str, Any] = {"mode": mode}
 
+        # Mask animation speed: driven by energy
+        anim_speed = 0.0
+        if energy > 0.25 and self.rng.random() < 0.55:
+            anim_speed = self.rng.uniform(0.3, 0.8 + energy * 1.2)
+
         if mode == "masked_split":
             mask_type = self._weighted_choice({
                 "horizontal_split": 0.3,
@@ -1201,6 +1243,7 @@ class VisualGrammar:
             result["mask_params"] = {
                 "mask_split": self.rng.uniform(0.3, 0.7),
                 "mask_softness": self.rng.uniform(0.05, 0.25),
+                "mask_anim_speed": anim_speed,
             }
             if mask_type == "diagonal":
                 result["mask_params"]["mask_angle"] = self.rng.uniform(-0.5, 0.5)
@@ -1213,6 +1256,7 @@ class VisualGrammar:
                 "mask_radius": self.rng.uniform(0.2, 0.5),
                 "mask_softness": self.rng.uniform(0.1, 0.3),
                 "mask_invert": self.rng.random() < 0.3,
+                "mask_anim_speed": anim_speed,
             }
 
         elif mode == "noise_masked":
@@ -1222,6 +1266,7 @@ class VisualGrammar:
                 "mask_noise_octaves": self.rng.randint(2, 4),
                 "mask_threshold": self.rng.uniform(0.3, 0.7),
                 "mask_softness": self.rng.uniform(0.1, 0.25),
+                "mask_anim_speed": anim_speed,
             }
 
         return result

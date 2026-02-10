@@ -65,13 +65,15 @@ echo '{"emotion":"panic","video":true}' | python3 viz.py generate
 
 | 字段 | 类型 | 说明 |
 |------|------|------|
-| `transforms` | list[dict] | 域变换链，如 `[{"type":"kaleidoscope","segments":6}]` |
-| `postfx` | list[dict] | 后处理链，如 `[{"type":"vignette","strength":0.5}]` |
+| `transforms` | list[dict] | 域变换链，如 `[{"type":"kaleidoscope","segments":6}]`；参数可为动画规格 |
+| `postfx` | list[dict] | 后处理链，如 `[{"type":"vignette","strength":0.5,"pulse_speed":0.5}]` |
 | `composition` | string | 合成模式：`blend` / `masked_split` / `radial_masked` / `noise_masked` |
 | `mask` | string | 遮罩类型+参数（CLI 格式：`radial:center_x=0.5,radius=0.3`） |
 | `variant` | string | 强制效果变体名（如 `warped`、`alien`、`turbulent`） |
 
 不指定时，文法系统根据情绪参数自动选择最优组合。指定时，精确覆盖文法选择。
+
+**GIF/视频动画增强：** 合成层（transforms、PostFX、masks）在动画模式下自动产生帧间变化。Transforms 支持动画 kwargs（旋转、缩放随时间变化），PostFX 支持滚动/脉动/漂移参数，masks 支持 `mask_anim_speed` 控制边界动画。Grammar 根据 energy 自动注入动画参数；Director Mode 也可手动指定。
 
 `params` 字段可用于微调效果的**变形参数**（deformation params），这些参数直接传递给效果：
 
@@ -285,9 +287,21 @@ echo '{
   "effect": "plasma",
   "variant": "warped",
   "transforms": [{"type": "kaleidoscope", "segments": 6}],
-  "postfx": [{"type": "vignette", "strength": 0.5}, {"type": "color_shift", "hue_shift": 0.1}],
+  "postfx": [{"type": "vignette", "strength": 0.5, "pulse_speed": 0.5, "pulse_amp": 0.2}, {"type": "color_shift", "hue_shift": 0.1, "drift_speed": 0.3}],
   "composition": "radial_masked",
   "seed": 100
+}' | python3 viz.py generate
+```
+
+### 8. 动画合成增强（GIF 模式）
+
+```bash
+echo '{
+  "emotion": "euphoria",
+  "video": true,
+  "transforms": [{"type": "rotate", "angle": {"base": 0.0, "speed": 0.3, "mode": "linear"}}],
+  "postfx": [{"type": "scanlines", "spacing": 4, "darkness": 0.3, "scroll_speed": 2.0}],
+  "params": {"mask_anim_speed": 1.0}
 }' | python3 viz.py generate
 ```
 

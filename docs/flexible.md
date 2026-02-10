@@ -221,9 +221,9 @@ class SceneSpec:
     saturation: float           # 饱和度
     brightness: float           # 亮度
 
-    # 域变换 (Domain transforms)
+    # 域变换 (Domain transforms — kwargs 可包含动画规格)
     domain_transforms: list[dict]   # 变换链 [{"type": "kaleidoscope", "segments": 6}, ...]
-    postfx_chain: list[dict]        # 后处理链 [{"type": "vignette", "strength": 0.5}, ...]
+    postfx_chain: list[dict]        # 后处理链 [{"type": "vignette", "strength": 0.5, "pulse_speed": 0.5}, ...]
 
     # 合成模式 (Composition mode)
     composition_mode: str           # "blend" / "masked_split" / "radial_masked" / "noise_masked"
@@ -249,9 +249,9 @@ class SceneSpec:
 | `_choose_particle_chars()` | **25+ 组** (经典/几何/box 线段/方块/盲文) | **energy + warmth** |
 | `_choose_text_elements()` | 8 组情绪词池（中英 + **semigraphic 符号**） | valence × arousal |
 | `_choose_kaomoji_mood()` | 6 象限情绪 | valence × arousal |
-| `_choose_domain_transforms()` | mirror_x/y/quad, kaleidoscope, tile, rotate, zoom, spiral_warp, **polar_remap** | structure + energy (概率提高至 30-55%) |
-| `_choose_postfx_chain()` | vignette, scanlines, threshold, edge_detect, invert, color_shift, pixelate | energy + structure + intensity (概率提高, 保底 ≥1) |
-| `_choose_composition_mode()` | blend, masked_split, radial_masked, noise_masked | energy + structure (blend 降至 25%) |
+| `_choose_domain_transforms()` | mirror_x/y/quad, kaleidoscope, tile, rotate, zoom, spiral_warp, **polar_remap** | structure + energy (概率提高至 30-55%); rotate/zoom/spiral_warp 支持动画 kwargs |
+| `_choose_postfx_chain()` | vignette, scanlines, threshold, edge_detect, invert, color_shift, pixelate | energy + structure + intensity (概率提高, 保底 ≥1); 4 种支持动画参数 |
+| `_choose_composition_mode()` | blend, masked_split, radial_masked, noise_masked | energy + structure (blend 降至 25%); masks 注入 `mask_anim_speed` |
 
 详见 [box_chars.md](box_chars.md) 获取完整的字符集和梯度参考。
 
