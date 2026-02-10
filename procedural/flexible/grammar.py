@@ -105,6 +105,17 @@ class SceneSpec:
     content_body: str | None = None
     content_source: str | None = None
 
+    # 域变换 (Domain transforms)
+    domain_transforms: list[dict[str, Any]] = field(default_factory=list)
+
+    # 后处理链 (Post-FX chain)
+    postfx_chain: list[dict[str, Any]] = field(default_factory=list)
+
+    # 合成模式 (Composition mode)
+    composition_mode: str = "blend"
+    mask_type: str | None = None
+    mask_params: dict[str, Any] = field(default_factory=dict)
+
 
 class VisualGrammar:
     """
@@ -160,6 +171,19 @@ class VisualGrammar:
             )
             spec.overlay_blend = self._choose_blend_mode(energy)
             spec.overlay_mix = self.rng.uniform(0.15, 0.5)
+
+        # === 域变换 ===
+        spec.domain_transforms = self._choose_domain_transforms(energy, structure)
+
+        # === 合成模式 (当有叠加效果时) ===
+        if spec.overlay_effect is not None:
+            comp = self._choose_composition_mode(energy, structure)
+            spec.composition_mode = comp["mode"]
+            spec.mask_type = comp.get("mask_type")
+            spec.mask_params = comp.get("mask_params", {})
+
+        # === 后处理链 ===
+        spec.postfx_chain = self._choose_postfx_chain(energy, structure, intensity)
 
         # === 布局 ===
         spec.layout_type = self._choose_layout(structure)
@@ -538,38 +562,43 @@ class VisualGrammar:
         为效果生成连续参数
 
         不同于旧系统的固定范围随机，这里参数受 energy/structure 影响。
+        变体注册表提供结构变化，抖动提供微观变化。
         """
         rng = self.rng
 
         if effect_name == "plasma":
-            return {
-                "frequency": rng.uniform(0.02, 0.08 + energy * 0.12),
+            params = {
+                "frequency": self._jitter(
+                    rng.uniform(0.02, 0.08 + energy * 0.12), 0.03, 0.005, 0.3),
                 "speed": rng.uniform(0.3, 1.0 + energy * 4.0),
                 "color_phase": rng.uniform(0.0, 1.0),
             }
         elif effect_name == "wave":
-            return {
+            params = {
                 "wave_count": rng.randint(1, 3 + int(energy * 7)),
-                "frequency": rng.uniform(0.02, 0.05 + energy * 0.15),
+                "frequency": self._jitter(
+                    rng.uniform(0.02, 0.05 + energy * 0.15), 0.02, 0.005, 0.3),
                 "amplitude": rng.uniform(0.5, 1.0 + energy * 2.0),
                 "speed": rng.uniform(0.3, 1.0 + energy * 4.0),
             }
         elif effect_name == "flame":
-            return {
+            params = {
                 "intensity": rng.uniform(0.5, 1.0 + energy * 2.0),
             }
         elif effect_name == "moire":
             base_freq = 2.0 + structure * 10.0
-            return {
-                "freq_a": rng.uniform(base_freq * 0.5, base_freq * 1.5),
-                "freq_b": rng.uniform(base_freq * 0.5, base_freq * 1.5),
+            params = {
+                "freq_a": self._jitter(
+                    rng.uniform(base_freq * 0.5, base_freq * 1.5), 2.0, 1.0, 25.0),
+                "freq_b": self._jitter(
+                    rng.uniform(base_freq * 0.5, base_freq * 1.5), 2.0, 1.0, 25.0),
                 "speed_a": rng.uniform(-2.0, 2.0) * (0.5 + energy),
                 "speed_b": rng.uniform(-2.0, 2.0) * (0.5 + energy),
                 "offset_a": rng.uniform(-0.5, 0.5),
                 "offset_b": rng.uniform(-0.5, 0.5),
             }
         elif effect_name == "noise_field":
-            return {
+            params = {
                 "scale": rng.uniform(0.02, 0.05 + energy * 0.15),
                 "octaves": rng.randint(2, 3 + int(structure * 5)),
                 "lacunarity": rng.uniform(1.5, 2.0 + structure),
@@ -579,7 +608,7 @@ class VisualGrammar:
                 "turbulence": rng.random() < (0.3 + energy * 0.4),
             }
         elif effect_name == "sdf_shapes":
-            return {
+            params = {
                 "shape_count": rng.randint(2, 3 + int(energy * 7)),
                 "shape_type": rng.choice(["circle", "box", "ring", "cross"]),
                 "radius_min": rng.uniform(0.02, 0.05 + structure * 0.05),
@@ -589,31 +618,33 @@ class VisualGrammar:
                 "speed": rng.uniform(0.3, 1.0 + energy * 4.0),
             }
         elif effect_name == "cppn":
-            return {
+            params = {
                 "num_hidden": rng.randint(2, 5),
                 "layer_size": rng.choice([4, 6, 8, 10, 12]),
                 "seed": rng.randint(0, 100000),
             }
         elif effect_name == "ten_print":
-            return {
+            params = {
                 "cell_size": rng.randint(4, 8 + int(structure * 4)),
                 "probability": rng.uniform(0.3, 0.7),
                 "speed": rng.uniform(0.3, 1.0 + energy * 3.0),
             }
         elif effect_name == "game_of_life":
-            return {
+            params = {
                 "density": rng.uniform(0.3, 0.5 + energy * 0.2),
                 "speed": rng.uniform(2.0, 5.0 + energy * 10.0),
                 "wrap": True,
             }
         elif effect_name == "donut":
-            return {
-                "R1": rng.uniform(0.3, 0.5),
-                "R2": rng.uniform(0.1, 0.2),
+            params = {
+                "R1": self._jitter(
+                    rng.uniform(0.15, 0.6 + energy * 0.4), 0.2, 0.1, 3.0),
+                "R2": self._jitter(
+                    rng.uniform(0.05, 0.3 + structure * 0.3), 0.15, 0.05, 4.0),
                 "rotation_speed": rng.uniform(0.3, 1.0 + energy * 2.0),
             }
         elif effect_name == "mod_xor":
-            return {
+            params = {
                 "modulus": rng.choice([8, 16, 32, 64]),
                 "operation": rng.choice(["xor", "and", "or"]),
                 "layers": rng.randint(1, 2 + int(energy)),
@@ -621,35 +652,36 @@ class VisualGrammar:
                 "zoom": rng.uniform(0.5, 1.5 + structure * 0.5),
             }
         elif effect_name == "wireframe_cube":
-            return {
+            params = {
                 "rotation_speed_x": rng.uniform(0.2, 0.5 + energy * 1.0),
                 "rotation_speed_y": rng.uniform(0.3, 0.6 + energy * 1.0),
                 "rotation_speed_z": rng.uniform(0.1, 0.4 + energy * 0.8),
-                "scale": rng.uniform(0.3, 0.5),
+                "scale": self._jitter(
+                    rng.uniform(0.2, 0.5 + structure * 0.2), 0.1, 0.1, 0.8),
                 "edge_thickness": rng.uniform(0.01, 0.03 + structure * 0.02),
             }
         elif effect_name == "chroma_spiral":
-            return {
+            params = {
                 "arms": rng.randint(1, 4 + int(energy * 4)),
                 "tightness": rng.uniform(0.1, 1.0 + structure * 1.0),
                 "speed": rng.uniform(0.3, 1.0 + energy * 3.0),
                 "chroma_offset": rng.uniform(0.0, 0.1 + energy * 0.2),
             }
         elif effect_name == "wobbly":
-            return {
+            params = {
                 "warp_amount": rng.uniform(0.1, 0.4 + energy * 0.6),
                 "warp_freq": rng.uniform(0.02, 0.04 + structure * 0.02),
                 "iterations": rng.randint(1, 2 + int(energy)),
                 "speed": rng.uniform(0.2, 0.5 + energy * 1.5),
             }
         elif effect_name == "sand_game":
-            return {
+            params = {
                 "spawn_rate": rng.uniform(0.1, 0.3 + energy * 0.5),
                 "gravity_speed": rng.randint(1, 2 + int(energy * 2)),
                 "particle_types": rng.randint(1, 2 + int(structure)),
             }
         elif effect_name == "slime_dish":
-            return {
+            params = {
                 "agent_count": rng.randint(500, 2000 + int(energy * 3000)),
                 "sensor_distance": rng.randint(3, 9 + int(structure * 6)),
                 "sensor_angle": rng.uniform(0.2, 0.6 + structure * 0.4),
@@ -657,14 +689,20 @@ class VisualGrammar:
                 "speed": rng.randint(1, 3 + int(energy * 3)),
             }
         elif effect_name == "dyna":
-            return {
+            params = {
                 "attractor_count": rng.randint(2, 4 + int(energy * 4)),
                 "frequency": rng.uniform(0.1, 0.5 + energy * 1.5),
                 "speed": rng.uniform(0.3, 1.0 + energy * 3.0),
                 "bounce": rng.random() < 0.7,
             }
         else:
-            return {}
+            params = {}
+
+        # Merge variant params (overrides base where specified)
+        variant_params = self._sample_variant_params(effect_name)
+        params.update(variant_params)
+
+        return params
 
     def _choose_text_elements(
         self, valence: float, arousal: float, energy: float
@@ -976,7 +1014,213 @@ class VisualGrammar:
                     }
                 )
 
+    # === 域变换 / 后处理 / 合成模式 产生式规则 ===
+
+    def _choose_domain_transforms(
+        self, energy: float, structure: float
+    ) -> list[dict[str, Any]]:
+        """选择域变换 - Choose domain transforms"""
+        transforms: list[dict[str, Any]] = []
+
+        # Mirror symmetry: 15-40% chance (higher with structure)
+        mirror_chance = 0.15 + structure * 0.25
+        if self.rng.random() < mirror_chance:
+            mirror_type = self._weighted_choice({
+                "mirror_x": 0.3,
+                "mirror_y": 0.3,
+                "mirror_quad": 0.2,
+                "kaleidoscope": 0.2,
+            })
+            if mirror_type == "kaleidoscope":
+                transforms.append({
+                    "type": "kaleidoscope",
+                    "segments": self.rng.choice([3, 4, 5, 6, 8]),
+                })
+            else:
+                transforms.append({"type": mirror_type})
+
+        # Tiling: 10-25%
+        if self.rng.random() < 0.10 + structure * 0.15:
+            transforms.append({
+                "type": "tile",
+                "cols": self.rng.choice([2, 3, 4]),
+                "rows": self.rng.choice([2, 3, 4]),
+            })
+
+        # Spiral warp: 8-20%
+        if self.rng.random() < 0.08 + energy * 0.12:
+            transforms.append({
+                "type": "spiral_warp",
+                "twist": self.rng.uniform(0.3, 1.5),
+            })
+
+        # Rotation: 15%
+        if self.rng.random() < 0.15:
+            transforms.append({
+                "type": "rotate",
+                "angle": self.rng.uniform(-0.5, 0.5),
+            })
+
+        # Zoom: 10-20%
+        if self.rng.random() < 0.10 + energy * 0.10:
+            transforms.append({
+                "type": "zoom",
+                "factor": self.rng.uniform(1.2, 3.0),
+            })
+
+        return transforms
+
+    def _choose_postfx_chain(
+        self, energy: float, structure: float, intensity: float
+    ) -> list[dict[str, Any]]:
+        """选择后处理链 - Choose post-FX chain"""
+        chain: list[dict[str, Any]] = []
+
+        # Vignette: 20-35%
+        if self.rng.random() < 0.20 + intensity * 0.15:
+            chain.append({
+                "type": "vignette",
+                "strength": self.rng.uniform(0.3, 0.7),
+            })
+
+        # Scanlines: 12-20%
+        if self.rng.random() < 0.12 + energy * 0.08:
+            chain.append({
+                "type": "scanlines",
+                "spacing": self.rng.choice([3, 4, 5, 6]),
+                "darkness": self.rng.uniform(0.2, 0.4),
+            })
+
+        # Threshold: 8-20% (structure-dependent)
+        if self.rng.random() < 0.08 + structure * 0.12:
+            chain.append({
+                "type": "threshold",
+                "threshold": self.rng.uniform(0.3, 0.7),
+            })
+
+        # Edge detect: 6-14%
+        if self.rng.random() < 0.06 + structure * 0.08:
+            chain.append({"type": "edge_detect"})
+
+        # Invert: 5-10%
+        if self.rng.random() < 0.05 + energy * 0.05:
+            chain.append({"type": "invert"})
+
+        # Color shift: 10-18%
+        if self.rng.random() < 0.10 + energy * 0.08:
+            chain.append({
+                "type": "color_shift",
+                "hue_shift": self.rng.uniform(0.05, 0.25),
+            })
+
+        # Pixelate: 5-12%
+        if self.rng.random() < 0.05 + (1 - structure) * 0.07:
+            chain.append({
+                "type": "pixelate",
+                "block_size": self.rng.choice([3, 4, 5, 6]),
+            })
+
+        return chain
+
+    def _choose_composition_mode(
+        self, energy: float, structure: float
+    ) -> dict[str, Any]:
+        """选择合成模式 - Choose composition mode"""
+        weights = {
+            "blend": 0.40,
+            "masked_split": 0.20 + structure * 0.15,
+            "radial_masked": 0.15 + (1 - structure) * 0.10,
+            "noise_masked": 0.15 + energy * 0.15,
+        }
+        mode = self._weighted_choice(weights)
+
+        result: dict[str, Any] = {"mode": mode}
+
+        if mode == "masked_split":
+            mask_type = self._weighted_choice({
+                "horizontal_split": 0.3,
+                "vertical_split": 0.3,
+                "diagonal": 0.4,
+            })
+            result["mask_type"] = mask_type
+            result["mask_params"] = {
+                "mask_split": self.rng.uniform(0.3, 0.7),
+                "mask_softness": self.rng.uniform(0.05, 0.25),
+            }
+            if mask_type == "diagonal":
+                result["mask_params"]["mask_angle"] = self.rng.uniform(-0.5, 0.5)
+
+        elif mode == "radial_masked":
+            result["mask_type"] = "radial"
+            result["mask_params"] = {
+                "mask_center_x": self.rng.uniform(0.3, 0.7),
+                "mask_center_y": self.rng.uniform(0.3, 0.7),
+                "mask_radius": self.rng.uniform(0.2, 0.5),
+                "mask_softness": self.rng.uniform(0.1, 0.3),
+                "mask_invert": self.rng.random() < 0.3,
+            }
+
+        elif mode == "noise_masked":
+            result["mask_type"] = "noise"
+            result["mask_params"] = {
+                "mask_noise_scale": self.rng.uniform(0.03, 0.1),
+                "mask_noise_octaves": self.rng.randint(2, 4),
+                "mask_threshold": self.rng.uniform(0.3, 0.7),
+                "mask_softness": self.rng.uniform(0.1, 0.25),
+            }
+
+        return result
+
     # === 工具方法 ===
+
+    def _jitter(
+        self, base: float, amount: float,
+        lo: float | None = None, hi: float | None = None,
+    ) -> float:
+        """添加高斯抖动 - Add Gaussian jitter to a base value"""
+        offset = self.rng.gauss(0, amount * 0.4)
+        result = base + offset
+        if lo is not None:
+            result = max(lo, result)
+        if hi is not None:
+            result = min(hi, result)
+        return result
+
+    def _sample_variant_params(self, effect_name: str) -> dict[str, Any]:
+        """从变体注册表采样参数 - Sample parameters from variant registry"""
+        try:
+            from procedural.effects.variants import VARIANT_REGISTRY
+        except ImportError:
+            return {}
+
+        variants = VARIANT_REGISTRY.get(effect_name)
+        if not variants:
+            return {}
+
+        # Weighted selection
+        total = sum(v["weight"] for v in variants)
+        r = self.rng.random() * total
+        cumulative = 0.0
+        selected = variants[0]
+        for v in variants:
+            cumulative += v["weight"]
+            if r <= cumulative:
+                selected = v
+                break
+
+        # Sample params from ranges
+        params: dict[str, Any] = {}
+        for key, val in selected["params"].items():
+            if isinstance(val, tuple) and len(val) == 2:
+                lo, hi = val
+                if isinstance(lo, int) and isinstance(hi, int):
+                    params[key] = self.rng.randint(lo, hi)
+                else:
+                    params[key] = self.rng.uniform(float(lo), float(hi))
+            else:
+                params[key] = val
+
+        return params
 
     def _weighted_choice(self, weights: dict[str, float]) -> str:
         """加权随机选择"""

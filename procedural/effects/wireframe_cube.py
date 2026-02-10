@@ -16,6 +16,8 @@
     rotation_speed_z: Z 轴旋转速度 (默认 0.3)
     scale: 立方体缩放 (默认 0.3)
     edge_thickness: 边线粗细 (默认 0.015)
+    vertex_noise: 顶点噪声位移 (默认 0.0, 范围 0.0-1.0)
+    morph: 立方体-球体变形 (默认 0.0, 范围 0.0-1.0)
 
 用法::
 
@@ -31,6 +33,7 @@ from typing import Any
 
 from procedural.types import Context, Cell, Buffer
 from procedural.core.mathx import clamp
+from procedural.core.noise import ValueNoise
 from procedural.core.vec import Vec2
 from procedural.palette import value_to_color, value_to_color_continuous
 from .base import BaseEffect
@@ -47,7 +50,7 @@ except ImportError:
 
 __all__ = ["WireframeCubeEffect"]
 
-# 立方体 8 个顶点 (±0.5, ±0.5, ±0.5)
+# 立方体 8 个顶点 (+-0.5, +-0.5, +-0.5)
 _CUBE_VERTICES = [
     Vec3(-0.5, -0.5, -0.5),
     Vec3(+0.5, -0.5, -0.5),
@@ -82,6 +85,8 @@ class WireframeCubeEffect(BaseEffect):
         rotation_speed_z: Z 轴旋转速度 (默认 0.3)
         scale: 立方体缩放 (默认 0.3)
         edge_thickness: 边线粗细 (默认 0.015)
+        vertex_noise: 顶点噪声位移 (默认 0.0)
+        morph: 立方体-球体变形 (默认 0.0)
     """
 
     def pre(self, ctx: Context, buffer: Buffer) -> dict[str, Any]:
@@ -97,6 +102,15 @@ class WireframeCubeEffect(BaseEffect):
         warmth = ctx.params.get("warmth", None)
         saturation = ctx.params.get("saturation", None)
 
+        # 变形参数 - Deformation params
+        vertex_noise_amt = ctx.params.get("vertex_noise", 0.0)
+        morph = ctx.params.get("morph", 0.0)
+
+        # 噪声源 (用于顶点变形)
+        noise_fn = None
+        if vertex_noise_amt > 0:
+            noise_fn = ValueNoise(seed=ctx.seed + 55)
+
         t = ctx.time
         w = ctx.width
         h = ctx.height
@@ -108,9 +122,29 @@ class WireframeCubeEffect(BaseEffect):
 
         # 旋转并投影顶点到归一化屏幕空间
         projected = []
-        for v in _CUBE_VERTICES:
+        for vi, v in enumerate(_CUBE_VERTICES):
+            mv = v
+
+            # 立方体-球体变形
+            if morph > 0:
+                vlen = math.sqrt(v.x * v.x + v.y * v.y + v.z * v.z)
+                if vlen > 0.001:
+                    sphere_v = Vec3(v.x / vlen * 0.5, v.y / vlen * 0.5, v.z / vlen * 0.5)
+                    mv = Vec3(
+                        v.x * (1.0 - morph) + sphere_v.x * morph,
+                        v.y * (1.0 - morph) + sphere_v.y * morph,
+                        v.z * (1.0 - morph) + sphere_v.z * morph,
+                    )
+
+            # 顶点噪声位移
+            if noise_fn is not None and vertex_noise_amt > 0:
+                nx = (noise_fn(vi * 7.1, t * 0.5) - 0.5) * vertex_noise_amt * 0.5
+                ny = (noise_fn(t * 0.5, vi * 7.1) - 0.5) * vertex_noise_amt * 0.5
+                nz = (noise_fn(vi * 3.7, vi * 5.3 + t * 0.3) - 0.5) * vertex_noise_amt * 0.5
+                mv = Vec3(mv.x + nx, mv.y + ny, mv.z + nz)
+
             # 缩放
-            sv = Vec3(v.x * scale, v.y * scale, v.z * scale)
+            sv = Vec3(mv.x * scale, mv.y * scale, mv.z * scale)
             # 旋转
             sv = rotate_x(sv, ax)
             sv = rotate_y(sv, ay)
@@ -120,9 +154,9 @@ class WireframeCubeEffect(BaseEffect):
             # 投影到屏幕空间 (-1 to 1 range)
             sx, sy, _ = project_perspective(sv, fov=60.0, aspect=1.0)
             # 转为归一化坐标 (0 to 1)
-            nx = sx * 0.5 + 0.5
-            ny = -sy * 0.5 + 0.5
-            projected.append(Vec2(nx, ny))
+            px = sx * 0.5 + 0.5
+            py = -sy * 0.5 + 0.5
+            projected.append(Vec2(px, py))
 
         # 构建距离场缓冲区
         dist_buffer = [[0.0] * w for _ in range(h)]

@@ -32,6 +32,7 @@ from typing import Any
 
 from procedural.types import Context, Cell, Buffer
 from procedural.core.mathx import clamp, fract
+from procedural.core.noise import ValueNoise
 from procedural.palette import value_to_color, value_to_color_continuous
 from .base import BaseEffect
 
@@ -70,6 +71,7 @@ class ModXorEffect(BaseEffect):
         layers: 叠加层数 (默认 1, 范围 1-3)
         speed: 动画速度 (默认 0.5)
         zoom: 缩放级别 (默认 1.0)
+        distortion: 坐标噪声扭曲 (默认 0.0, 范围 0.0-1.0)
 
     示例::
 
@@ -96,6 +98,14 @@ class ModXorEffect(BaseEffect):
         warmth = ctx.params.get("warmth", None)
         saturation = ctx.params.get("saturation", None)
 
+        # 变形参数 - Deformation params
+        distortion = ctx.params.get("distortion", 0.0)
+
+        # 噪声源 (用于坐标扭曲)
+        noise_fn = None
+        if distortion > 0:
+            noise_fn = ValueNoise(seed=ctx.seed + 66)
+
         return {
             "modulus": max(2, int(modulus)),
             "op_func": op_func,
@@ -104,6 +114,8 @@ class ModXorEffect(BaseEffect):
             "zoom": zoom,
             "warmth": warmth,
             "saturation": saturation,
+            "distortion": distortion,
+            "noise_fn": noise_fn,
         }
 
     def main(self, x: int, y: int, ctx: Context, state: dict[str, Any]) -> Cell:
@@ -113,6 +125,8 @@ class ModXorEffect(BaseEffect):
         layers = state["layers"]
         speed = state["speed"]
         zoom = state["zoom"]
+        distortion = state["distortion"]
+        noise_fn = state["noise_fn"]
 
         t = ctx.time * speed
 
@@ -120,8 +134,20 @@ class ModXorEffect(BaseEffect):
         # Zoom from center
         cx = ctx.width / 2.0
         cy = ctx.height / 2.0
-        sx = int((x - cx) / zoom + cx + t * 5.0)
-        sy = int((y - cy) / zoom + cy + t * 3.0)
+
+        # 坐标计算 (浮点)
+        fx = (x - cx) / zoom + cx + t * 5.0
+        fy = (y - cy) / zoom + cy + t * 3.0
+
+        # 噪声扭曲整数坐标
+        if noise_fn is not None and distortion > 0:
+            u = x / ctx.width
+            v = y / ctx.height
+            fx += (noise_fn(u * 4.0, v * 4.0 + t * 0.2) - 0.5) * distortion * ctx.width * 0.15
+            fy += (noise_fn(u * 4.0 + 50.0, v * 4.0 + 50.0 + t * 0.2) - 0.5) * distortion * ctx.height * 0.15
+
+        sx = int(fx)
+        sy = int(fy)
 
         # Accumulate across layers
         total = 0.0

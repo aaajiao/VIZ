@@ -32,6 +32,7 @@ from typing import Any
 
 from procedural.types import Context, Cell, Buffer
 from procedural.core.mathx import clamp, fract, TAU
+from procedural.core.noise import ValueNoise
 from procedural.palette import value_to_color, value_to_color_continuous
 from .base import BaseEffect
 
@@ -49,6 +50,8 @@ class ChromaSpiralEffect(BaseEffect):
         tightness: 螺旋紧密度 (默认 0.5, 范围 0.1-2.0)
         speed: 动画速度 (默认 1.0)
         chroma_offset: 色差偏移量 (默认 0.1, 范围 0.0-0.3)
+        distortion: 极坐标噪声扭曲 (默认 0.0, 范围 0.0-1.0)
+        multi_center: 多中心点数量 (默认 1, 范围 1-4)
 
     示例::
 
@@ -74,6 +77,25 @@ class ChromaSpiralEffect(BaseEffect):
         warmth = ctx.params.get("warmth", None)
         saturation = ctx.params.get("saturation", None)
 
+        # 变形参数 - Deformation params
+        distortion = ctx.params.get("distortion", 0.0)
+        multi_center = max(1, int(ctx.params.get("multi_center", 1)))
+
+        # 噪声源 (用于极坐标扭曲)
+        noise_fn = None
+        if distortion > 0:
+            noise_fn = ValueNoise(seed=ctx.seed + 88)
+
+        # 多中心点: 围绕画布中心均匀分布
+        centers = [(center_x, center_y)]
+        if multi_center > 1:
+            centers = []
+            for ci in range(multi_center):
+                angle = ci * (TAU / multi_center)
+                cx = center_x + ctx.width * 0.15 * math.cos(angle)
+                cy = center_y + ctx.height * 0.15 * math.sin(angle)
+                centers.append((cx, cy))
+
         return {
             "arms": max(1, int(arms)),
             "tightness": tightness,
@@ -83,6 +105,10 @@ class ChromaSpiralEffect(BaseEffect):
             "center_y": center_y,
             "warmth": warmth,
             "saturation": saturation,
+            "distortion": distortion,
+            "noise_fn": noise_fn,
+            "multi_center": multi_center,
+            "centers": centers,
         }
 
     def main(self, x: int, y: int, ctx: Context, state: dict[str, Any]) -> Cell:
@@ -91,39 +117,90 @@ class ChromaSpiralEffect(BaseEffect):
         tightness = state["tightness"]
         speed = state["speed"]
         chroma_offset = state["chroma_offset"]
-        center_x = state["center_x"]
-        center_y = state["center_y"]
+        distortion = state["distortion"]
+        noise_fn = state["noise_fn"]
+        multi_center = state["multi_center"]
+        centers = state["centers"]
 
         t = ctx.time * speed
 
-        # Compute polar coordinates from center
-        dx = x - center_x
-        dy = y - center_y
-        radius = math.sqrt(dx * dx + dy * dy)
-        angle = math.atan2(dy, dx)
+        if multi_center > 1:
+            # 多中心模式: 叠加多个螺旋中心
+            r_total = 0.0
+            g_total = 0.0
+            b_total = 0.0
+            for ci, (cx, cy) in enumerate(centers):
+                dx = x - cx
+                dy = y - cy
+                radius = math.sqrt(dx * dx + dy * dy)
+                angle = math.atan2(dy, dx)
 
-        # Normalize radius by half the smaller dimension
-        max_radius = min(ctx.width, ctx.height) / 2.0
-        norm_radius = radius / max_radius if max_radius > 0 else 0.0
+                max_radius = min(ctx.width, ctx.height) / 2.0
+                norm_radius = radius / max_radius if max_radius > 0 else 0.0
 
-        # Spiral value for each RGB channel with chromatic offset
-        # Base spiral: fract(angle/TAU * arms + radius * tightness + t)
-        def spiral_value(r_offset: float, a_offset: float) -> float:
-            r = norm_radius + r_offset
-            a = angle + a_offset
-            return fract(a / TAU * arms + r * tightness * 10.0 + t)
+                # 噪声扭曲
+                if noise_fn is not None and distortion > 0:
+                    u = x / ctx.width
+                    v = y / ctx.height
+                    angle += (noise_fn(u * 4.0 + ci * 10.0, v * 4.0) - 0.5) * distortion * 2.0
+                    norm_radius += (noise_fn(u * 4.0 + ci * 10.0 + 50.0, v * 4.0 + 50.0) - 0.5) * distortion * 0.3
 
-        # Red channel - slight outward offset
-        r_val = spiral_value(chroma_offset, chroma_offset * 0.5)
-        # Green channel - no offset (reference)
-        g_val = spiral_value(0.0, 0.0)
-        # Blue channel - slight inward offset
-        b_val = spiral_value(-chroma_offset, -chroma_offset * 0.5)
+                def spiral_value(r_off, a_off):
+                    r = norm_radius + r_off
+                    a = angle + a_off
+                    return fract(a / TAU * arms + r * tightness * 10.0 + t + ci * 0.7)
 
-        # Apply smoothing curve to each channel
-        r_val = r_val * r_val * (3.0 - 2.0 * r_val)
-        g_val = g_val * g_val * (3.0 - 2.0 * g_val)
-        b_val = b_val * b_val * (3.0 - 2.0 * b_val)
+                r_val = spiral_value(chroma_offset, chroma_offset * 0.5)
+                g_val = spiral_value(0.0, 0.0)
+                b_val = spiral_value(-chroma_offset, -chroma_offset * 0.5)
+
+                r_total += r_val * r_val * (3.0 - 2.0 * r_val)
+                g_total += g_val * g_val * (3.0 - 2.0 * g_val)
+                b_total += b_val * b_val * (3.0 - 2.0 * b_val)
+
+            r_val = r_total / multi_center
+            g_val = g_total / multi_center
+            b_val = b_total / multi_center
+        else:
+            # 标准单中心模式
+            center_x = state["center_x"]
+            center_y = state["center_y"]
+
+            # Compute polar coordinates from center
+            dx = x - center_x
+            dy = y - center_y
+            radius = math.sqrt(dx * dx + dy * dy)
+            angle = math.atan2(dy, dx)
+
+            # Normalize radius by half the smaller dimension
+            max_radius = min(ctx.width, ctx.height) / 2.0
+            norm_radius = radius / max_radius if max_radius > 0 else 0.0
+
+            # 噪声扭曲极坐标
+            if noise_fn is not None and distortion > 0:
+                u = x / ctx.width
+                v = y / ctx.height
+                angle += (noise_fn(u * 4.0, v * 4.0) - 0.5) * distortion * 2.0
+                norm_radius += (noise_fn(u * 4.0 + 50.0, v * 4.0 + 50.0) - 0.5) * distortion * 0.3
+
+            # Spiral value for each RGB channel with chromatic offset
+            # Base spiral: fract(angle/TAU * arms + radius * tightness + t)
+            def spiral_value(r_offset: float, a_offset: float) -> float:
+                r = norm_radius + r_offset
+                a = angle + a_offset
+                return fract(a / TAU * arms + r * tightness * 10.0 + t)
+
+            # Red channel - slight outward offset
+            r_val = spiral_value(chroma_offset, chroma_offset * 0.5)
+            # Green channel - no offset (reference)
+            g_val = spiral_value(0.0, 0.0)
+            # Blue channel - slight inward offset
+            b_val = spiral_value(-chroma_offset, -chroma_offset * 0.5)
+
+            # Apply smoothing curve to each channel
+            r_val = r_val * r_val * (3.0 - 2.0 * r_val)
+            g_val = g_val * g_val * (3.0 - 2.0 * g_val)
+            b_val = b_val * b_val * (3.0 - 2.0 * b_val)
 
         # Average for char_idx
         avg_value = (r_val + g_val + b_val) / 3.0

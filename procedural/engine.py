@@ -220,6 +220,17 @@ class Engine:
         # 5. 后处理阶段
         effect.post(ctx, buffer, state)
 
+        # 5b. 后处理特效链 (PostFX)
+        postfx_chain = params.get("_postfx_chain", [])
+        if postfx_chain:
+            from procedural.postfx import POSTFX_REGISTRY
+            for fx in postfx_chain:
+                fx_type = fx.get("type", "")
+                fx_fn = POSTFX_REGISTRY.get(fx_type)
+                if fx_fn:
+                    fx_kwargs = {k: v for k, v in fx.items() if k != "type"}
+                    fx_fn(buffer, **fx_kwargs)
+
         # 6. Buffer → 低分辨率图像
         img = buffer_to_image(
             buffer,

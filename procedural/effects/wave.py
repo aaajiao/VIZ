@@ -34,7 +34,8 @@ import math
 from typing import Any
 
 from procedural.types import Context, Cell, Buffer
-from procedural.core.mathx import clamp
+from procedural.core.mathx import clamp, mix
+from procedural.core.noise import ValueNoise
 from procedural.palette import value_to_color, value_to_color_continuous
 from .base import BaseEffect
 
@@ -53,6 +54,8 @@ class WaveEffect(BaseEffect):
         amplitude: 波的振幅 (默认 1.0, 范围 0.5-3.0)
         speed: 动画速度 (默认 1.0, 范围 0.1-5.0)
         color_scheme: 颜色方案 (默认 'ocean')
+        self_warp: 自扭曲量 (默认 0.0, 范围 0.0-1.0)
+        noise_injection: 噪声注入量 (默认 0.0, 范围 0.0-1.0)
 
     参数范围说明:
         - wave_count: 1 (单波) 到 10 (复杂干涉)
@@ -112,6 +115,15 @@ class WaveEffect(BaseEffect):
         warmth = ctx.params.get("warmth", None)
         saturation = ctx.params.get("saturation", None)
 
+        # 变形参数 - Deformation params
+        self_warp = ctx.params.get("self_warp", 0.0)
+        noise_injection = ctx.params.get("noise_injection", 0.0)
+
+        # 噪声源 (用于坐标扰动)
+        noise_fn = None
+        if noise_injection > 0:
+            noise_fn = ValueNoise(seed=ctx.seed + 44)
+
         return {
             "wave_count": wave_count,
             "base_frequency": base_frequency,
@@ -122,6 +134,9 @@ class WaveEffect(BaseEffect):
             "color_scheme": color_scheme,
             "warmth": warmth,
             "saturation": saturation,
+            "self_warp": self_warp,
+            "noise_injection": noise_injection,
+            "noise_fn": noise_fn,
         }
 
     def main(self, x: int, y: int, ctx: Context, state: dict[str, Any]) -> Cell:
@@ -148,21 +163,48 @@ class WaveEffect(BaseEffect):
         frequencies = state["frequencies"]
         speeds = state["speeds"]
         color_scheme = state["color_scheme"]
+        self_warp = state["self_warp"]
+        noise_injection = state["noise_injection"]
+        noise_fn = state["noise_fn"]
 
         # 时间参数
         t = ctx.time
+
+        # 坐标用于变形
+        px = float(x)
+        py = float(y)
+
+        # 噪声注入: 扰动坐标
+        if noise_fn is not None and noise_injection > 0:
+            u = x / ctx.width
+            v = y / ctx.height
+            px += (noise_fn(u * 5.0, v * 5.0 + t * 0.3) - 0.5) * noise_injection * ctx.width * 0.15
+            py += (noise_fn(u * 5.0 + 100.0, v * 5.0 + t * 0.3) - 0.5) * noise_injection * ctx.height * 0.15
 
         # === Wave 核心算法 ===
         # 叠加多个正弦波
         wave_sum = 0.0
         for i in range(wave_count):
             # 每个波使用不同的频率和速度
-            wave_value = math.sin(y * frequencies[i] + t * speeds[i])
+            wave_value = math.sin(py * frequencies[i] + t * speeds[i])
             wave_sum += wave_value * amplitude
 
         # 归一化到 0-1 范围
         # wave_sum 范围: [-wave_count * amplitude, wave_count * amplitude]
         value = (wave_sum / (wave_count * amplitude) + 1.0) / 2.0
+        value = clamp(value, 0.0, 1.0)
+
+        # 自扭曲: 用波值偏移坐标并重新计算
+        if self_warp > 0:
+            warped_y = py + value * self_warp * ctx.height * 0.1
+            wave_sum2 = 0.0
+            for i in range(wave_count):
+                wave_value2 = math.sin(warped_y * frequencies[i] + t * speeds[i])
+                wave_sum2 += wave_value2 * amplitude
+            value2 = (wave_sum2 / (wave_count * amplitude) + 1.0) / 2.0
+            value2 = clamp(value2, 0.0, 1.0)
+            value = mix(value, value2, self_warp * 0.5)
+
         value = clamp(value, 0.0, 1.0)
 
         # === 映射到字符 ===

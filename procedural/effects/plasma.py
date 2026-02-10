@@ -39,7 +39,8 @@ from typing import Any
 
 from procedural.types import Context, Cell, Buffer
 from procedural.core.vec import Vec2, dot, length, sub
-from procedural.core.mathx import clamp, map_range
+from procedural.core.mathx import clamp, map_range, mix
+from procedural.core.noise import ValueNoise
 from procedural.palette import char_at_value, value_to_color, value_to_color_continuous
 from .base import BaseEffect
 
@@ -57,6 +58,8 @@ class PlasmaEffect(BaseEffect):
         speed: 动画速度 (默认 1.0, 范围 0.1-5.0)
         color_phase: 颜色相位偏移 (默认 0.0, 范围 0.0-1.0)
         seed: 随机种子 (默认 0)
+        self_warp: 自扭曲量 (默认 0.0, 范围 0.0-1.0)
+        noise_injection: 噪声注入量 (默认 0.0, 范围 0.0-1.0)
 
     参数范围说明:
         - frequency: 0.01 (稀疏波纹) 到 0.2 (密集波纹)
@@ -101,6 +104,15 @@ class PlasmaEffect(BaseEffect):
         warmth = ctx.params.get("warmth", None)
         saturation = ctx.params.get("saturation", None)
 
+        # 变形参数 - Deformation params
+        self_warp = ctx.params.get("self_warp", 0.0)
+        noise_injection = ctx.params.get("noise_injection", 0.0)
+
+        # 噪声源 (用于坐标注入)
+        noise_fn = None
+        if noise_injection > 0:
+            noise_fn = ValueNoise(seed=ctx.seed + 33)
+
         return {
             "frequency": frequency,
             "speed": speed,
@@ -109,6 +121,9 @@ class PlasmaEffect(BaseEffect):
             "aspect": aspect,
             "warmth": warmth,
             "saturation": saturation,
+            "self_warp": self_warp,
+            "noise_injection": noise_injection,
+            "noise_fn": noise_fn,
         }
 
     def main(self, x: int, y: int, ctx: Context, state: dict[str, Any]) -> Cell:
@@ -136,6 +151,9 @@ class PlasmaEffect(BaseEffect):
         color_phase = state["color_phase"]
         center = state["center"]
         aspect = state["aspect"]
+        self_warp = state["self_warp"]
+        noise_injection = state["noise_injection"]
+        noise_fn = state["noise_fn"]
 
         # 时间参数
         t = ctx.time * speed
@@ -146,6 +164,11 @@ class PlasmaEffect(BaseEffect):
 
         # 宽高比校正
         u *= aspect
+
+        # 噪声注入: 扰动坐标
+        if noise_fn is not None and noise_injection > 0:
+            u += (noise_fn(u * 5.0, v * 5.0 + t * 0.3) - 0.5) * noise_injection * 0.3
+            v += (noise_fn(u * 5.0 + 100.0, v * 5.0 + t * 0.3) - 0.5) * noise_injection * 0.3
 
         # === Plasma 核心算法 ===
         # 4 层正弦波叠加
@@ -174,6 +197,15 @@ class PlasmaEffect(BaseEffect):
         # 合成所有波 (平均值)
         value = (v1 + v2 + v3 + v4) / 4.0  # -1 到 1
         value = (value + 1.0) / 2.0  # 归一化到 0-1
+
+        # 自扭曲: 用计算出的值再次扰动坐标并重新采样
+        if self_warp > 0:
+            warp_u = u + value * self_warp * 0.2
+            warp_v = v + (1.0 - value) * self_warp * 0.2
+            direction2 = Vec2(math.sin(t * 0.3), math.cos(t * 0.5))
+            coord2 = Vec2(warp_u, warp_v)
+            v1b = math.sin(dot(coord2, direction2) * 10.0 * freq + t)
+            value = mix(value, (v1b + 1.0) / 2.0, self_warp * 0.5)
 
         # 确保值在有效范围内
         value = clamp(value, 0.0, 1.0)

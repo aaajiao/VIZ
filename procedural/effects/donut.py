@@ -16,6 +16,11 @@
     R2: 大半径 (环心距, 默认 2.0)
     rotation_speed: 旋转速度 (默认 1.0)
     light_x, light_y, light_z: 光源方向 (默认 0, 1, -1)
+    surface_noise: 表面噪声变形量 (默认 0.0, 范围 0.0-1.0)
+    asymmetry_x, asymmetry_y: 非均匀缩放 (默认 1.0, 范围 0.3-2.0)
+    twist: 沿环面扭曲截面 (默认 0.0, 范围 0.0-2.0)
+    count: 环面数量 (默认 1, 范围 1-3)
+    ring_offset: 多环面轨道偏移 (默认 0.3)
 
 用法::
 
@@ -31,6 +36,7 @@ from typing import Any
 
 from procedural.types import Context, Cell, Buffer
 from procedural.core.mathx import clamp
+from procedural.core.noise import ValueNoise
 from procedural.palette import value_to_color, value_to_color_continuous
 from .base import BaseEffect
 
@@ -57,6 +63,11 @@ class DonutEffect(BaseEffect):
         R2: 大半径 (默认 2.0, 范围 1.0-5.0)
         rotation_speed: 旋转速度 (默认 1.0, 范围 0.1-5.0)
         light_x, light_y, light_z: 光源方向分量
+        surface_noise: 表面噪声量 (默认 0.0)
+        asymmetry_x, asymmetry_y: 非均匀缩放 (默认 1.0)
+        twist: 截面扭曲 (默认 0.0)
+        count: 环面数量 (默认 1)
+        ring_offset: 多环面轨道偏移 (默认 0.3)
     """
 
     def pre(self, ctx: Context, buffer: Buffer) -> dict[str, Any]:
@@ -79,6 +90,19 @@ class DonutEffect(BaseEffect):
         warmth = ctx.params.get("warmth", None)
         saturation = ctx.params.get("saturation", None)
 
+        # 变形参数 - Deformation params
+        surface_noise_amt = ctx.params.get("surface_noise", 0.0)
+        asymmetry_x = ctx.params.get("asymmetry_x", 1.0)
+        asymmetry_y = ctx.params.get("asymmetry_y", 1.0)
+        twist = ctx.params.get("twist", 0.0)
+        count = max(1, int(ctx.params.get("count", 1)))
+        ring_offset = ctx.params.get("ring_offset", 0.3)
+
+        # 噪声源 (用于表面变形)
+        noise_fn = None
+        if surface_noise_amt > 0:
+            noise_fn = ValueNoise(seed=ctx.seed + 99)
+
         w = ctx.width
         h = ctx.height
 
@@ -98,57 +122,84 @@ class DonutEffect(BaseEffect):
         theta_step = 2.0 * math.pi / THETA_STEPS
         phi_step = 2.0 * math.pi / PHI_STEPS
 
-        for j in range(THETA_STEPS):
-            theta = j * theta_step
-            cos_theta = math.cos(theta)
-            sin_theta = math.sin(theta)
+        for torus_idx in range(count):
+            # 多环面轨道偏移
+            if torus_idx > 0:
+                torus_angle = torus_idx * (2.0 * math.pi / count) + ctx.time * 0.3
+                offset_x = ring_offset * math.cos(torus_angle)
+                offset_y = ring_offset * math.sin(torus_angle)
+            else:
+                offset_x = 0.0
+                offset_y = 0.0
 
-            for i in range(PHI_STEPS):
-                phi = i * phi_step
-                cos_phi = math.cos(phi)
-                sin_phi = math.sin(phi)
+            for j in range(THETA_STEPS):
+                theta = j * theta_step
+                cos_theta = math.cos(theta)
+                sin_theta = math.sin(theta)
 
-                # 环面上的圆 (在 xz 平面)
-                circle_x = R2 + R1 * cos_theta
-                circle_y = R1 * sin_theta
+                for i in range(PHI_STEPS):
+                    phi = i * phi_step
+                    cos_phi = math.cos(phi)
+                    sin_phi = math.sin(phi)
 
-                # 绕 Y 轴旋转 phi 角得到 3D 环面点
-                px = circle_x * cos_phi
-                py = circle_y
-                pz = -circle_x * sin_phi
+                    # 表面噪声变形
+                    local_R1 = R1
+                    if noise_fn is not None and surface_noise_amt > 0:
+                        noise_val = noise_fn(theta * 3.0, phi * 3.0)
+                        local_R1 = R1 + (noise_val - 0.5) * 2.0 * surface_noise_amt * R1
 
-                # 表面法线 (环面上的法线方向)
-                nx = cos_theta * cos_phi
-                ny = sin_theta
-                nz = -cos_theta * sin_phi
+                    # 截面扭曲: 根据 phi 旋转截面
+                    if twist > 0:
+                        twist_angle = phi * twist
+                        ct = math.cos(twist_angle)
+                        st = math.sin(twist_angle)
+                        deformed_cos = cos_theta * ct - sin_theta * st
+                        deformed_sin = cos_theta * st + sin_theta * ct
+                    else:
+                        deformed_cos = cos_theta
+                        deformed_sin = sin_theta
 
-                # 施加旋转 A (绕 X), B (绕 Z)
-                p = Vec3(px, py, pz)
-                p = rotate_x(p, A)
-                p = rotate_z(p, B)
+                    # 环面上的圆 (在 xz 平面)
+                    circle_x = R2 + local_R1 * deformed_cos
+                    circle_y = local_R1 * deformed_sin
 
-                n = Vec3(nx, ny, nz)
-                n = rotate_x(n, A)
-                n = rotate_z(n, B)
+                    # 绕 Y 轴旋转 phi 角得到 3D 环面点 + 非均匀缩放
+                    px = circle_x * cos_phi * asymmetry_x + offset_x
+                    py = circle_y * asymmetry_y + offset_y
+                    pz = -circle_x * sin_phi
 
-                # 平移到视点前方
-                p = Vec3(p.x, p.y, p.z + K2)
+                    # 表面法线 (环面上的法线方向)
+                    nx = deformed_cos * cos_phi
+                    ny = deformed_sin
+                    nz = -deformed_cos * sin_phi
 
-                # 深度倒数 (用于 z-buffer)
-                ooz = 1.0 / p.z if p.z > 0.1 else 0.0
+                    # 施加旋转 A (绕 X), B (绕 Z)
+                    p = Vec3(px, py, pz)
+                    p = rotate_x(p, A)
+                    p = rotate_z(p, B)
 
-                # 投影到屏幕
-                xp = int(w / 2.0 + K1 * ooz * p.x)
-                yp = int(h / 2.0 - K1 * ooz * p.y)
+                    n = Vec3(nx, ny, nz)
+                    n = rotate_x(n, A)
+                    n = rotate_z(n, B)
 
-                # 光照计算 (法线点积光源方向)
-                luminance = dot3(n, light_dir)
+                    # 平移到视点前方
+                    p = Vec3(p.x, p.y, p.z + K2)
 
-                # 裁剪到屏幕范围
-                if 0 <= xp < w and 0 <= yp < h:
-                    if ooz > z_buffer[yp][xp]:
-                        z_buffer[yp][xp] = ooz
-                        lum_buffer[yp][xp] = luminance
+                    # 深度倒数 (用于 z-buffer)
+                    ooz = 1.0 / p.z if p.z > 0.1 else 0.0
+
+                    # 投影到屏幕
+                    xp = int(w / 2.0 + K1 * ooz * p.x)
+                    yp = int(h / 2.0 - K1 * ooz * p.y)
+
+                    # 光照计算 (法线点积光源方向)
+                    luminance = dot3(n, light_dir)
+
+                    # 裁剪到屏幕范围
+                    if 0 <= xp < w and 0 <= yp < h:
+                        if ooz > z_buffer[yp][xp]:
+                            z_buffer[yp][xp] = ooz
+                            lum_buffer[yp][xp] = luminance
 
         return {
             "z_buffer": z_buffer,
