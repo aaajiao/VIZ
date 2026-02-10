@@ -50,6 +50,11 @@ Run from the VIZ project root. Only dependency: `pillow`.
 | `seed` | int | Reproducible output |
 | `overlay` | object | `{"effect":"wave","blend":"SCREEN","mix":0.3}` — layer two effects |
 | `params` | object | Effect-specific tuning, including deformation params (see references/COMPOSITION.md) |
+| `transforms` | list[dict] | Domain transform chain: `[{"type":"kaleidoscope","segments":6}]` |
+| `postfx` | list[dict] | PostFX chain: `[{"type":"vignette","strength":0.5}]` |
+| `composition` | string | `blend` / `masked_split` / `radial_masked` / `noise_masked` |
+| `mask` | string | Mask type+params (CLI: `radial:center_x=0.5,radius=0.3`) |
+| `variant` | string | Force effect variant name (e.g. `warped`, `alien`, `turbulent`) |
 
 ### Output Control
 
@@ -99,7 +104,7 @@ Priority: `emotion` field > `vad` field > infer from text > `neutral`.
 
 VIZ auto-selects from emotion; override with `effect` field.
 
-Effects support deformation params via `params` field (e.g. `{"params": {"surface_noise": 0.5}}`). Domain transforms, PostFX, spatial masks, and structural variants are auto-selected by grammar — no manual input needed. See **references/COMPOSITION.md** for details.
+Effects support deformation params via `params` field (e.g. `{"params": {"surface_noise": 0.5}}`). Domain transforms, PostFX, spatial masks, and structural variants are auto-selected by grammar, but can also be precisely controlled via `transforms`, `postfx`, `composition`, `mask`, and `variant` fields (Director Mode). See **references/COMPOSITION.md** for details.
 
 ## Content Sources
 

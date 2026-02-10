@@ -59,7 +59,19 @@ echo '{"emotion":"panic","video":true}' | python3 viz.py generate
 | `overlay` | object | 叠加效果：`{"effect":"wave","blend":"SCREEN","mix":0.3}` |
 | `params` | object | 效果参数微调 |
 
-**关于合成系统（Composition System）：** 域变换（`transforms`）、后处理链（`postfx`）、空间遮罩（`masks`）和合成模式由文法系统自动选择，不在 `_apply_overrides()` 中暴露。无需手动指定——文法根据情绪参数自动做出最优组合。
+### 导演模式（Director Mode）
+
+域变换、后处理链、空间遮罩、合成模式和效果变体现在可以通过 JSON 字段直接控制：
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `transforms` | list[dict] | 域变换链，如 `[{"type":"kaleidoscope","segments":6}]` |
+| `postfx` | list[dict] | 后处理链，如 `[{"type":"vignette","strength":0.5}]` |
+| `composition` | string | 合成模式：`blend` / `masked_split` / `radial_masked` / `noise_masked` |
+| `mask` | string | 遮罩类型+参数（CLI 格式：`radial:center_x=0.5,radius=0.3`） |
+| `variant` | string | 强制效果变体名（如 `warped`、`alien`、`turbulent`） |
+
+不指定时，文法系统根据情绪参数自动选择最优组合。指定时，精确覆盖文法选择。
 
 `params` 字段可用于微调效果的**变形参数**（deformation params），这些参数直接传递给效果：
 
@@ -255,7 +267,21 @@ echo '{
 }' | python3 viz.py generate
 ```
 
-### 5. 强制效果 + 叠加
+### 5. 导演模式：精确控制合成维度
+
+```bash
+echo '{
+  "emotion": "euphoria",
+  "effect": "plasma",
+  "variant": "warped",
+  "transforms": [{"type": "kaleidoscope", "segments": 6}],
+  "postfx": [{"type": "vignette", "strength": 0.5}, {"type": "color_shift", "hue_shift": 0.1}],
+  "composition": "radial_masked",
+  "seed": 100
+}' | python3 viz.py generate
+```
+
+### 6. 强制效果 + 叠加
 
 ```bash
 echo '{
@@ -266,7 +292,7 @@ echo '{
 }' | python3 viz.py generate
 ```
 
-### 6. 多变体
+### 7. 多变体
 
 ```bash
 echo '{"emotion": "joy", "variants": 5}' | python3 viz.py generate
