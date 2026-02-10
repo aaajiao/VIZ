@@ -597,6 +597,7 @@ def cmd_capabilities(args):
     from procedural.postfx import POSTFX_REGISTRY
     from procedural.masks import MASK_REGISTRY
     from procedural.effects.variants import VARIANT_REGISTRY
+    from procedural.palette import ASCII_GRADIENTS
 
     capabilities = {
         "version": "2.0.0",
@@ -634,28 +635,7 @@ def cmd_capabilities(args):
             "grid_lines",
             "circuit",
         ],
-        "gradients": [
-            "classic",
-            "smooth",
-            "matrix",
-            "plasma",
-            "default",
-            "blocks",
-            "blocks_fine",
-            "blocks_ultra",
-            "glitch",
-            "box_density",
-            "box_vertical",
-            "box_cross",
-            "circuit",
-            "dots_density",
-            "geometric",
-            "braille_density",
-            "tech",
-            "cyber",
-            "organic",
-            "noise",
-        ],
+        "gradients": sorted(ASCII_GRADIENTS.keys()),
         "transforms": sorted(TRANSFORM_REGISTRY.keys()),
         "postfx": sorted(POSTFX_REGISTRY.keys()),
         "masks": sorted(MASK_REGISTRY.keys()),
