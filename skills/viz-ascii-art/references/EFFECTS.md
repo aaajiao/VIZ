@@ -26,6 +26,8 @@ Best for: High-energy emotions (euphoria, excitement, joy)
 |-------|---------|-------|-------------|
 | frequency | 2.0 | 0.5-5.0 | Wave frequency |
 | speed | 1.0 | 0.1-3.0 | Animation speed |
+| self_warp | 0.0 | 0.0-1.0 | Output-feedback coordinate warp |
+| noise_injection | 0.0 | 0.0-1.0 | Random coordinate offset |
 
 ---
 
@@ -60,6 +62,8 @@ Best for: Flowing, calm, meditative moods
 |-------|---------|-------|-------------|
 | layers | 4 | 2-8 | Number of wave layers |
 | amplitude | 1.0 | 0.5-2.0 | Wave amplitude |
+| self_warp | 0.0 | 0.0-1.0 | Wave-feedback coordinate warp |
+| noise_injection | 0.0 | 0.0-1.0 | Random coordinate offset |
 
 ---
 
@@ -77,6 +81,8 @@ Best for: Mysterious, psychedelic, awe-inspiring
 |-------|---------|-------|-------------|
 | rings | 20 | 5-50 | Number of radial rings |
 | rotation | 0.5 | 0-2.0 | Rotation speed |
+| distortion | 0.0 | 0.0-1.0 | Polar noise distortion |
+| multi_center | 1 | 1-4 | Number of interference centers |
 
 ---
 
@@ -183,6 +189,12 @@ Best for: Futuristic, technical aesthetics
 | R1 | 1.0 | 0.5-3.0 | Minor radius (cross-section) |
 | R2 | 2.0 | 1.0-5.0 | Major radius (ring distance) |
 | rotation_speed | 1.0 | 0.1-5.0 | Rotation speed |
+| surface_noise | 0.0 | 0.0-1.0 | Surface noise deformation |
+| asymmetry_x | 1.0 | 0.3-2.0 | X-axis non-uniform scaling |
+| asymmetry_y | 1.0 | 0.3-2.0 | Y-axis non-uniform scaling |
+| twist | 0.0 | 0.0-2.0 | Cross-section twist |
+| count | 1 | 1-3 | Number of tori |
+| ring_offset | 0.3 | 0.1-0.5 | Multi-torus orbit offset |
 
 ---
 
@@ -203,6 +215,7 @@ Best for: Mathematical, abstract, high-energy visuals
 | layers | 1 | 1-3 | Number of stacked layers |
 | speed | 0.5 | 0.1-2.0 | Animation speed |
 | zoom | 1.0 | 0.5-3.0 | Coordinate zoom |
+| distortion | 0.0 | 0.0-1.0 | Coordinate noise distortion |
 
 ---
 
@@ -223,6 +236,8 @@ Best for: Geometric, tech aesthetics, structured moods
 | rotation_speed_z | 0.3 | 0.0-3.0 | Z-axis rotation speed |
 | scale | 0.3 | 0.1-0.5 | Cube scale factor |
 | edge_thickness | 0.015 | 0.005-0.05 | Edge line thickness |
+| vertex_noise | 0.0 | 0.0-1.0 | Vertex displacement noise |
+| morph | 0.0 | 0.0-1.0 | Shape morphing factor |
 
 ---
 
@@ -242,6 +257,8 @@ Best for: Psychedelic, hypnotic, colorful aesthetics
 | tightness | 0.5 | 0.1-2.0 | Spiral compression |
 | speed | 1.0 | 0.1-3.0 | Animation speed |
 | chroma_offset | 0.1 | 0.0-0.3 | Chromatic aberration strength |
+| distortion | 0.0 | 0.0-1.0 | Polar noise distortion |
+| multi_center | 1 | 1-4 | Number of spiral centers |
 
 ---
 

@@ -283,6 +283,62 @@ Complete examples for common use cases.
 
 ---
 
+## Composition & Deformation
+
+### Alien Donut (deformation params)
+
+```json
+{
+  "effect": "donut",
+  "emotion": "awe",
+  "params": {"surface_noise": 0.6, "twist": 1.5, "asymmetry_x": 1.5}
+}
+```
+
+### Warped Plasma
+
+```json
+{
+  "effect": "plasma",
+  "emotion": "euphoria",
+  "params": {"self_warp": 0.5, "noise_injection": 0.3}
+}
+```
+
+### Multi-Center Moire
+
+```json
+{
+  "effect": "moire",
+  "emotion": "volatile",
+  "params": {"distortion": 0.4, "multi_center": 3}
+}
+```
+
+### Deformed Wireframe
+
+```json
+{
+  "effect": "wireframe_cube",
+  "emotion": "anxiety",
+  "params": {"vertex_noise": 0.5, "morph": 0.6}
+}
+```
+
+### Multi-Center Spiral
+
+```json
+{
+  "effect": "chroma_spiral",
+  "emotion": "excitement",
+  "params": {"multi_center": 3, "distortion": 0.3, "arms": 5}
+}
+```
+
+Note: Domain transforms (mirror, kaleidoscope, tile), PostFX (vignette, scanlines, edge detect), spatial masks, and structural variants are auto-selected by the grammar system. No need to specify them manually.
+
+---
+
 ## Advanced Techniques
 
 ### Custom VAD (Fine-tuned Emotion)

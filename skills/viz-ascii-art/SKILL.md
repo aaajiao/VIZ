@@ -49,6 +49,7 @@ Run from the VIZ project root. Only dependency: `pillow`.
 | `gradient` | string | `classic` / `smooth` / `matrix` / `plasma` / `blocks` / `glitch` / `circuit` / `cyber` / `organic` |
 | `seed` | int | Reproducible output |
 | `overlay` | object | `{"effect":"wave","blend":"SCREEN","mix":0.3}` — layer two effects |
+| `params` | object | Effect-specific tuning, including deformation params (see references/COMPOSITION.md) |
 
 ### Output Control
 
@@ -98,6 +99,8 @@ Priority: `emotion` field > `vad` field > infer from text > `neutral`.
 
 VIZ auto-selects from emotion; override with `effect` field.
 
+Effects support deformation params via `params` field (e.g. `{"params": {"surface_noise": 0.5}}`). Domain transforms, PostFX, spatial masks, and structural variants are auto-selected by grammar — no manual input needed. See **references/COMPOSITION.md** for details.
+
 ## Content Sources
 
 | Source | Particles | Atmosphere |
@@ -120,4 +123,5 @@ Specs: 1080x1080 PNG (quality=95), GIF, or MP4. Internal 160x160 nearest-neighbo
 
 - **references/EMOTIONS.md** — Full VAD values for all 25 emotions and custom VAD usage
 - **references/EFFECTS.md** — All 17 effects with parameters, ranges, and overlay/blend details
+- **references/COMPOSITION.md** — Composition system: transforms, PostFX, masks, variants, deformation params
 - **references/EXAMPLES.md** — Complete examples: market, art, news, mood, advanced techniques
