@@ -231,6 +231,23 @@ class Engine:
                     fx_kwargs = {k: v for k, v in fx.items() if k != "type"}
                     fx_fn(buffer, **fx_kwargs)
 
+        # 5c. 低饱和度亮度衰减 (neutral/calm 等低唤醒情绪压暗效果纹理)
+        saturation = params.get("saturation", 1.0)
+        if saturation < 0.8:
+            t = min(saturation / 0.8, 1.0)
+            base_factor = 0.35 + t * 0.65
+            # 随机抖动: 同一 seed 结果一致，不同 seed 亮度有变化
+            _jitter_rng = random.Random(seed ^ 0xB817)
+            dim_factor = base_factor + _jitter_rng.uniform(-0.15, 0.15)
+            dim_factor = max(0.25, min(1.0, dim_factor))
+            for row in buffer:
+                for cell in row:
+                    r, g, b = cell.fg
+                    cell.fg = (int(r * dim_factor), int(g * dim_factor), int(b * dim_factor))
+                    if cell.bg is not None:
+                        br, bg_, bb = cell.bg
+                        cell.bg = (int(br * dim_factor), int(bg_ * dim_factor), int(bb * dim_factor))
+
         # 6. Buffer → 低分辨率图像
         img = buffer_to_image(
             buffer,

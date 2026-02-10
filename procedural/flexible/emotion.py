@@ -138,7 +138,7 @@ class EmotionVector:
         structure = _remap(d, -1, 1, 0.0, 1.0)
 
         # 派生参数 (交叉项产生更丰富的变化)
-        saturation = clamp(abs(v) * 0.7 + abs(a) * 0.3, 0.0, 1.0)
+        saturation = clamp(abs(v) * 0.7 + abs(a) * 0.3, 0.15, 1.0)
         turbulence = clamp(abs(v - 0.5) * 0.6 + a * 0.4, 0.0, 1.0)
         intensity = clamp(self.magnitude() / math.sqrt(3), 0.0, 1.0)
 
