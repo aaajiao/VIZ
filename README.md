@@ -4,8 +4,6 @@
 
 1080x1080 PNG/GIF/MP4 ASCII art. Kaomoji, procedural effects, emotion-driven styles. Pure Python 3 + Pillow.
 
-Inspired by [play.ertdfgcvb.xyz](https://play.ertdfgcvb.xyz)
-
 <p align="center">
   <img src="assets/viz_20260211_121447.png" width="480" alt="VIZ static output" />
   <img src="assets/viz_20260211_121607.gif" width="480" alt="VIZ animated output" />
