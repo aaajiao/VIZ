@@ -49,6 +49,7 @@ from __future__ import annotations
 
 import os
 import random
+import sys
 from datetime import datetime
 from typing import Any, cast
 
@@ -237,7 +238,7 @@ class FlexiblePipeline:
         if output_path:
             os.makedirs(os.path.dirname(output_path), exist_ok=True)
             img.save(output_path, quality=95)
-            print(f"已保存: {output_path}")
+            print(f"已保存: {output_path}", file=sys.stderr)
 
         return img
 
