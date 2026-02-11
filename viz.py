@@ -28,6 +28,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import select
 import sys
 import time
 from typing import Any, cast
@@ -200,13 +201,15 @@ def cmd_generate(args):
     from lib.content import make_content, content_has_data
 
     # === 1. Parse input ===
-    # Try reading stdin JSON (non-blocking)
+    # Try reading stdin JSON (non-blocking: skip if no data available)
     stdin_data = {}
     if not sys.stdin.isatty():
         try:
-            raw = sys.stdin.read()
-            if raw.strip():
-                stdin_data = json.loads(raw)
+            ready, _, _ = select.select([sys.stdin], [], [], 0.1)
+            if ready:
+                raw = sys.stdin.read()
+                if raw.strip():
+                    stdin_data = json.loads(raw)
         except json.JSONDecodeError as e:
             print(
                 json.dumps(
@@ -217,7 +220,7 @@ def cmd_generate(args):
                 ),
                 file=sys.stderr,
             )
-        except IOError:
+        except (IOError, OSError):
             pass
 
     # Merge CLI args over stdin data
@@ -547,13 +550,15 @@ def cmd_convert(args):
         print(json.dumps(result))
         return
 
-    # Optional overlay from stdin
+    # Optional overlay from stdin (non-blocking)
     overlay_data = {}
     if not sys.stdin.isatty():
         try:
-            raw = sys.stdin.read()
-            if raw.strip():
-                overlay_data = json.loads(raw)
+            ready, _, _ = select.select([sys.stdin], [], [], 0.1)
+            if ready:
+                raw = sys.stdin.read()
+                if raw.strip():
+                    overlay_data = json.loads(raw)
         except json.JSONDecodeError as e:
             print(
                 json.dumps(
@@ -564,7 +569,7 @@ def cmd_convert(args):
                 ),
                 file=sys.stderr,
             )
-        except IOError:
+        except (IOError, OSError):
             pass
 
     if overlay_data:
