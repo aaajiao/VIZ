@@ -54,6 +54,17 @@ _VALID_DECORATIONS = {
 _VALID_BLEND_MODES = {"ADD", "SCREEN", "OVERLAY", "MULTIPLY"}
 
 
+def _save_input_json(json_path, content_data, variant_seed):
+    """保存输入 JSON - Save input JSON alongside output for reproducibility"""
+    record = dict(content_data)
+    record["seed"] = variant_seed
+    try:
+        with open(json_path, "w", encoding="utf-8") as f:
+            json.dump(record, f, ensure_ascii=False, indent=2)
+    except OSError:
+        pass
+
+
 def _parse_compound_arg(arg_str):
     """解析复合参数 - Parse 'name:key=val,key=val' into dict"""
     if ":" not in arg_str:
@@ -453,7 +464,7 @@ def cmd_generate(args):
 
         if is_video:
             suffix = f"_v{variant_idx}" if variant_count > 1 else ""
-            output_path = os.path.join(output_dir, f"viz_{timestamp_str}{suffix}.gif")
+            output_path = os.path.join(output_dir, f"viz_{timestamp_str}_s{variant_seed}{suffix}.gif")
 
             pipe.generate_video(
                 text=body_text,
@@ -488,9 +499,13 @@ def cmd_generate(args):
 
             results.append(result_entry)
 
+            # Save input JSON alongside output
+            input_json_path = os.path.splitext(output_path)[0] + ".json"
+            _save_input_json(input_json_path, content_data, variant_seed)
+
         else:
             suffix = f"_v{variant_idx}" if variant_count > 1 else ""
-            output_path = os.path.join(output_dir, f"viz_{timestamp_str}{suffix}.png")
+            output_path = os.path.join(output_dir, f"viz_{timestamp_str}_s{variant_seed}{suffix}.png")
 
             pipe.generate(
                 text=body_text,
@@ -512,6 +527,10 @@ def cmd_generate(args):
                     "format": "png",
                 }
             )
+
+            # Save input JSON alongside output
+            input_json_path = os.path.splitext(output_path)[0] + ".json"
+            _save_input_json(input_json_path, content_data, variant_seed)
 
     # === 6. Output JSON ===
     output = {

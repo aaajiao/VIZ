@@ -65,7 +65,7 @@ Emotion drives all visual choices. `vocabulary` overrides specific visual assets
 ## Output
 
 ```json
-{"status": "ok", "results": [{"path": "media/viz_20260203_120000.png", "seed": 42, "format": "png"}], "emotion": "euphoria", "resolution": [1080, 1080]}
+{"status": "ok", "results": [{"path": "media/viz_20260203_120000_s42.png", "seed": 42, "format": "png"}], "emotion": "euphoria", "resolution": [1080, 1080]}
 ```
 
 ## Director Mode

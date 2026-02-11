@@ -47,7 +47,7 @@ stdin JSON 字段全部可选，CLI 参数会覆盖 stdin 中的同名值。
 ### stdout 输出
 
 ```json
-{"status": "ok", "results": [{"path": "/home/user/VIZ/media/viz_20260203_120000.png", "seed": 42, "format": "png"}], "emotion": "euphoria"}
+{"status": "ok", "results": [{"path": "/home/user/VIZ/media/viz_20260203_120000_s42.png", "seed": 42, "format": "png"}], "emotion": "euphoria"}
 ```
 
 ### 完整参数
@@ -88,7 +88,7 @@ stdin JSON 字段全部可选，CLI 参数会覆盖 stdin 中的同名值。
 **单帧**（默认）：
 ```bash
 python3 viz.py generate --emotion joy --seed 42
-# → media/viz_20260203_120000.png
+# → media/viz_20260203_120000_s42.png + media/viz_20260203_120000_s42.json
 ```
 
 **多变体**：
@@ -100,13 +100,13 @@ python3 viz.py generate --text "hope" --variants 5
 **动画 GIF**：
 ```bash
 python3 viz.py generate --emotion calm --video --duration 3 --fps 15
-# → media/viz_20260203_120000.gif
+# → media/viz_20260203_120000_s{seed}.gif + .json
 ```
 
 **动画 MP4**（需要系统安装 FFmpeg）：
 ```bash
 python3 viz.py generate --emotion euphoria --video --mp4
-# → media/viz_20260203_120000.gif + media/viz_20260203_120000.mp4
+# → media/viz_20260203_120000_s{seed}.gif + .mp4 + .json
 ```
 
 ### 导演模式（Director Mode）
@@ -208,8 +208,8 @@ python3 viz.py capabilities --format json  # 默认 JSON
 | 画布尺寸 | 默认 1080 × 1080，可通过 `--width`/`--height` 调整（120-3840px） |
 | 内部渲染 | 自动缩放（~输出 ÷ 6.75，最近邻上采样） |
 | 默认目录 | `./media/` |
-| 文件命名 | `viz_{timestamp}.{png\|gif}` |
-| 可复现性 | `--seed` 参数控制 |
+| 文件命名 | `viz_{timestamp}_s{seed}.{png\|gif}`，同名 `.json` 保存输入参数 |
+| 可复现性 | `--seed` 参数控制，输入参数自动存档于同名 `.json` |
 
 ---
 

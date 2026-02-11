@@ -195,10 +195,10 @@ Run `python3 viz.py capabilities --format json` to discover all available kaomoj
 
 stdout JSON:
 ```json
-{"status":"ok","results":[{"path":"media/viz_20260203_120000.png","seed":42,"format":"png"}],"emotion":"euphoria","resolution":[1080,1080]}
+{"status":"ok","results":[{"path":"media/viz_20260203_120000_s42.png","seed":42,"format":"png"}],"emotion":"euphoria","resolution":[1080,1080]}
 ```
 
-Specs: Default 1080x1080, configurable via `width`/`height` (120-3840px, supports portrait/landscape). PNG (quality=95), GIF, or MP4. Internal buffer auto-scaled (~6.75x smaller). Background filled via second render pass (independent effect + color scheme, ~750k texture combinations). Files in `./media/`.
+Specs: Default 1080x1080, configurable via `width`/`height` (120-3840px, supports portrait/landscape). PNG (quality=95), GIF, or MP4. Internal buffer auto-scaled (~6.75x smaller). Background filled via second render pass (independent effect + color scheme, ~750k texture combinations). Files in `./media/`, named `viz_{timestamp}_s{seed}.{ext}`. Each output has a companion `.json` with input params for reproducibility.
 
 ### Custom Palette Example
 

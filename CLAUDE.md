@@ -70,7 +70,7 @@ No build step. No requirements.txt. Only dependency is `Pillow>=9.0.0`. CI runs 
 - **Docstrings**: Bilingual Chinese/English format: `"""生成可视化 - Generate visualization"""`
 - **Font loading**: Always provide fallback with `try: truetype() except: load_default()`
 - **Canvas**: Default 1080x1080 (configurable via `--width`/`--height`, 120-3840px), post-process with sharpen + contrast 1.4
-- **Output paths**: Timestamped in `./media/` directory
+- **Output paths**: `viz_{timestamp}_s{seed}.{png|gif}` in `./media/`, with companion `.json` containing input params for reproducibility
 
 ## Where to Make Changes
 
