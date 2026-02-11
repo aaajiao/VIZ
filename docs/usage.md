@@ -75,7 +75,7 @@ stdin JSON 字段全部可选，CLI 参数会覆盖 stdin 中的同名值。
 | `--blend-mode` | str | 自动 | 混合模式：`ADD` / `SCREEN` / `OVERLAY` / `MULTIPLY` |
 | `--overlay` | str | 自动 | 叠加效果名（如 `wave`、`plasma`） |
 | `--overlay-mix` | float | 自动 | 叠加混合比 0.0-1.0 |
-| `--composition` | str | 自动 | 合成模式：`blend` / `masked_split` / `radial_masked` / `noise_masked` |
+| `--composition` | str | 自动 | 合成模式：`blend` / `masked_split` / `radial_masked` / `noise_masked` / `sdf_masked` |
 | `--mask` | str | 自动 | 遮罩类型+参数，如 `radial:center_x=0.5,radius=0.3` |
 | `--variant` | str | 自动 | 强制效果变体名（如 `warped`、`alien`） |
 | `--output-dir` | str | ./media | 输出目录 |
@@ -189,7 +189,7 @@ python3 viz.py capabilities --format json  # 默认 JSON
   "transforms": ["mirror_x", "mirror_y", "mirror_quad", "kaleidoscope", "tile", "rotate", "zoom", "spiral_warp", "polar_remap"],
   "postfx": ["threshold", "invert", "edge_detect", "scanlines", "vignette", "pixelate", "color_shift"],
   "masks": ["horizontal_split", "vertical_split", "diagonal", "radial", "noise", "sdf"],
-  "composition_modes": ["blend", "masked_split", "radial_masked", "noise_masked"],
+  "composition_modes": ["blend", "masked_split", "radial_masked", "noise_masked", "sdf_masked"],
   "variants": {"plasma": ["classic", "warped", "noisy", "turbulent", "slow_morph"], "...": "..."},
   "input_schema": {"emotion": "string", "source": "string", "transforms": "list[{type, ...params}]", "postfx": "list[{type, ...params}]", "composition": "string", "mask": "string", "variant": "string", "...": "..."},
   "output_schema": {"status": "string", "results": "list[{path, seed, format}]", "...": "..."}

@@ -188,7 +188,7 @@ class TestCompositionModeBalance:
             assert blend_rate < 0.45, f"Blend rate {blend_rate:.1%} too high (expected <45%)"
 
     def test_all_composition_modes_appear(self):
-        """All 4 composition modes should appear in 200 seeds"""
+        """All 5 composition modes should appear in 200 seeds"""
         modes = set()
         for seed in range(200):
             grammar = VisualGrammar(seed=seed)
@@ -196,6 +196,6 @@ class TestCompositionModeBalance:
             if spec.overlay_effect is not None:
                 modes.add(spec.composition_mode)
 
-        expected = {"blend", "masked_split", "radial_masked", "noise_masked"}
+        expected = {"blend", "masked_split", "radial_masked", "noise_masked", "sdf_masked"}
         missing = expected - modes
         assert not missing, f"Missing composition modes: {missing}"

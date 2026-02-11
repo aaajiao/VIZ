@@ -94,15 +94,32 @@ MOOD_CATEGORIES = {
 
 ### VAD → Mood 映射（`grammar.py::_choose_kaomoji_mood`）
 
-6 个效价区间 × 2 个唤醒等级的 2D 查找：
+3D 最近质心算法：计算输入 (V, A, D) 到 20 个情绪质心的欧几里得距离，选择最近的情绪。
 
-| valence | arousal > 0.3 | arousal ≤ 0.3 |
-|---------|---------------|---------------|
-| > 0.5 | euphoria | happy |
-| 0.0 ~ 0.5 | excitement | relaxed |
-| -0.3 ~ 0.0 | confused | bored |
-| -0.6 ~ -0.3 | anxiety | sad |
-| < -0.6 | panic | lonely |
+| 情绪 | Valence | Arousal | Dominance |
+|------|---------|---------|-----------|
+| euphoria | 0.8 | 0.8 | 0.5 |
+| happy | 0.6 | 0.0 | 0.3 |
+| excitement | 0.5 | 0.7 | 0.4 |
+| love | 0.7 | 0.2 | -0.3 |
+| proud | 0.5 | 0.3 | 0.8 |
+| relaxed | 0.4 | -0.6 | 0.1 |
+| angry | -0.6 | 0.7 | 0.7 |
+| anxiety | -0.4 | 0.6 | -0.4 |
+| fear | -0.7 | 0.7 | -0.7 |
+| panic | -0.8 | 0.9 | -0.3 |
+| sad | -0.5 | -0.4 | -0.3 |
+| lonely | -0.6 | -0.5 | -0.6 |
+| disappointed | -0.4 | -0.3 | 0.0 |
+| confused | 0.0 | 0.3 | -0.3 |
+| surprised | 0.1 | 0.9 | -0.2 |
+| thinking | 0.0 | -0.3 | 0.4 |
+| embarrassed | -0.2 | 0.3 | -0.6 |
+| bored | -0.1 | -0.7 | 0.0 |
+| sleepy | 0.1 | -0.8 | -0.3 |
+| neutral | 0.0 | 0.0 | 0.0 |
+
+Dominance 轴使情绪选择更精确：高 Dominance 的愤怒与低 Dominance 的焦虑可区分，高 Dominance 的骄傲与低 Dominance 的爱也可区分。
 
 ---
 
@@ -177,8 +194,8 @@ anim = sprite.apply_animations(time)
 1. text_to_emotion()
    → VAD = (-0.85, +0.80, -0.65)
 
-2. _choose_kaomoji_mood(valence=-0.85, arousal=+0.80)
-   → valence < -0.6 AND arousal > 0.3
+2. _choose_kaomoji_mood(valence=-0.85, arousal=+0.80, dominance=-0.65)
+   → 3D 最近质心: 距 panic(-0.8, 0.9, -0.3) 最近
    → mood = "panic"
 
 3. KAOMOJI_SINGLE["panic"]

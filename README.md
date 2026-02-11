@@ -103,9 +103,9 @@ echo '{"source":"mood","emotion":"calm","title":"Sunday Morning"}' | python3 viz
 | 域变换 | 9 种 | mirror/kaleidoscope/tile/rotate/zoom/spiral/polar |
 | 后处理链 | 7 种（独立概率） | vignette/scanlines/threshold/edge/invert/color_shift/pixelate |
 | 空间遮罩 | 6 种 | horizontal/vertical/diagonal/radial/noise/sdf |
-| 结构变体 | 32 种（7 个效果） | 命名参数预设（alien donut, warped plasma, ...） |
+| 结构变体 | 86 种（17 个效果） | 命名参数预设（alien donut, warped plasma, ...） |
 | 连续参数 | ∞ | 情绪驱动 + 噪声调制 + 变形参数 |
-| **组合总数** | **数亿离散 × ∞ 连续** | |
+| **组合总数** | **数千亿离散 × ∞ 连续** | |
 
 ## 程序化生成引擎
 
@@ -219,7 +219,7 @@ VIZ/
 │   │   ├── plasma.py, flame.py, wave.py, moire.py, sdf_shapes.py, noise_field.py
 │   │   ├── ten_print.py, game_of_life.py, donut.py, mod_xor.py, wireframe_cube.py
 │   │   ├── chroma_spiral.py, wobbly.py, sand_game.py, slime_dish.py, dyna.py
-│   │   ├── variants.py          # 结构变体注册表（32 种命名变体）
+│   │   ├── variants.py          # 结构变体注册表（86 种命名变体）
 │   │   └── ...
 │   ├── core/                     # 数学原语（纯 Python，无 NumPy）
 │   │   ├── vec.py, sdf.py, noise.py, mathx.py

@@ -52,7 +52,7 @@ Run from the VIZ project root. Only dependency: `pillow`.
 | `params` | object | Effect-specific tuning, including deformation params (see references/COMPOSITION.md) |
 | `transforms` | list[dict] | Domain transform chain: `[{"type":"kaleidoscope","segments":6}]` |
 | `postfx` | list[dict] | PostFX chain: `[{"type":"vignette","strength":0.5}]` |
-| `composition` | string | `blend` / `masked_split` / `radial_masked` / `noise_masked` |
+| `composition` | string | `blend` / `masked_split` / `radial_masked` / `noise_masked` / `sdf_masked` |
 | `mask` | string | Mask type+params (CLI: `radial:center_x=0.5,radius=0.3`) |
 | `variant` | string | Force effect variant name (e.g. `warped`, `alien`, `turbulent`) |
 
@@ -114,7 +114,7 @@ Grammar auto-selects transforms, PostFX, masks, and variants from emotion; Direc
 |-------|------|------------------|
 | `transforms` | list[dict] | Domain transform chain (mirror, kaleidoscope, tile, etc.); params can be animated kwargs |
 | `postfx` | list[dict] | Post-processing chain with optional animation (vignette pulse, scanline scroll, etc.) |
-| `composition` | string | How two effects merge: `blend` / `masked_split` / `radial_masked` / `noise_masked` |
+| `composition` | string | How two effects merge: `blend` / `masked_split` / `radial_masked` / `noise_masked` / `sdf_masked` |
 | `mask` | string | Spatial mask for composition: `radial`, `noise`, `diagonal`, etc. |
 | `variant` | string | Named structural variant per effect (e.g. `warped`, `alien`, `turbulent`) |
 | `params` | object | Effect-specific tuning: deformation, noise, twist, `mask_anim_speed` (see references/COMPOSITION.md) |
@@ -186,7 +186,7 @@ stdout JSON:
 {"status":"ok","results":[{"path":"media/viz_20260203_120000.png","seed":42,"format":"png"}],"emotion":"euphoria","source":"market"}
 ```
 
-Specs: 1080x1080 PNG (quality=95), GIF, or MP4. Internal 160x160 nearest-neighbor upscale. Background filled via second render pass (independent effect + color scheme, ~320k texture combinations). Files in `./media/`.
+Specs: 1080x1080 PNG (quality=95), GIF, or MP4. Internal 160x160 nearest-neighbor upscale. Background filled via second render pass (independent effect + color scheme, ~750k texture combinations). Files in `./media/`.
 
 ## References
 

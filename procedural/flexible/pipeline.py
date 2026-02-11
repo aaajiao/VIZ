@@ -164,6 +164,7 @@ class FlexiblePipeline:
             intensity=visual_params.get("intensity", 0.5),
             valence=visual_params.get("valence", 0.0),
             arousal=visual_params.get("arousal", 0.0),
+            dominance=visual_params.get("dominance", 0.0),
         )
 
         # === 4b. Place content data ===
@@ -278,6 +279,7 @@ class FlexiblePipeline:
             intensity=visual_params.get("intensity", 0.5),
             valence=visual_params.get("valence", 0.0),
             arousal=visual_params.get("arousal", 0.0),
+            dominance=visual_params.get("dominance", 0.0),
         )
 
         # Place content data

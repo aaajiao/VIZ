@@ -71,7 +71,7 @@ Control how two effects blend across different regions. All masks support `mask_
 | `noise` | Organic blobs via fractal noise | Pattern drifts |
 | `sdf` | Circle/box/ring geometric shapes | Size pulses |
 
-## Structural Variants (32 named, auto-selected)
+## Structural Variants (86 named, auto-selected)
 
 Grammar picks a named variant per effect and samples params from its ranges.
 
@@ -84,8 +84,18 @@ Grammar picks a named variant per effect and samples params from its ranges.
 | moire (4) | classic, distorted, multi_center, dense |
 | chroma_spiral (5) | classic, warped, multi, tight, loose |
 | mod_xor (4) | classic, distorted, fine, layered |
+| flame (4) | classic, intense, faint, turbulent |
+| noise_field (6) | classic, dense, coarse, turbulent, smooth_flow, sharp |
+| ten_print (5) | classic, compact, spacious, biased, dynamic |
+| wobbly (5) | classic, gentle, violent, fine_ripple, coarse_warp |
+| sdf_shapes (6) | classic, single, swarm, boxes, sharp, fuzzy |
+| game_of_life (5) | classic, sparse, dense, fast_evolution, bounded |
+| sand_game (5) | classic, rain, drizzle, avalanche, rainbow |
+| slime_dish (6) | classic, sparse, dense, explorer, focused, persistent |
+| dyna (6) | classic, single, many, long_waves, short_ripples, chaotic |
+| cppn (6) | classic, delicate, intricate, radiant, chaotic, linear |
 
-## Composition Modes (4, auto-selected or via `composition` field)
+## Composition Modes (5, auto-selected or via `composition` field)
 
 | Mode | Description |
 |------|-------------|
@@ -93,21 +103,22 @@ Grammar picks a named variant per effect and samples params from its ranges.
 | `masked_split` | Spatial split via horizontal/vertical/diagonal masks |
 | `radial_masked` | Center vs edges with radial mask |
 | `noise_masked` | Organic noise-based region blending |
+| `sdf_masked` | SDF geometric shapes (circle/box/ring) |
 
-## Background Fill (auto-selected, ~320k combinations)
+## Background Fill (auto-selected, ~750k combinations)
 
 After main rendering, a **second render pass** fills `bg=None` cells with textured backgrounds. Grammar auto-selects all dimensions:
 
 | Dimension | Options | Count |
 |-----------|---------|-------|
 | Effect | 13 lightweight candidates (excludes game_of_life/sand_game/slime_dish/dyna) | 13 |
-| Variants | Sampled from VARIANT_REGISTRY | ~4 per effect |
-| Transforms | 0-2 from mirror/tile/kaleidoscope/spiral_warp/polar_remap | ~15 combos |
-| PostFX | 0-1 from vignette/color_shift/scanlines/threshold | 4 |
-| Masks | 0-1 from radial/noise/diagonal | 3 |
+| Variants | Sampled from VARIANT_REGISTRY | ~5 per effect |
+| Transforms | 0-2 from mirror/tile/kaleidoscope/spiral_warp/polar_remap/rotate/zoom | ~20 combos |
+| PostFX | 0-1 from vignette/color_shift/scanlines/threshold/invert/edge_detect/pixelate | 7 |
+| Masks | 0-1 from radial/noise/diagonal/horizontal_split/vertical_split/sdf | 6 |
 | Color mode | 7 named schemes + continuous (warmth/saturation) | 8 |
 
-Total: ~320,000 discrete background texture combinations × continuous parameters.
+Total: ~750,000 discrete background texture combinations × continuous parameters.
 
 Background fill is fully automatic — no user-facing fields needed. Dim factor ~30% ensures backgrounds stay subtle.
 

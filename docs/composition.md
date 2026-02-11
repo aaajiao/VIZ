@@ -29,7 +29,7 @@ The composition system provides four composable layers of structural transformat
                         ┌─────────────────────────┐
                         │   bg_fill 第二渲染通道    │
                         │   procedural/bg_fill.py  │
-                        │   (~320k 纹理组合)       │
+                        │   (~750k 纹理组合)       │
                         └────────────┬────────────┘
                                      │
                                      ▼
@@ -332,7 +332,7 @@ VARIANT_REGISTRY = {
 }
 ```
 
-### 32 个命名变体总览
+### 86 个命名变体总览
 
 | 效果 | 变体数 | 变体名称 |
 |------|--------|----------|
@@ -343,8 +343,18 @@ VARIANT_REGISTRY = {
 | `moire` | 4 | classic, distorted, multi_center, dense |
 | `chroma_spiral` | 5 | classic, warped, multi, tight, loose |
 | `mod_xor` | 4 | classic, distorted, fine, layered |
+| `flame` | 4 | classic, intense, faint, turbulent |
+| `noise_field` | 6 | classic, dense, coarse, turbulent, smooth_flow, sharp |
+| `ten_print` | 5 | classic, compact, spacious, biased, dynamic |
+| `wobbly` | 5 | classic, gentle, violent, fine_ripple, coarse_warp |
+| `sdf_shapes` | 6 | classic, single, swarm, boxes, sharp, fuzzy |
+| `game_of_life` | 5 | classic, sparse, dense, fast_evolution, bounded |
+| `sand_game` | 5 | classic, rain, drizzle, avalanche, rainbow |
+| `slime_dish` | 6 | classic, sparse, dense, explorer, focused, persistent |
+| `dyna` | 6 | classic, single, many, long_waves, short_ripples, chaotic |
+| `cppn` | 6 | classic, delicate, intricate, radiant, chaotic, linear |
 
-共 7 个效果 x 32 个命名变体。
+共 17 个效果 x 86 个命名变体。
 
 ### 变体参数详情
 
@@ -466,7 +476,7 @@ VARIANT_REGISTRY = {
 
 ### 组合空间
 
-13 effect × ~4 variant × ~15 transform 组合 × 4 postfx × 3 mask × 8 color（7 named + continuous）≈ ~320,000 种离散背景纹理组合，加上连续参数。
+13 effect × ~5 variant × ~20 transform 组合 × 7 postfx × 6 mask × 8 color（7 named + continuous）≈ ~750,000 种离散背景纹理组合，加上连续参数。
 
 ---
 
@@ -474,7 +484,7 @@ VARIANT_REGISTRY = {
 
 `procedural/compositor.py`
 
-当文法选择叠加效果（overlay）时，需要决定两个效果的合成方式。系统支持四种合成模式：
+当文法选择叠加效果（overlay）时，需要决定两个效果的合成方式。系统支持五种合成模式：
 
 ### 模式总览
 
@@ -484,6 +494,7 @@ VARIANT_REGISTRY = {
 | `masked_split` | `MaskedCompositeEffect` | 空间分割遮罩（horizontal/vertical/diagonal） |
 | `radial_masked` | `MaskedCompositeEffect` | 径向遮罩（中心/边缘分区） |
 | `noise_masked` | `MaskedCompositeEffect` | 噪声遮罩（有机斑块混合） |
+| `sdf_masked` | `MaskedCompositeEffect` | SDF 几何遮罩（圆/方/环几何形状） |
 
 ### blend 模式
 
@@ -527,6 +538,18 @@ VARIANT_REGISTRY = {
 - `mask_softness` (0.1-0.25) — 过渡柔和度
 
 产生有机的、不规则斑块状混合边界，视觉上类似岩石纹理或云层分界。
+
+### sdf_masked 模式
+
+使用 `MaskedCompositeEffect` + `sdf` 遮罩：
+
+- `mask_sdf_shape` — 形状类型：`circle`（40%）, `box`（30%）, `ring`（30%）
+- `mask_sdf_size` (0.15-0.45) — SDF 形状大小
+- `mask_softness` (0.05-0.2) — 过渡柔和度
+- `mask_sdf_thickness` (0.05-0.15) — 环形厚度（仅 ring 形状）
+- `mask_invert` (30% 概率) — 反转内外
+
+产生几何形状的空间遮罩，适合结构化、现代风格的合成效果。
 
 ---
 
@@ -579,6 +602,7 @@ VARIANT_REGISTRY = {
 | masked_split | 25-35% | `+ structure * 0.10` |
 | radial_masked | 22-30% | `+ (1-structure) * 0.08` |
 | noise_masked | 22-30% | `+ energy * 0.08` |
+| sdf_masked | ~12% | 固定权重 |
 
 **遮罩动画速度注入：** 当 energy > 0.25 时，Grammar 以 ~55% 概率为 `mask_anim_speed` 注入 0.3-2.0 范围的值。高能量情绪产生更动态的遮罩边界。
 
@@ -610,9 +634,9 @@ overlay_chance = 0.45 + energy * 0.35   → 45-80%
 | 维度 | 选项 | 概率影响 |
 |------|------|----------|
 | bg effect | 13 候选 (pop 主 effect) | energy/structure 加权 |
-| transforms | 0-2 个 (mirror 40%, tile 30%, kaleidoscope 20%, spiral_warp 12%, polar_remap 10%) | — |
-| postfx | 0-1 个 (40% 概率: vignette/color_shift/scanlines/threshold) | — |
-| mask | 0-1 个 (35% 概率: radial 40%/noise 35%/diagonal 25%) | — |
+| transforms | 0-2 个 (mirror 40%, tile 30%, kaleidoscope 20%, spiral_warp 12%, polar_remap 10%, rotate 10%, zoom 8%) | — |
+| postfx | 0-1 个 (40% 概率: vignette/color_shift/scanlines/threshold/invert/edge_detect/pixelate) | — |
+| mask | 0-1 个 (35% 概率: radial/noise/diagonal/horizontal_split/vertical_split/sdf) | — |
 | color_mode | 55% scheme / 45% continuous | — |
 | dim | 0.22-0.38 + energy*0.05 | energy 越高越亮 |
 
@@ -686,28 +710,31 @@ postfx_chain = params.get("_postfx_chain", [])
 
 | 层 | 离散组合数 | 说明 |
 |----|-----------|------|
-| Structural Variants | 32 命名变体 | 7 个效果的预设参数配置 |
+| Structural Variants | 86 命名变体 | 17 个效果的预设参数配置 |
 | PostFX Chain | 2^7 = 128 | 7 种效果独立开关 |
 | Domain Transforms | 9 种类型 | 含连续参数的无限变化 |
 | Blend Modes | 4 | ADD / SCREEN / OVERLAY / MULTIPLY |
 | Spatial Masks | 6 种类型 | 含连续参数的无限变化 |
+| Composition Modes | 5 | blend / masked_split / radial_masked / noise_masked / sdf_masked |
 
 ### 综合估算
 
 ```
 17 基础效果
-  x 32 结构变体（含连续参数采样）
+  x 86 结构变体（含连续参数采样）
   x 128 PostFX 开关组合
   x 9 域变换类型（含连续参数）
-  x 4 混合模式
+  x 5 合成模式（含 sdf_masked）
   x 6 空间遮罩类型（含连续参数）
   x 5 布局算法
   x 73 ASCII 梯度
   x 8 装饰风格
   x 13 bg_fill effect（含变体 + 连续参数）
-  x ~15 bg_fill transform 组合
+  x ~20 bg_fill transform 组合（含 rotate/zoom）
+  x 7 bg_fill postfx（含 invert/edge_detect/pixelate）
+  x 6 bg_fill mask（含 horizontal_split/vertical_split/sdf）
   x 8 color scheme（7 named + continuous）
-≈ 数百亿种离散组合
+≈ 数千亿种离散组合
 ```
 
 加上每层的连续参数采样（变体范围内均匀采样、遮罩位置/半径/柔和度、变换角度/因子/扭曲度、PostFX 强度、bg_fill dim 系数等），实际视觉变化空间是连续无限的。
