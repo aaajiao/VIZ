@@ -56,6 +56,7 @@ echo '{"emotion":"panic","video":true}' | python3 viz.py generate
 | `decoration` | string | 装饰风格 |
 | `gradient` | string | ASCII 字符梯度 |
 | `color_scheme` | string | 颜色方案名称（`heat` / `rainbow` / `cool` / `matrix` / `plasma` / `ocean` / `fire` / `default`） |
+| `palette` | list[[r,g,b]] | 自定义调色盘（2+ 个 RGB 三元组 0-255），覆盖 `color_scheme` |
 | `overlay` | object | 叠加效果：`{"effect":"wave","blend":"SCREEN","mix":0.3}` |
 | `params` | object | 效果参数微调 |
 
@@ -96,6 +97,8 @@ echo '{"emotion":"panic","video":true}' | python3 viz.py generate
 | `duration` | float | 3.0 | GIF 时长（秒） |
 | `fps` | int | 15 | 帧率 |
 | `variants` | int | 1 | 生成多个变体 |
+| `width` | int | 1080 | 输出宽度（120-3840 像素） |
+| `height` | int | 1080 | 输出高度（120-3840 像素） |
 
 ---
 
@@ -335,15 +338,36 @@ echo '{"emotion": "joy", "variants": 5}' | python3 viz.py generate
 # → 5 张不同种子的图片，同一情绪不同视觉组合
 ```
 
+### 9. 自定义调色盘
+
+```bash
+echo '{
+  "emotion": "joy",
+  "palette": [[255, 0, 0], [255, 255, 0], [0, 255, 0]]
+}' | python3 viz.py generate
+# → 使用红→黄→绿渐变替代内置颜色方案
+```
+
+### 10. 可变分辨率
+
+```bash
+# 快速预览 (渲染快 4 倍)
+echo '{"emotion": "calm", "width": 540, "height": 540}' | python3 viz.py generate
+
+# 竖版社交媒体 (1080x1920)
+echo '{"emotion": "euphoria", "width": 1080, "height": 1920}' | python3 viz.py generate
+```
+
 ---
 
 ## 输出规格
 
 | 项 | 值 |
 |----|------|
-| 格式 | PNG (quality=95) 或 GIF |
-| 尺寸 | 1080 × 1080 像素 |
-| 内部渲染 | 160 × 160（最近邻上采样），背景通过第二渲染通道生成纹理（~750k 种组合） |
+| 格式 | PNG (quality=95)、GIF 或 MP4 (via FFmpeg) |
+| 尺寸 | 默认 1080 × 1080，可通过 `width`/`height` 调整（120-3840px，支持竖版/横版） |
+| 内部渲染 | 自动缩放（~输出 ÷ 6.75，最近邻上采样），背景通过第二渲染通道生成纹理（~750k 种组合） |
+| 颜色 | 7 种内置方案 + `palette` 自定义任意调色盘 |
 | 默认目录 | `./media/` |
 | 文件命名 | `viz_{timestamp}.{png\|gif}` |
 
@@ -358,7 +382,8 @@ echo '{"emotion": "joy", "variants": 5}' | python3 viz.py generate
   "results": [
     {"path": "media/viz_20260203_120000.png", "seed": 42, "format": "png"}
   ],
-  "emotion": "euphoria"
+  "emotion": "euphoria",
+  "resolution": [1080, 1080]
 }
 ```
 

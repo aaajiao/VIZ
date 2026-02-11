@@ -2,7 +2,7 @@
 
 [![Tests](https://github.com/aaajiao/VIZ/actions/workflows/test.yml/badge.svg)](https://github.com/aaajiao/VIZ/actions/workflows/test.yml)
 
-1080x1080 PNG/GIF/MP4 ASCII art. Kaomoji, procedural effects, emotion-driven styles. Pure Python 3 + Pillow.
+PNG/GIF/MP4 ASCII art. Variable resolution (default 1080x1080, up to 3840px), custom palettes, kaomoji, procedural effects, emotion-driven styles. Pure Python 3 + Pillow.
 
 <p align="center">
   <img src="assets/viz_20260211_121447.png" width="480" alt="VIZ static output" />
@@ -32,9 +32,9 @@ python3 viz.py capabilities --format json
 `viz.py` is the single CLI entry — a rendering backend for AI. AI decides *what* to express; VIZ decides *how* it looks.
 
 ```
-emotion/text  -->  VAD vector  -->  grammar  -->  SceneSpec  -->  Engine  -->  1080x1080
-                   (continuous)     (stochastic)   (full spec)    (160x160    (PNG/GIF/MP4)
-                                                                   upscale)
+emotion/text  -->  VAD vector  -->  grammar  -->  SceneSpec  -->  Engine  -->  output
+                   (continuous)     (stochastic)   (full spec)    (auto-      (PNG/GIF/MP4,
+                                                                  scaled)     variable res)
 ```
 
 Everything is driven by the **VAD emotion model** (Valence-Arousal-Dominance). 26 named emotions map to points in continuous 3D space. The grammar system samples visual choices weighted by emotion — same emotion + different seed = different output.
@@ -45,7 +45,7 @@ Combinatorial space: 17 effects x 86 variants x 9 transforms x 7 postfx x 6 mask
 
 | Command | Purpose |
 |---------|---------|
-| `generate` | Render 1080x1080 visualization (PNG/GIF/MP4) |
+| `generate` | Render visualization (variable resolution, PNG/GIF/MP4) |
 | `convert` | Convert image to ASCII art |
 | `capabilities` | Output full inventory as JSON for AI discovery |
 
@@ -65,7 +65,7 @@ Emotion drives all visual choices. `vocabulary` overrides specific visual assets
 ## Output
 
 ```json
-{"status": "ok", "results": [{"path": "media/viz_20260203_120000.png", "seed": 42, "format": "png"}], "emotion": "euphoria"}
+{"status": "ok", "results": [{"path": "media/viz_20260203_120000.png", "seed": 42, "format": "png"}], "emotion": "euphoria", "resolution": [1080, 1080]}
 ```
 
 ## Director Mode
@@ -88,7 +88,7 @@ Details in [docs/composition.md](docs/composition.md).
 viz.py                          # Single CLI entry
 lib/                            # Shared: kaomoji, content, box-drawing chars, vocabulary
 procedural/
-  engine.py                     # Render orchestrator (160x160 -> 1080x1080)
+  engine.py                     # Render orchestrator (auto-scaled buffer -> output)
   effects/                      # 17 pluggable effects + 86 structural variants
   transforms.py                 # 9 domain transforms (mirror, kaleidoscope, tile, ...)
   postfx.py                     # 7 buffer-level post-FX (vignette, scanlines, ...)

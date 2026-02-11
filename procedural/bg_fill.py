@@ -18,7 +18,7 @@ import random
 
 from procedural.types import Context, Cell, Buffer
 from procedural.effects import EFFECT_REGISTRY, get_effect
-from procedural.palette import value_to_color, value_to_color_continuous
+from procedural.palette import value_to_color, value_to_color_continuous, value_to_color_from_palette
 
 # 轻量级 effect 候选池 (纯逐像素数学，优先选择)
 # 排除 game_of_life, sand_game, slime_dish, dyna (pre() 跑模拟，太重)
@@ -61,6 +61,7 @@ def bg_fill(buffer, w, h, seed, spec):
     mask_spec = spec.get("mask")
     color_mode = spec.get("color_mode", "scheme")
     color_scheme = spec.get("color_scheme", "heat")
+    palette = spec.get("palette")
     warmth = spec.get("warmth", 0.5)
     saturation = spec.get("saturation", 0.9)
     dim = spec.get("dim", 0.30)
@@ -141,7 +142,9 @@ def bg_fill(buffer, w, h, seed, spec):
                 value = value * (0.3 + 0.7 * mask_val)
 
             # 着色
-            if color_mode == "continuous":
+            if palette:
+                rgb = value_to_color_from_palette(value, palette)
+            elif color_mode == "continuous":
                 rgb = value_to_color_continuous(value, warmth, saturation)
             else:
                 rgb = value_to_color(value, color_scheme)

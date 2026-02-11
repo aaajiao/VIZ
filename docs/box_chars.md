@@ -581,7 +581,7 @@ create_data_particles(draw, w, h, color, density=50, charset="╱╲╳")
    │   → " ·░▒▓█▀▄▌▐" 中的字符
    │
    ├── buffer_to_image() → 低分辨率 PIL Image
-   ├── upscale → 1080×1080
+   ├── upscale → 输出分辨率（默认 1080×1080）
    └── 渲染精灵: circuit 装饰 + "━┃╋" 粒子 + "╳╳╳" 文字
 
 最终输出: 充满 box-drawing 字符的电路板风格画面

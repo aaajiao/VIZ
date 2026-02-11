@@ -289,6 +289,18 @@ def cmd_generate(args):
         content_data["mask"] = _parse_compound_arg(args.mask)
     if args.variant:
         content_data["variant"] = args.variant
+    if args.palette:
+        parsed_palette = []
+        for p in args.palette:
+            parts = p.split(",")
+            if len(parts) == 3:
+                parsed_palette.append([int(x) for x in parts])
+        if len(parsed_palette) >= 2:
+            content_data["palette"] = parsed_palette
+    if args.width:
+        content_data["width"] = args.width
+    if args.height:
+        content_data["height"] = args.height
 
     content = make_content(content_data)
 
@@ -361,7 +373,19 @@ def cmd_generate(args):
     os.makedirs(output_dir, exist_ok=True)
     timestamp_str = time.strftime("%Y%m%d_%H%M%S")
 
-    pipe = FlexiblePipeline(seed=seed)
+    # Compute output and internal resolution
+    out_w = content.get("width") or 1080
+    out_h = content.get("height") or 1080
+    # Internal buffer: ~6.75x smaller, minimum 40px, keep aspect ratio
+    _SCALE = 6.75
+    buf_w = max(40, round(out_w / _SCALE))
+    buf_h = max(40, round(out_h / _SCALE))
+
+    pipe = FlexiblePipeline(
+        seed=seed,
+        internal_size=(buf_w, buf_h),
+        output_size=(out_w, out_h),
+    )
 
     # Build overrides for pipeline (CLI/stdin params that override grammar choices)
     overrides = {}
@@ -396,6 +420,8 @@ def cmd_generate(args):
         overrides["variant"] = content["variant"]
     if content.get("color_scheme"):
         overrides["color_scheme"] = content["color_scheme"]
+    if content.get("palette"):
+        overrides["palette"] = content["palette"]
 
     # Validate overrides against known values
     errors = _validate_overrides(overrides)
@@ -492,6 +518,7 @@ def cmd_generate(args):
         "status": "ok",
         "results": results,
         "emotion": emotion_name,
+        "resolution": [out_w, out_h],
     }
 
     print(json.dumps(output, ensure_ascii=False))
@@ -690,11 +717,15 @@ def cmd_capabilities(args):
             "composition": "string (blend|masked_split|radial_masked|noise_masked)",
             "mask": "string - mask type+params, e.g. 'radial:center_x=0.5,radius=0.3'",
             "variant": "string - force effect variant name",
+            "palette": "list[[r,g,b], ...] - custom color palette (2+ RGB triplets, 0-255), overrides color_scheme",
+            "width": "int - output width in pixels (120-3840, default 1080)",
+            "height": "int - output height in pixels (120-3840, default 1080)",
         },
         "output_schema": {
             "status": "string (ok|error)",
             "results": "list[{path, seed, format, ...}] - always an array, even for single result",
             "emotion": "string|null - emotion used",
+            "resolution": "[width, height] - actual output resolution",
         },
     }
 
@@ -757,6 +788,9 @@ def build_parser():
     gen.add_argument("--composition", choices=["blend", "masked_split", "radial_masked", "noise_masked"], help="合成模式")
     gen.add_argument("--mask", help="遮罩类型+参数 (如 radial:center_x=0.5,radius=0.3)")
     gen.add_argument("--variant", help="强制效果变体名")
+    gen.add_argument("--palette", nargs="*", help="自定义调色盘 (如 255,0,0 0,255,0 0,0,255)")
+    gen.add_argument("--width", type=int, help="输出宽度 (120-3840, 默认 1080)")
+    gen.add_argument("--height", type=int, help="输出高度 (120-3840, 默认 1080)")
     gen.add_argument("--output-dir", help="输出目录")
     gen.add_argument("--mp4", action="store_true", help="同时输出 MP4 (需要 FFmpeg)")
 

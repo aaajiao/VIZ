@@ -225,6 +225,10 @@ class FlexiblePipeline:
         if spec.bg_fill_spec:
             render_params["_bg_fill_spec"] = spec.bg_fill_spec
 
+        # Pass custom palette to engine
+        if spec.palette:
+            render_params["_palette"] = spec.palette
+
         img = engine.render_frame(
             effect=effect,
             sprites=sprites,
@@ -326,6 +330,10 @@ class FlexiblePipeline:
         if spec.bg_fill_spec:
             render_params["_bg_fill_spec"] = spec.bg_fill_spec
 
+        # Pass custom palette to engine
+        if spec.palette:
+            render_params["_palette"] = spec.palette
+
         # 渲染每帧 (带参数漂移)
         total_frames = int(duration * fps)
         frames = []
@@ -421,6 +429,10 @@ class FlexiblePipeline:
             spec.color_scheme = overrides["color_scheme"]
             if spec.bg_fill_spec:
                 spec.bg_fill_spec["color_scheme"] = overrides["color_scheme"]
+        if overrides.get("palette"):
+            spec.palette = overrides["palette"]
+            if spec.bg_fill_spec:
+                spec.bg_fill_spec["palette"] = overrides["palette"]
         if overrides.get("overlay"):
             ov = overrides["overlay"]
             if isinstance(ov, dict):

@@ -1,11 +1,11 @@
 ---
 name: viz-ascii-art
-description: "Generate 1080x1080 ASCII art visualizations with kaomoji, procedural effects, and emotion-driven styles. Use when users want to create visualizations, ASCII art images, emotion-based graphics, market mood images, or generate kaomoji art. Supports PNG, animated GIF, and MP4 output. Trigger words: visualization, ASCII art, kaomoji, emotion image, mood graphic, market visualization, generate viz."
+description: "Generate ASCII art visualizations (default 1080x1080, variable resolution up to 3840px, custom palettes) with kaomoji, procedural effects, and emotion-driven styles. Use when users want to create visualizations, ASCII art images, emotion-based graphics, market mood images, or generate kaomoji art. Supports PNG, animated GIF, and MP4 output. Trigger words: visualization, ASCII art, kaomoji, emotion image, mood graphic, market visualization, generate viz."
 ---
 
 # VIZ ASCII Art Generator
 
-AI handles intent, data, and emotion; VIZ renders 1080x1080 ASCII art.
+AI handles intent, data, and emotion; VIZ renders ASCII art (default 1080x1080, variable resolution, custom palettes).
 
 ## Quick Start
 
@@ -47,6 +47,7 @@ Run from the VIZ project root. Only dependency: `pillow`.
 | `decoration` | string | `corners` / `edges` / `scattered` / `minimal` / `none` / `frame` / `grid_lines` / `circuit` |
 | `gradient` | string | See gradient list below (73 presets) |
 | `color_scheme` | string | `heat` / `rainbow` / `cool` / `matrix` / `plasma` / `ocean` / `fire` / `default` |
+| `palette` | list[[r,g,b]] | Custom color palette (2+ RGB triplets 0-255), overrides `color_scheme` |
 | `seed` | int | Reproducible output — **omit or vary** (see tip below) |
 | `overlay` | object | `{"effect":"wave","blend":"SCREEN","mix":0.3}` — layer two effects |
 | `params` | object | Effect-specific tuning, including deformation params (see references/COMPOSITION.md) |
@@ -67,6 +68,8 @@ Run from the VIZ project root. Only dependency: `pillow`.
 | `duration` | float | 3.0 | GIF seconds |
 | `fps` | int | 15 | Frames per second |
 | `variants` | int | 1 | Generate multiple variants (different seeds) |
+| `width` | int | 1080 | Output width in pixels (120-3840) |
+| `height` | int | 1080 | Output height in pixels (120-3840) |
 
 ## Emotions at a Glance
 
@@ -192,10 +195,24 @@ Run `python3 viz.py capabilities --format json` to discover all available kaomoj
 
 stdout JSON:
 ```json
-{"status":"ok","results":[{"path":"media/viz_20260203_120000.png","seed":42,"format":"png"}],"emotion":"euphoria"}
+{"status":"ok","results":[{"path":"media/viz_20260203_120000.png","seed":42,"format":"png"}],"emotion":"euphoria","resolution":[1080,1080]}
 ```
 
-Specs: 1080x1080 PNG (quality=95), GIF, or MP4. Internal 160x160 nearest-neighbor upscale. Background filled via second render pass (independent effect + color scheme, ~750k texture combinations). Files in `./media/`.
+Specs: Default 1080x1080, configurable via `width`/`height` (120-3840px, supports portrait/landscape). PNG (quality=95), GIF, or MP4. Internal buffer auto-scaled (~6.75x smaller). Background filled via second render pass (independent effect + color scheme, ~750k texture combinations). Files in `./media/`.
+
+### Custom Palette Example
+
+Override color scheme with arbitrary colors:
+```json
+{"emotion":"joy", "palette":[[0,0,0],[255,0,128],[255,255,0]]}
+```
+
+### Variable Resolution Examples
+
+```json
+{"emotion":"calm", "width":540, "height":540}
+{"emotion":"euphoria", "width":1080, "height":1920}
+```
 
 ## References
 

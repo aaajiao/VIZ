@@ -6,7 +6,7 @@
 
 | 子命令 | 用途 | 输入 | 输出 |
 |--------|------|------|------|
-| `generate` | 生成 1080×1080 可视化 | 情绪/VAD + 可选内容数据 | PNG/GIF + stdout JSON |
+| `generate` | 生成可视化（默认 1080×1080，可变分辨率） | 情绪/VAD + 可选内容数据 | PNG/GIF + stdout JSON |
 | `convert` | 图片转 ASCII 艺术 | 图片路径 | PNG |
 | `capabilities` | 查询能力（AI 发现用） | 无 | JSON schema |
 
@@ -77,6 +77,9 @@ stdin JSON 字段全部可选，CLI 参数会覆盖 stdin 中的同名值。
 | `--composition` | str | 自动 | 合成模式：`blend` / `masked_split` / `radial_masked` / `noise_masked` / `sdf_masked` |
 | `--mask` | str | 自动 | 遮罩类型+参数，如 `radial:center_x=0.5,radius=0.3` |
 | `--variant` | str | 自动 | 强制效果变体名（如 `warped`、`alien`） |
+| `--palette` | list | 无 | 自定义调色盘（如 `255,0,0 0,255,0 0,0,255`） |
+| `--width` | int | 1080 | 输出宽度（120-3840 像素） |
+| `--height` | int | 1080 | 输出高度（120-3840 像素） |
 | `--output-dir` | str | ./media | 输出目录 |
 | `--mp4` | flag | false | 同时输出 MP4（需要系统 FFmpeg） |
 
@@ -202,8 +205,8 @@ python3 viz.py capabilities --format json  # 默认 JSON
 | 项 | 值 |
 |----|------|
 | 输出格式 | PNG (quality=95)、GIF 或 MP4 (via FFmpeg) |
-| 画布尺寸 | 1080 × 1080 像素 |
-| 内部渲染 | 160 × 160（最近邻上采样） |
+| 画布尺寸 | 默认 1080 × 1080，可通过 `--width`/`--height` 调整（120-3840px） |
+| 内部渲染 | 自动缩放（~输出 ÷ 6.75，最近邻上采样） |
 | 默认目录 | `./media/` |
 | 文件命名 | `viz_{timestamp}.{png\|gif}` |
 | 可复现性 | `--seed` 参数控制 |

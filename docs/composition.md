@@ -273,7 +273,7 @@ PostFX 链通过 `params["_postfx_chain"]` 传递给 Engine，Engine 在 `render
 **关键特征：**
 
 - 操作 Cell 网格（char_idx + fg RGB + bg RGB），不是像素图像
-- 分辨率固定为 160x160（内部渲染分辨率）
+- 分辨率为内部渲染分辨率（默认 160x160，随输出分辨率自动缩放）
 - 链内顺序有意义：先 `threshold` 再 `edge_detect` 与反序结果不同
 - 每个效果独立概率启用（参见 Grammar Integration 节），7 种效果理论上有 2^7 = 128 种开关组合
 
