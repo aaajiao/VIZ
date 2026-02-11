@@ -398,7 +398,7 @@ imgs = pipe.generate_variants(text="neutral", count=5)
 ### 关键常量
 
 - `internal_size`：160 × 160（低分辨率渲染）
-- `output_size`：1080 × 1080（最终输出）
+- `output_size`：默认 1080 × 1080（可通过 `width`/`height` 配置，120-3840px）
 - `drift_amount`：0.2-0.3（参数漂移强度）
 
 ---

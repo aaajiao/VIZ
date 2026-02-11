@@ -23,6 +23,7 @@ __all__ = [
     "char_at_value",
     "value_to_color",
     "value_to_color_continuous",
+    "value_to_color_from_palette",
 ]
 
 # ==================== ASCII 梯度定义 ====================
@@ -113,6 +114,43 @@ def value_to_color(value, color_scheme="heat"):
         return _fire_to_color(value)
     else:
         return _heat_to_color(value)  # 默认热力图
+
+
+def value_to_color_from_palette(value, palette):
+    """
+    自定义调色盘映射 - Map value to color using custom palette
+
+    对 0-1 值在用户提供的 RGB 色板之间线性插值。
+
+    Args:
+        value: 0.0 到 1.0 之间的浮点数
+        palette: RGB 元组列表，至少 2 个颜色，如 [(255,0,0), (0,255,0), (0,0,255)]
+
+    Returns:
+        tuple: (r, g, b) 元组，每个分量 0-255
+    """
+    value = clamp(value, 0.0, 1.0)
+
+    n = len(palette)
+    if n == 0:
+        return (0, 0, 0)
+    if n == 1:
+        return tuple(palette[0])
+
+    # Map value to segment index
+    pos = value * (n - 1)
+    idx = int(pos)
+    if idx >= n - 1:
+        return tuple(palette[-1])
+
+    t = pos - idx
+    r0, g0, b0 = palette[idx]
+    r1, g1, b1 = palette[idx + 1]
+    return (
+        int(r0 + (r1 - r0) * t),
+        int(g0 + (g1 - g0) * t),
+        int(b0 + (b1 - b0) * t),
+    )
 
 
 def value_to_color_continuous(value, warmth=0.5, saturation=1.0):

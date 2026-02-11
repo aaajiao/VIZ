@@ -254,6 +254,8 @@ class Engine:
         _bg_spec.setdefault("color_scheme", self.color_scheme)
         _bg_spec.setdefault("warmth", params.get("warmth", 0.5))
         _bg_spec.setdefault("saturation", params.get("saturation", 0.9))
+        if params.get("_palette"):
+            _bg_spec.setdefault("palette", params["_palette"])
         _bg_spec["_time"] = ctx.time
         bg_fill(buffer, w, h, seed, _bg_spec)
 
@@ -442,6 +444,12 @@ class Engine:
         if not frames:
             return False
 
+        # Use actual frame dimensions (may not be 1080x1080)
+        out_w, out_h = frames[0].size
+        # yuv420p requires even dimensions
+        out_w = out_w if out_w % 2 == 0 else out_w - 1
+        out_h = out_h if out_h % 2 == 0 else out_h - 1
+
         gif_path = None
         try:
             with tempfile.NamedTemporaryFile(suffix=".gif", delete=False) as tmp:
@@ -461,7 +469,7 @@ class Engine:
                     "-pix_fmt",
                     "yuv420p",
                     "-vf",
-                    f"fps={fps},scale=1080:1080:flags=neighbor",
+                    f"fps={fps},scale={out_w}:{out_h}:flags=neighbor",
                     output_path,
                 ],
                 check=True,

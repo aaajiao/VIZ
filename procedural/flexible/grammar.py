@@ -125,6 +125,8 @@ class SceneSpec:
     bg_fill_spec: dict[str, Any] = field(default_factory=dict)
     # 颜色方案
     color_scheme: str = "heat"
+    # 自定义调色盘 (覆盖 color_scheme)
+    palette: list[tuple[int, int, int]] | None = None
 
 
 class VisualGrammar:

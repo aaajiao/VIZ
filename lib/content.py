@@ -64,6 +64,40 @@ def make_content(data=None):
         variants = 1
     variants = max(1, min(variants, 20))
 
+    # Validate palette if provided
+    palette = data.get("palette", None)
+    if palette is not None:
+        if isinstance(palette, list) and len(palette) >= 2:
+            validated = []
+            for color in palette:
+                if isinstance(color, (list, tuple)) and len(color) == 3:
+                    r, g, b = int(color[0]), int(color[1]), int(color[2])
+                    validated.append((
+                        max(0, min(255, r)),
+                        max(0, min(255, g)),
+                        max(0, min(255, b)),
+                    ))
+            palette = validated if len(validated) >= 2 else None
+        else:
+            palette = None
+
+    # Validate output resolution if provided
+    width = data.get("width", None)
+    if width is not None:
+        try:
+            width = int(width)
+            width = max(120, min(3840, width))
+        except (TypeError, ValueError):
+            width = None
+
+    height = data.get("height", None)
+    if height is not None:
+        try:
+            height = int(height)
+            height = max(120, min(3840, height))
+        except (TypeError, ValueError):
+            height = None
+
     return {
         "headline": data.get("headline", None),
         "metrics": data.get("metrics", []),
@@ -93,6 +127,10 @@ def make_content(data=None):
         "mask": data.get("mask", None),
         "variant": data.get("variant", None),
         "color_scheme": data.get("color_scheme", None),
+        # Custom palette and resolution
+        "palette": palette,
+        "width": width,
+        "height": height,
     }
 
 

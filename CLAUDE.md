@@ -36,7 +36,7 @@ No build step. No requirements.txt. Only dependency is `Pillow>=9.0.0`. CI runs 
 **Rendering pipeline** (the critical path):
 1. `viz.py generate` parses CLI args + stdin JSON -> calls `FlexiblePipeline`
 2. `FlexiblePipeline` (`procedural/flexible/pipeline.py`) orchestrates: emotion -> VAD vector -> visual grammar -> effect selection -> sprite layout -> decoration
-3. `Engine` (`procedural/engine.py`) renders: creates 160x160 Buffer of Cells -> effect fills buffer -> PostFX chain -> **bg_fill second render pass** -> brightness scaling -> `buffer_to_image()` -> sprites overlay -> upscale to 1080x1080 via NEAREST -> sharpen + contrast -> save
+3. `Engine` (`procedural/engine.py`) renders: creates Buffer of Cells (default 160x160, auto-scaled from output resolution) -> effect fills buffer -> PostFX chain -> **bg_fill second render pass** -> brightness scaling -> `buffer_to_image()` -> sprites overlay -> upscale to output resolution (default 1080x1080) via NEAREST -> sharpen + contrast -> save
 
 **Composition layer**: `procedural/transforms.py` (9 domain transforms + `TransformedEffect`), `procedural/postfx.py` (7 buffer-level post-FX), `procedural/masks.py` (6 spatial masks + `MaskedCompositeEffect`), `procedural/effects/variants.py` (86 structural variants across 17 effects). Grammar auto-selects all composition features; CLI also exposes them via `--transforms`, `--postfx`, `--composition`, `--mask`, `--variant` for precise control ("Director Mode"). All three composition layers support **time-aware animation** for GIF/video output: transforms use animated kwargs (`_resolve_animated_kwargs`), PostFX receive `_time` from Engine, masks read `mask_anim_speed` from params. Static PNG (time=0) is unaffected. See `docs/composition.md`.
 
@@ -52,12 +52,14 @@ No build step. No requirements.txt. Only dependency is `Pillow>=9.0.0`. CI runs 
 
 **Character data**: `lib/box_chars.py` is the single source of truth for all character/gradient data (`GRADIENTS`, `CHARSETS`, `BORDER_SETS`). `procedural/palette.py` re-exports `GRADIENTS` as `ASCII_GRADIENTS` and owns color functions. `grammar.py` imports `CHARSETS`/`BORDER_SETS` to build decoration and particle char pools.
 
-**Color scheme**: Grammar selects from 8 named schemes (`heat`, `rainbow`, `cool`, `matrix`, `plasma`, `ocean`, `fire`, `default`) via warmth-driven `_choose_color_scheme()`, or uses continuous `value_to_color_continuous(warmth, saturation)`. Stored in `SceneSpec.color_scheme` and passed to both Engine and bg_fill.
+**Color scheme**: Grammar selects from 8 named schemes (`heat`, `rainbow`, `cool`, `matrix`, `plasma`, `ocean`, `fire`, `default`) via warmth-driven `_choose_color_scheme()`, or uses continuous `value_to_color_continuous(warmth, saturation)`. Custom palettes (`palette` field: list of RGB tuples) override named schemes via `value_to_color_from_palette()`. Stored in `SceneSpec.color_scheme` / `SceneSpec.palette` and passed to both Engine and bg_fill.
+
+**Variable resolution**: Output size configurable via `width`/`height` (120-3840px, default 1080x1080). Internal buffer auto-computed as output ÷ 6.75 (minimum 40px). Supports non-square (portrait 1080x1920, preview 540x540). `FlexiblePipeline` already parameterized; `viz.py` computes sizes and passes through.
 
 ## Forbidden Patterns
 
 - **NumPy** - all math must be pure Python stdlib (`procedural/core/` has vec, sdf, noise, mathx)
-- **High-res compute** - always 160x160 internally, upscale to 1080x1080
+- **High-res compute** - internal buffer auto-scaled (~output ÷ 6.75), upscale to output resolution
 - **Type hints** - not used except in `procedural/types.py` and `procedural/flexible/`
 - **Empty catch blocks** - only acceptable for pixel manipulation glitch effects and font loading fallbacks
 
@@ -67,8 +69,8 @@ No build step. No requirements.txt. Only dependency is `Pillow>=9.0.0`. CI runs 
 - **Naming**: `SCREAMING_SNAKE` constants, `snake_case` functions, `PascalCase` classes, `snake_case` dict keys.
 - **Docstrings**: Bilingual Chinese/English format: `"""生成可视化 - Generate visualization"""`
 - **Font loading**: Always provide fallback with `try: truetype() except: load_default()`
-- **Canvas**: Always 1080x1080 (`WIDTH, HEIGHT = 1080, 1080`), post-process with sharpen + contrast 1.4
-- **Output paths**: Timestamped in `./media/` directory
+- **Canvas**: Default 1080x1080 (configurable via `--width`/`--height`, 120-3840px), post-process with sharpen + contrast 1.4
+- **Output paths**: `viz_{timestamp}_s{seed}.{png|gif}` in `./media/`, with companion `.json` containing input params for reproducibility
 
 ## Where to Make Changes
 

@@ -208,5 +208,5 @@ anim = sprite.apply_animations(time)
 
 5. sprite.render(image, time=1.5)
    → 描边 + 加粗 + 浮动偏移
-   → 绘制到 1080×1080 画布
+   → 绘制到输出分辨率画布（默认 1080×1080）
 ```

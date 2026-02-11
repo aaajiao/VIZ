@@ -1,6 +1,6 @@
 # Rendering Pipeline（渲染管线）
 
-从 160×160 ASCII 网格到 1080×1080 最终图像的完整渲染流程。
+从 ASCII 网格到最终图像的完整渲染流程（默认 160×160 → 1080×1080，分辨率可配置）。
 
 ## 管线概览
 
@@ -32,7 +32,7 @@
 5. buffer_to_image(buffer) → 低分辨率 PIL Image
         │
         ▼
-6. upscale_image(img, 1080×1080) — NEAREST 插值
+6. upscale_image(img, output_size) — NEAREST 插值
         │
         ▼
 7. 精灵层渲染 (Kaomoji, Text, Decoration[frame/grid/circuit], Particle)
@@ -41,10 +41,10 @@
 8. 后处理 (Sharpen + Contrast)
         │
         ▼
-9. 最终 PIL Image (1080×1080)
+9. 最终 PIL Image (output_size)
 ```
 
-**关键设计：** 精灵在上采样 **之后** 渲染，坐标空间为输出分辨率（1080×1080）。
+**关键设计：** 精灵在上采样 **之后** 渲染，坐标空间为输出分辨率（默认 1080×1080，可配置）。
 
 ---
 
@@ -98,8 +98,8 @@ Buffer = list[list[Cell]]   # buffer[y][x] → Cell
 
 | 属性 | 默认值 | 说明 |
 |------|--------|------|
-| `internal_size` | (160, 160) | 内部渲染分辨率 |
-| `output_size` | (1080, 1080) | 最终输出分辨率 |
+| `internal_size` | (160, 160) | 内部渲染分辨率（可配置，自动按输出 ÷ 6.75 计算） |
+| `output_size` | (1080, 1080) | 最终输出分辨率（可配置，120-3840px） |
 | `char_size` | 1 | 像素/字符 |
 | `gradient_name` | — | ASCII 字符梯度选择 |
 | `color_scheme` | `"heat"` | 颜色方案（传给 bg_fill + buffer_to_image） |
@@ -377,9 +377,9 @@ GLSL 风格数学工具：
 
 | 空间 | 分辨率 | 用于 |
 |------|--------|------|
-| 内部网格 | 160 × 160 | Effect 的 (x, y) 参数 |
-| Buffer | 160 × 160 | Cell 二维数组 |
-| 低分辨率图像 | 160 × 160 | buffer_to_image 输出 |
-| 输出分辨率 | 1080 × 1080 | upscale 后、精灵坐标、最终输出 |
+| 内部网格 | 默认 160 × 160（可配置） | Effect 的 (x, y) 参数 |
+| Buffer | 同内部网格 | Cell 二维数组 |
+| 低分辨率图像 | 同内部网格 | buffer_to_image 输出 |
+| 输出分辨率 | 默认 1080 × 1080（可配置） | upscale 后、精灵坐标、最终输出 |
 
-精灵的 `(x, y)` 始终在输出分辨率空间（1080×1080）。
+精灵的 `(x, y)` 始终在输出分辨率空间。

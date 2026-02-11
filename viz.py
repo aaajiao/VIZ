@@ -28,6 +28,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import select
 import sys
 import time
 from typing import Any, cast
@@ -51,6 +52,17 @@ _VALID_DECORATIONS = {
     "circuit",
 }
 _VALID_BLEND_MODES = {"ADD", "SCREEN", "OVERLAY", "MULTIPLY"}
+
+
+def _save_input_json(json_path, content_data, variant_seed):
+    """保存输入 JSON - Save input JSON alongside output for reproducibility"""
+    record = dict(content_data)
+    record["seed"] = variant_seed
+    try:
+        with open(json_path, "w", encoding="utf-8") as f:
+            json.dump(record, f, ensure_ascii=False, indent=2)
+    except OSError:
+        pass
 
 
 def _parse_compound_arg(arg_str):
@@ -200,13 +212,15 @@ def cmd_generate(args):
     from lib.content import make_content, content_has_data
 
     # === 1. Parse input ===
-    # Try reading stdin JSON (non-blocking)
+    # Try reading stdin JSON (non-blocking: skip if no data available)
     stdin_data = {}
     if not sys.stdin.isatty():
         try:
-            raw = sys.stdin.read()
-            if raw.strip():
-                stdin_data = json.loads(raw)
+            ready, _, _ = select.select([sys.stdin], [], [], 0.1)
+            if ready:
+                raw = sys.stdin.read()
+                if raw.strip():
+                    stdin_data = json.loads(raw)
         except json.JSONDecodeError as e:
             print(
                 json.dumps(
@@ -217,7 +231,7 @@ def cmd_generate(args):
                 ),
                 file=sys.stderr,
             )
-        except IOError:
+        except (IOError, OSError):
             pass
 
     # Merge CLI args over stdin data
@@ -286,6 +300,18 @@ def cmd_generate(args):
         content_data["mask"] = _parse_compound_arg(args.mask)
     if args.variant:
         content_data["variant"] = args.variant
+    if args.palette:
+        parsed_palette = []
+        for p in args.palette:
+            parts = p.split(",")
+            if len(parts) == 3:
+                parsed_palette.append([int(x) for x in parts])
+        if len(parsed_palette) >= 2:
+            content_data["palette"] = parsed_palette
+    if args.width:
+        content_data["width"] = args.width
+    if args.height:
+        content_data["height"] = args.height
 
     content = make_content(content_data)
 
@@ -358,7 +384,19 @@ def cmd_generate(args):
     os.makedirs(output_dir, exist_ok=True)
     timestamp_str = time.strftime("%Y%m%d_%H%M%S")
 
-    pipe = FlexiblePipeline(seed=seed)
+    # Compute output and internal resolution
+    out_w = content.get("width") or 1080
+    out_h = content.get("height") or 1080
+    # Internal buffer: ~6.75x smaller, minimum 40px, keep aspect ratio
+    _SCALE = 6.75
+    buf_w = max(40, round(out_w / _SCALE))
+    buf_h = max(40, round(out_h / _SCALE))
+
+    pipe = FlexiblePipeline(
+        seed=seed,
+        internal_size=(buf_w, buf_h),
+        output_size=(out_w, out_h),
+    )
 
     # Build overrides for pipeline (CLI/stdin params that override grammar choices)
     overrides = {}
@@ -393,6 +431,8 @@ def cmd_generate(args):
         overrides["variant"] = content["variant"]
     if content.get("color_scheme"):
         overrides["color_scheme"] = content["color_scheme"]
+    if content.get("palette"):
+        overrides["palette"] = content["palette"]
 
     # Validate overrides against known values
     errors = _validate_overrides(overrides)
@@ -424,7 +464,7 @@ def cmd_generate(args):
 
         if is_video:
             suffix = f"_v{variant_idx}" if variant_count > 1 else ""
-            output_path = os.path.join(output_dir, f"viz_{timestamp_str}{suffix}.gif")
+            output_path = os.path.join(output_dir, f"viz_{timestamp_str}_s{variant_seed}{suffix}.gif")
 
             pipe.generate_video(
                 text=body_text,
@@ -459,9 +499,13 @@ def cmd_generate(args):
 
             results.append(result_entry)
 
+            # Save input JSON alongside output
+            input_json_path = os.path.splitext(output_path)[0] + ".json"
+            _save_input_json(input_json_path, content_data, variant_seed)
+
         else:
             suffix = f"_v{variant_idx}" if variant_count > 1 else ""
-            output_path = os.path.join(output_dir, f"viz_{timestamp_str}{suffix}.png")
+            output_path = os.path.join(output_dir, f"viz_{timestamp_str}_s{variant_seed}{suffix}.png")
 
             pipe.generate(
                 text=body_text,
@@ -484,11 +528,16 @@ def cmd_generate(args):
                 }
             )
 
+            # Save input JSON alongside output
+            input_json_path = os.path.splitext(output_path)[0] + ".json"
+            _save_input_json(input_json_path, content_data, variant_seed)
+
     # === 6. Output JSON ===
     output = {
         "status": "ok",
         "results": results,
         "emotion": emotion_name,
+        "resolution": [out_w, out_h],
     }
 
     print(json.dumps(output, ensure_ascii=False))
@@ -547,13 +596,15 @@ def cmd_convert(args):
         print(json.dumps(result))
         return
 
-    # Optional overlay from stdin
+    # Optional overlay from stdin (non-blocking)
     overlay_data = {}
     if not sys.stdin.isatty():
         try:
-            raw = sys.stdin.read()
-            if raw.strip():
-                overlay_data = json.loads(raw)
+            ready, _, _ = select.select([sys.stdin], [], [], 0.1)
+            if ready:
+                raw = sys.stdin.read()
+                if raw.strip():
+                    overlay_data = json.loads(raw)
         except json.JSONDecodeError as e:
             print(
                 json.dumps(
@@ -564,7 +615,7 @@ def cmd_convert(args):
                 ),
                 file=sys.stderr,
             )
-        except IOError:
+        except (IOError, OSError):
             pass
 
     if overlay_data:
@@ -603,7 +654,7 @@ def cmd_capabilities(args):
     from lib.kaomoji_data import KAOMOJI_SINGLE
 
     capabilities = {
-        "version": "0.5.0",
+        "version": "0.6.0",
         "description": "VIZ - ASCII Art Visualization CLI. AI is the brain, VIZ is the paintbrush.",
         "commands": {
             "generate": "Generate 1080x1080 PNG/GIF visualization",
@@ -685,11 +736,15 @@ def cmd_capabilities(args):
             "composition": "string (blend|masked_split|radial_masked|noise_masked)",
             "mask": "string - mask type+params, e.g. 'radial:center_x=0.5,radius=0.3'",
             "variant": "string - force effect variant name",
+            "palette": "list[[r,g,b], ...] - custom color palette (2+ RGB triplets, 0-255), overrides color_scheme",
+            "width": "int - output width in pixels (120-3840, default 1080)",
+            "height": "int - output height in pixels (120-3840, default 1080)",
         },
         "output_schema": {
             "status": "string (ok|error)",
             "results": "list[{path, seed, format, ...}] - always an array, even for single result",
             "emotion": "string|null - emotion used",
+            "resolution": "[width, height] - actual output resolution",
         },
     }
 
@@ -752,6 +807,9 @@ def build_parser():
     gen.add_argument("--composition", choices=["blend", "masked_split", "radial_masked", "noise_masked"], help="合成模式")
     gen.add_argument("--mask", help="遮罩类型+参数 (如 radial:center_x=0.5,radius=0.3)")
     gen.add_argument("--variant", help="强制效果变体名")
+    gen.add_argument("--palette", nargs="*", help="自定义调色盘 (如 255,0,0 0,255,0 0,0,255)")
+    gen.add_argument("--width", type=int, help="输出宽度 (120-3840, 默认 1080)")
+    gen.add_argument("--height", type=int, help="输出高度 (120-3840, 默认 1080)")
     gen.add_argument("--output-dir", help="输出目录")
     gen.add_argument("--mp4", action="store_true", help="同时输出 MP4 (需要 FFmpeg)")
 
