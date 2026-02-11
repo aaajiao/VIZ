@@ -146,6 +146,7 @@ class VisualGrammar:
         intensity: float = 0.5,
         valence: float = 0.0,
         arousal: float = 0.0,
+        dominance: float = 0.0,
     ) -> SceneSpec:
         """
         根据连续参数生成场景规格
@@ -235,7 +236,7 @@ class VisualGrammar:
         spec.text_elements = self._choose_text_elements(valence, arousal, energy)
 
         # === 颜文字情绪 ===
-        spec.kaomoji_mood = self._choose_kaomoji_mood(valence, arousal)
+        spec.kaomoji_mood = self._choose_kaomoji_mood(valence, arousal, dominance)
 
         # === 颜色方案 ===
         spec.color_scheme = self._choose_color_scheme(warmth, energy)
@@ -520,6 +521,7 @@ class VisualGrammar:
         weights = {
             # 经典
             "classic": 0.06,
+            "default": 0.03,
             "smooth": 0.06,
             "matrix": 0.04 + energy * 0.06,
             "plasma": 0.03 + energy * 0.08,
@@ -1006,23 +1008,42 @@ class VisualGrammar:
 
         return elements
 
-    def _choose_kaomoji_mood(self, valence: float, arousal: float) -> str:
+    def _choose_kaomoji_mood(self, valence: float, arousal: float, dominance: float = 0.0) -> str:
         """
-        根据 valence + arousal 二维空间选择颜文字情绪类别
+        根据 VAD 三维空间最近质心选择颜文字情绪类别
 
-        作为 SceneSpec 的参考情绪，pipeline 可用作 fallback。
+        使用欧氏距离匹配最近情绪锚点，覆盖 20 种情绪。
         """
-        high_a = arousal > 0.3
-        if valence > 0.5:
-            return "euphoria" if high_a else "happy"
-        elif valence > 0.0:
-            return "excitement" if high_a else "relaxed"
-        elif valence > -0.3:
-            return "confused" if high_a else "bored"
-        elif valence > -0.6:
-            return "anxiety" if high_a else "sad"
-        else:
-            return "panic" if high_a else "lonely"
+        centroids = {
+            "euphoria":      ( 0.8,  0.8,  0.5),
+            "happy":         ( 0.6,  0.0,  0.3),
+            "excitement":    ( 0.5,  0.7,  0.4),
+            "love":          ( 0.7,  0.2, -0.3),
+            "proud":         ( 0.5,  0.3,  0.8),
+            "relaxed":       ( 0.4, -0.6,  0.1),
+            "angry":         (-0.6,  0.7,  0.7),
+            "anxiety":       (-0.4,  0.6, -0.4),
+            "fear":          (-0.7,  0.7, -0.7),
+            "panic":         (-0.8,  0.9, -0.3),
+            "sad":           (-0.5, -0.4, -0.3),
+            "lonely":        (-0.6, -0.5, -0.6),
+            "disappointed":  (-0.4, -0.3,  0.0),
+            "confused":      ( 0.0,  0.3, -0.3),
+            "surprised":     ( 0.1,  0.9, -0.2),
+            "thinking":      ( 0.0, -0.3,  0.4),
+            "embarrassed":   (-0.2,  0.3, -0.6),
+            "bored":         (-0.1, -0.7,  0.0),
+            "sleepy":        ( 0.1, -0.8, -0.3),
+            "neutral":       ( 0.0,  0.0,  0.0),
+        }
+        best_mood = "neutral"
+        best_dist = float("inf")
+        for mood, (cv, ca, cd) in centroids.items():
+            dist = (valence - cv) ** 2 + (arousal - ca) ** 2 + (dominance - cd) ** 2
+            if dist < best_dist:
+                best_dist = dist
+                best_mood = mood
+        return best_mood
 
     def place_content(self, spec, content, visual_params):
         """
@@ -1335,10 +1356,11 @@ class VisualGrammar:
     ) -> dict[str, Any]:
         """选择合成模式 - Choose composition mode"""
         weights = {
-            "blend": 0.25,
-            "masked_split": 0.25 + structure * 0.10,
-            "radial_masked": 0.22 + (1 - structure) * 0.08,
-            "noise_masked": 0.22 + energy * 0.08,
+            "blend": 0.22,
+            "masked_split": 0.22 + structure * 0.10,
+            "radial_masked": 0.20 + (1 - structure) * 0.08,
+            "noise_masked": 0.20 + energy * 0.08,
+            "sdf_masked": 0.12,
         }
         mode = self._weighted_choice(weights)
 
@@ -1384,6 +1406,23 @@ class VisualGrammar:
                 "mask_softness": self.rng.uniform(0.1, 0.25),
                 "mask_anim_speed": anim_speed,
             }
+
+        elif mode == "sdf_masked":
+            sdf_shape = self._weighted_choice({
+                "circle": 0.35,
+                "box": 0.30,
+                "ring": 0.35,
+            })
+            result["mask_type"] = "sdf"
+            sdf_params: dict[str, Any] = {
+                "sdf_shape": sdf_shape,
+                "sdf_size": self.rng.uniform(0.2, 0.5),
+                "mask_softness": self.rng.uniform(0.05, 0.2),
+                "mask_anim_speed": anim_speed,
+            }
+            if sdf_shape == "ring":
+                sdf_params["sdf_thickness"] = self.rng.uniform(0.05, 0.15)
+            result["mask_params"] = sdf_params
 
         return result
 
@@ -1463,16 +1502,29 @@ class VisualGrammar:
             })
         if rng.random() < 0.10 and len(transforms) < 2:
             transforms.append({"type": "polar_remap"})
+        if rng.random() < 0.10 and len(transforms) < 2:
+            transforms.append({
+                "type": "rotate",
+                "angle": rng.uniform(-0.5, 0.5),
+            })
+        if rng.random() < 0.08 and len(transforms) < 2:
+            transforms.append({
+                "type": "zoom",
+                "factor": rng.uniform(1.2, 2.5),
+            })
         transforms = transforms[:2]
 
         # 4. 选择 postfx (0~1 个，概率 40%)
         postfx: list[dict[str, Any]] = []
         if rng.random() < 0.40:
             fx_type = self._weighted_choice({
-                "vignette": 0.35,
-                "color_shift": 0.25,
-                "scanlines": 0.25,
-                "threshold": 0.15,
+                "vignette": 0.22,
+                "color_shift": 0.17,
+                "scanlines": 0.17,
+                "threshold": 0.10,
+                "invert": 0.10,
+                "edge_detect": 0.10,
+                "pixelate": 0.07,
             })
             if fx_type == "vignette":
                 postfx.append({
@@ -1490,6 +1542,20 @@ class VisualGrammar:
                     "spacing": rng.choice([3, 4, 5]),
                     "darkness": rng.uniform(0.2, 0.3),
                 })
+            elif fx_type == "threshold":
+                postfx.append({
+                    "type": "threshold",
+                    "threshold": rng.uniform(0.3, 0.6),
+                })
+            elif fx_type == "invert":
+                postfx.append({"type": "invert"})
+            elif fx_type == "edge_detect":
+                postfx.append({"type": "edge_detect"})
+            elif fx_type == "pixelate":
+                postfx.append({
+                    "type": "pixelate",
+                    "block_size": rng.choice([3, 4, 5]),
+                })
             else:
                 postfx.append({
                     "type": "threshold",
@@ -1500,9 +1566,12 @@ class VisualGrammar:
         mask: dict[str, Any] | None = None
         if rng.random() < 0.35:
             mask_type = self._weighted_choice({
-                "radial": 0.40,
-                "noise": 0.35,
-                "diagonal": 0.25,
+                "radial": 0.20,
+                "noise": 0.18,
+                "diagonal": 0.12,
+                "horizontal_split": 0.15,
+                "vertical_split": 0.15,
+                "sdf": 0.10,
             })
             if mask_type == "radial":
                 mask = {
@@ -1517,12 +1586,34 @@ class VisualGrammar:
                     "noise_octaves": rng.randint(2, 4),
                     "softness": rng.uniform(0.1, 0.25),
                 }
-            else:
+            elif mask_type == "diagonal":
                 mask = {
                     "type": "diagonal",
                     "softness": rng.uniform(0.1, 0.25),
                     "angle": rng.uniform(-0.5, 0.5),
                 }
+            elif mask_type == "horizontal_split":
+                mask = {
+                    "type": "horizontal_split",
+                    "split": rng.uniform(0.3, 0.7),
+                    "softness": rng.uniform(0.1, 0.25),
+                }
+            elif mask_type == "vertical_split":
+                mask = {
+                    "type": "vertical_split",
+                    "split": rng.uniform(0.3, 0.7),
+                    "softness": rng.uniform(0.1, 0.25),
+                }
+            elif mask_type == "sdf":
+                sdf_shape = rng.choice(["circle", "box", "ring"])
+                mask = {
+                    "type": "sdf",
+                    "sdf_shape": sdf_shape,
+                    "sdf_size": rng.uniform(0.2, 0.5),
+                    "softness": rng.uniform(0.05, 0.2),
+                }
+                if sdf_shape == "ring":
+                    mask["sdf_thickness"] = rng.uniform(0.05, 0.15)
 
         # 6. 选择调色板模式
         if rng.random() < 0.55:
