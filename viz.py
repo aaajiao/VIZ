@@ -603,7 +603,7 @@ def cmd_capabilities(args):
     from lib.kaomoji_data import KAOMOJI_SINGLE
 
     capabilities = {
-        "version": "0.4.0",
+        "version": "0.5.0",
         "description": "VIZ - ASCII Art Visualization CLI. AI is the brain, VIZ is the paintbrush.",
         "commands": {
             "generate": "Generate 1080x1080 PNG/GIF visualization",
