@@ -173,6 +173,14 @@ def _validate_overrides(overrides):
         if not isinstance(overrides["variant"], str):
             errors.append(f"variant must be a string, got {type(overrides['variant']).__name__}")
 
+    if overrides.get("color_scheme"):
+        from procedural.palette import COLOR_SCHEMES
+
+        if overrides["color_scheme"] not in COLOR_SCHEMES:
+            errors.append(
+                f"Unknown color_scheme '{overrides['color_scheme']}', valid: {sorted(COLOR_SCHEMES.keys())}"
+            )
+
     return errors
 
 
@@ -383,6 +391,8 @@ def cmd_generate(args):
             overrides["mask_type"] = str(mask_data)
     if content.get("variant"):
         overrides["variant"] = content["variant"]
+    if content.get("color_scheme"):
+        overrides["color_scheme"] = content["color_scheme"]
 
     # Validate overrides against known values
     errors = _validate_overrides(overrides)
@@ -591,7 +601,6 @@ def cmd_capabilities(args):
     from procedural.effects.variants import VARIANT_REGISTRY
     from procedural.palette import ASCII_GRADIENTS, COLOR_SCHEMES
     from lib.kaomoji_data import KAOMOJI_SINGLE
-    from lib.box_chars import CHARSETS, BORDER_SETS
 
     capabilities = {
         "version": "0.4.0",
@@ -611,8 +620,6 @@ def cmd_capabilities(args):
         },
         "effects": sorted(EFFECT_REGISTRY.keys()),
         "kaomoji_moods": sorted(KAOMOJI_SINGLE.keys()),
-        "charsets": sorted(CHARSETS.keys()),
-        "border_styles": sorted(BORDER_SETS.keys()),
         "color_schemes": sorted(COLOR_SCHEMES.keys()),
         "blend_modes": ["ADD", "SCREEN", "OVERLAY", "MULTIPLY"],
         "layouts": [
@@ -663,6 +670,7 @@ def cmd_capabilities(args):
             "layout": "string - layout algorithm name",
             "decoration": "string - decoration style",
             "gradient": "string - ASCII gradient name",
+            "color_scheme": "string - color scheme name (heat|rainbow|cool|matrix|plasma|ocean|fire|default)",
             "overlay": "dict {effect, blend, mix} - overlay effect config",
             "vocabulary": "dict - override visual vocabulary {particles, kaomoji_moods, decoration_chars}",
             "video": "bool - output GIF instead of PNG",
@@ -688,8 +696,6 @@ def cmd_capabilities(args):
     emotions_dict = cast(dict[str, dict[str, float]], capabilities["emotions"])
     effects_list = cast(list[str], capabilities["effects"])
     moods_list = cast(list[str], capabilities["kaomoji_moods"])
-    charsets_list = cast(list[str], capabilities["charsets"])
-    border_list = cast(list[str], capabilities["border_styles"])
     schemes_list = cast(list[str], capabilities["color_schemes"])
     layouts_list = cast(list[str], capabilities["layouts"])
     decorations_list = cast(list[str], capabilities["decorations"])
@@ -708,8 +714,6 @@ def cmd_capabilities(args):
             )
         print(f"\nEffects ({len(effects_list)}): {', '.join(effects_list)}")
         print(f"Kaomoji Moods ({len(moods_list)}): {', '.join(moods_list)}")
-        print(f"Charsets ({len(charsets_list)}): {', '.join(charsets_list)}")
-        print(f"Border Styles ({len(border_list)}): {', '.join(border_list)}")
         print(f"Color Schemes ({len(schemes_list)}): {', '.join(schemes_list)}")
         print(f"Layouts ({len(layouts_list)}): {', '.join(layouts_list)}")
         print(f"Decorations ({len(decorations_list)}): {', '.join(decorations_list)}")

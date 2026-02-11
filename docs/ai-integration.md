@@ -55,6 +55,7 @@ echo '{"emotion":"panic","video":true}' | python3 viz.py generate
 | `layout` | string | 布局算法 |
 | `decoration` | string | 装饰风格 |
 | `gradient` | string | ASCII 字符梯度 |
+| `color_scheme` | string | 颜色方案名称（`heat` / `rainbow` / `cool` / `matrix` / `plasma` / `ocean` / `fire` / `default`） |
 | `overlay` | object | 叠加效果：`{"effect":"wave","blend":"SCREEN","mix":0.3}` |
 | `params` | object | 效果参数微调 |
 
@@ -387,7 +388,7 @@ AI 可随时查询 VIZ 的完整能力：
 python3 viz.py capabilities --format json
 ```
 
-返回所有可用情绪、效果、颜文字情绪、字符集、边框样式、颜色方案、布局、装饰、梯度、输入输出 schema。
+返回所有可用情绪、效果、颜文字情绪、颜色方案、布局、装饰、梯度、输入输出 schema。
 
 ---
 

@@ -46,6 +46,7 @@ Run from the VIZ project root. Only dependency: `pillow`.
 | `layout` | string | `random_scatter` / `grid_jitter` / `spiral` / `force_directed` / `preset` |
 | `decoration` | string | `corners` / `edges` / `scattered` / `minimal` / `none` / `frame` / `grid_lines` / `circuit` |
 | `gradient` | string | See gradient list below (73 presets) |
+| `color_scheme` | string | `heat` / `rainbow` / `cool` / `matrix` / `plasma` / `ocean` / `fire` / `default` |
 | `seed` | int | Reproducible output |
 | `overlay` | object | `{"effect":"wave","blend":"SCREEN","mix":0.3}` — layer two effects |
 | `params` | object | Effect-specific tuning, including deformation params (see references/COMPOSITION.md) |
@@ -183,7 +184,7 @@ Emotion drives all visual choices by default. Override via `vocabulary` field:
 | `kaomoji_moods` | list[str] | Override kaomoji mood pool |
 | `decoration_chars` | list[str] | Override decoration characters |
 
-Run `python3 viz.py capabilities --format json` to discover all available kaomoji moods, charsets, border styles, and color schemes.
+Run `python3 viz.py capabilities --format json` to discover all available kaomoji moods and color schemes.
 
 ## Output
 

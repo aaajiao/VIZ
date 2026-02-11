@@ -417,6 +417,10 @@ class FlexiblePipeline:
             spec.decoration_style = overrides["decoration"]
         if overrides.get("gradient"):
             spec.gradient_name = overrides["gradient"]
+        if overrides.get("color_scheme"):
+            spec.color_scheme = overrides["color_scheme"]
+            if spec.bg_fill_spec:
+                spec.bg_fill_spec["color_scheme"] = overrides["color_scheme"]
         if overrides.get("overlay"):
             ov = overrides["overlay"]
             if isinstance(ov, dict):

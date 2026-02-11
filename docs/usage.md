@@ -135,7 +135,7 @@ stdin JSON 同样支持：`transforms`、`postfx`、`composition`、`mask`、`va
 echo '{"emotion":"bull","vocabulary":{"particles":"$€¥₿↑↓","kaomoji_moods":["euphoria","excitement"]}}' | python3 viz.py generate
 ```
 
-可用的颜文字情绪、字符集、边框样式等通过 `capabilities` 命令查询。
+可用的颜文字情绪、颜色方案等通过 `capabilities` 命令查询。
 
 ---
 
@@ -181,8 +181,6 @@ python3 viz.py capabilities --format json  # 默认 JSON
   "emotions": {"joy": {"valence": 0.76, "arousal": 0.48, "dominance": 0.35}, "...": "..."},
   "effects": ["cppn", "flame", "moire", "noise_field", "plasma", "sdf_shapes", "wave", "..."],
   "kaomoji_moods": ["angry", "anxiety", "bored", "confused", "euphoria", "..."],
-  "charsets": ["arrows", "blocks", "box_corners", "box_lines", "braille", "..."],
-  "border_styles": ["double", "heavy", "light", "rounded", "..."],
   "color_schemes": ["cool", "default", "fire", "heat", "matrix", "ocean", "plasma", "rainbow"],
   "layouts": ["random_scatter", "grid_jitter", "spiral", "force_directed", "preset"],
   "decorations": ["corners", "edges", "scattered", "minimal", "none", "frame", "grid_lines", "circuit"],

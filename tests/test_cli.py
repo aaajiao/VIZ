@@ -33,7 +33,9 @@ class TestCapabilities:
         assert "emotions" in data
         assert "effects" in data
         assert "kaomoji_moods" in data
-        assert "charsets" in data
+        assert "color_schemes" in data
+        assert "charsets" not in data
+        assert "border_styles" not in data
 
     def test_capabilities_text_output(self):
         result = run_cli(["capabilities", "--format", "text"])
@@ -178,6 +180,14 @@ class TestGenerate:
             ]
         )
         assert result.returncode == 0
+
+
+    def test_generate_with_color_scheme(self, temp_dir):
+        stdin_data = json.dumps({"emotion": "calm", "color_scheme": "ocean", "seed": 42})
+        result = run_cli(["generate", "--output-dir", temp_dir], stdin=stdin_data)
+        assert result.returncode == 0
+        output = parse_json_output(result)
+        assert output["status"] == "ok"
 
 
 class TestGenerateValidation:
