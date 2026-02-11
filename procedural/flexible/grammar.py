@@ -40,6 +40,11 @@ import random
 from dataclasses import dataclass, field
 from typing import Any
 
+try:
+    from lib.box_chars import CHARSETS, BORDER_SETS
+except ImportError:
+    from viz.lib.box_chars import CHARSETS, BORDER_SETS
+
 
 @dataclass
 class SceneSpec:
@@ -382,7 +387,7 @@ class VisualGrammar:
 
     def _choose_decoration_chars(self, energy: float, warmth: float) -> list[str]:
         """选择装饰字符 (含 box-drawing 和 semigraphic 字符)"""
-        # 经典 ASCII 装饰
+        # 经典 ASCII 装饰 (纯 ASCII，保持内联)
         classic_sets = [
             ["+", "+", "+", "+"],
             [".", ".", ".", "."],
@@ -398,66 +403,103 @@ class VisualGrammar:
             [":::", ":::", ":::", ":::"],
         ]
 
-        # Box-drawing 角落装饰
+        # Box-drawing 角落装饰 (from BORDER_SETS)
+        _bs_light = BORDER_SETS["light"]
+        _bs_round = BORDER_SETS["round"]
+        _bs_heavy = BORDER_SETS["heavy"]
+        _bs_double = BORDER_SETS["double"]
         box_corner_sets = [
-            ["┌", "┐", "└", "┘"],
-            ["╭", "╮", "╰", "╯"],
-            ["┏", "┓", "┗", "┛"],
-            ["╔", "╗", "╚", "╝"],
-            ["┌─", "─┐", "└─", "─┘"],
-            ["╔═", "═╗", "╚═", "═╝"],
-            ["┏━", "━┓", "┗━", "━┛"],
-            ["╭─", "─╮", "╰─", "─╯"],
+            [_bs_light["tl"], _bs_light["tr"], _bs_light["bl"], _bs_light["br"]],
+            [_bs_round["tl"], _bs_round["tr"], _bs_round["bl"], _bs_round["br"]],
+            [_bs_heavy["tl"], _bs_heavy["tr"], _bs_heavy["bl"], _bs_heavy["br"]],
+            [_bs_double["tl"], _bs_double["tr"], _bs_double["bl"], _bs_double["br"]],
+            [_bs_light["tl"] + _bs_light["h"], _bs_light["h"] + _bs_light["tr"],
+             _bs_light["bl"] + _bs_light["h"], _bs_light["h"] + _bs_light["br"]],
+            [_bs_double["tl"] + _bs_double["h"], _bs_double["h"] + _bs_double["tr"],
+             _bs_double["bl"] + _bs_double["h"], _bs_double["h"] + _bs_double["br"]],
+            [_bs_heavy["tl"] + _bs_heavy["h"], _bs_heavy["h"] + _bs_heavy["tr"],
+             _bs_heavy["bl"] + _bs_heavy["h"], _bs_heavy["h"] + _bs_heavy["br"]],
+            [_bs_round["tl"] + _bs_round["h"], _bs_round["h"] + _bs_round["tr"],
+             _bs_round["bl"] + _bs_round["h"], _bs_round["h"] + _bs_round["br"]],
         ]
 
-        # Box-drawing 线条装饰
+        # Box-drawing 线条装饰 (from BORDER_SETS)
+        _bs_dl = BORDER_SETS["dash_light"]
+        _bs_dh = BORDER_SETS["dash_heavy"]
         box_line_sets = [
-            ["─", "─", "│", "│"],
-            ["━", "━", "┃", "┃"],
-            ["═", "═", "║", "║"],
-            ["┄", "┄", "┆", "┆"],
-            ["┈", "┈", "┊", "┊"],
-            ["├", "┤", "┬", "┴"],
-            ["┣", "┫", "┳", "┻"],
-            ["╠", "╣", "╦", "╩"],
+            [_bs_light["h"], _bs_light["h"], _bs_light["v"], _bs_light["v"]],
+            [_bs_heavy["h"], _bs_heavy["h"], _bs_heavy["v"], _bs_heavy["v"]],
+            [_bs_double["h"], _bs_double["h"], _bs_double["v"], _bs_double["v"]],
+            [_bs_dl["h"], _bs_dl["h"], _bs_dl["v"], _bs_dl["v"]],
+            [_bs_dh["h"], _bs_dh["h"], _bs_dh["v"], _bs_dh["v"]],
+            [_bs_light["lt"], _bs_light["rt"], _bs_light["tt"], _bs_light["bt"]],
+            [_bs_heavy["lt"], _bs_heavy["rt"], _bs_heavy["tt"], _bs_heavy["bt"]],
+            [_bs_double["lt"], _bs_double["rt"], _bs_double["tt"], _bs_double["bt"]],
         ]
 
-        # 交叉/节点装饰
+        # 交叉/节点装饰 (from BORDER_SETS cross keys)
         cross_sets = [
-            ["┼", "┼", "┼", "┼"],
-            ["╋", "╋", "╋", "╋"],
-            ["╬", "╬", "╬", "╬"],
+            [_bs_light["cross"]] * 4,
+            [_bs_heavy["cross"]] * 4,
+            [_bs_double["cross"]] * 4,
             ["╳", "╳", "╳", "╳"],
         ]
 
-        # 方块/几何装饰
+        # 方块/几何装饰 (from CHARSETS)
+        _blk_full = CHARSETS["blocks_full"]
+        _blk_half = CHARSETS["blocks_half"]
+        _blk_quarter = CHARSETS["blocks_quarter"]
+        _geo_filled = CHARSETS["geometric_filled"]
         block_sets = [
-            ["░", "░", "░", "░"],
-            ["▪", "▫", "▪", "▫"],
-            ["■", "□", "■", "□"],
-            ["▛", "▜", "▙", "▟"],
-            ["▀", "▄", "▌", "▐"],
-            ["●", "○", "●", "○"],
-            ["◆", "◇", "◆", "◇"],
-            ["◉", "◎", "◉", "◎"],
+            [_blk_full[0]] * 4,                              # ░░░░
+            [_geo_filled[1], _geo_filled[1], _geo_filled[1], _geo_filled[1]],  # ▪▪▪▪
+            [_geo_filled[0], _geo_filled[0], _geo_filled[0], _geo_filled[0]],  # ■■■■
+            list(_blk_quarter[:4]),                           # ▖▗▘▙
+            list(_blk_half[:4]),                              # ▀▄▌▐
+            [_geo_filled[3], _geo_filled[3], _geo_filled[3], _geo_filled[3]],  # ●●●●
+            [_geo_filled[5], _geo_filled[5], _geo_filled[5], _geo_filled[5]],  # ◆◆◆◆
         ]
 
-        # 点阵装饰
+        # 点阵装饰 (from CHARSETS)
+        _dots = CHARSETS["dots"]
+        _circles = CHARSETS["geometric_circles"]
         dot_sets = [
-            ["·", "·", "·", "·"],
-            ["∙", "∙", "∙", "∙"],
-            ["•", "◦", "•", "◦"],
-            ["○", "◎", "○", "◎"],
+            [_dots[0]] * 4,                          # ····
+            [_dots[1]] * 4,                          # ∙∙∙∙
+            [_dots[2], _dots[3], _dots[2], _dots[3]],  # •◦•◦
+            [_circles[1], _circles[2], _circles[1], _circles[2]],  # ○◉○◉
+        ]
+
+        # 星星装饰 (from CHARSETS - 新增)
+        _stars = CHARSETS["stars"]
+        _sparkles = CHARSETS["sparkles"]
+        star_sets = [
+            [_stars[0], _stars[1], _stars[0], _stars[1]],     # ✦✧✦✧
+            [_stars[2], _stars[3], _stars[2], _stars[3]],     # ★☆★☆
+            [_sparkles[0], _sparkles[1], _sparkles[0], _sparkles[1]],
+            [_stars[4], _sparkles[2], _stars[4], _sparkles[2]],
+        ]
+
+        # 箭头装饰 (from CHARSETS - 新增)
+        _arrows = CHARSETS["arrows"]
+        _arrows_t = CHARSETS["arrows_thin"]
+        arrow_sets = [
+            [_arrows[0], _arrows[2], _arrows[1], _arrows[3]],  # ←→↑↓
+            [_arrows_t[0], _arrows_t[1], _arrows_t[2], _arrows_t[3]],
+            [_arrows[4], _arrows[5], _arrows[4], _arrows[5]],  # ↔↕↔↕
+            [_arrows[6], _arrows[7], _arrows[8], _arrows[9]],
         ]
 
         # Probability-weighted pool (all categories always available)
         pool_weights = [
-            (classic_sets, 0.20),
-            (box_corner_sets, 0.15 + energy * 0.15),
-            (box_line_sets, 0.12 + (1 - energy) * 0.10),
-            (cross_sets, 0.08 + energy * 0.12),
-            (block_sets, 0.10 + energy * 0.10),
-            (dot_sets, 0.10 + (1 - energy) * 0.10 + warmth * 0.05),
+            (classic_sets, 0.18),
+            (box_corner_sets, 0.13 + energy * 0.13),
+            (box_line_sets, 0.10 + (1 - energy) * 0.08),
+            (cross_sets, 0.07 + energy * 0.10),
+            (block_sets, 0.09 + energy * 0.09),
+            (dot_sets, 0.09 + (1 - energy) * 0.08 + warmth * 0.04),
+            (star_sets, 0.06 + warmth * 0.08),
+            (arrow_sets, 0.06 + energy * 0.08),
         ]
 
         # Weighted category selection
@@ -527,6 +569,37 @@ class VisualGrammar:
             "cyber": 0.02 + energy * 0.05,
             "organic": 0.03 + (1 - structure) * 0.05,
             "noise": 0.02 + energy * 0.04,
+            # --- 之前遗漏的 box-drawing 复杂组合 ---
+            "box_thin_corner": 0.02 + structure * 0.04,
+            "box_thick_corner": 0.02 + structure * 0.04 + energy * 0.03,
+            "box_double_corner": 0.02 + structure * 0.05,
+            "box_mixed_dh": 0.02 + structure * 0.04,
+            "box_mixed_dv": 0.02 + structure * 0.04,
+            "box_mixed_a": 0.02 + structure * 0.03 + energy * 0.03,
+            "box_mixed_b": 0.02 + structure * 0.03,
+            "box_complex_a": 0.02 + structure * 0.05 + energy * 0.04,
+            "box_complex_b": 0.02 + structure * 0.04 + energy * 0.03,
+            "box_complex_c": 0.02 + structure * 0.04,
+            "box_ends": 0.02 + structure * 0.03,
+            # 遗漏的几何
+            "geo_misc": 0.02 + energy * 0.03,
+            # 遗漏的排版
+            "math_rel": 0.02 + structure * 0.03,
+            "brackets": 0.02 + (1 - energy) * 0.03,
+            "currency": 0.02,
+            "symbols": 0.02 + (1 - energy) * 0.02,
+            "superscript": 0.02,
+            "ligature": 0.02 + (1 - structure) * 0.03,
+            "diacritics": 0.02 + (1 - structure) * 0.02,
+            "alpha_lower": 0.02 + (1 - structure) * 0.03,
+            "alpha_upper": 0.02 + energy * 0.03,
+            # --- 新增类别 ---
+            "stars_density": 0.02 + (1 - structure) * 0.04,
+            "sparkles": 0.02 + (1 - structure) * 0.03,
+            "arrows_flow": 0.02 + energy * 0.05,
+            "arrows_double": 0.02 + energy * 0.04,
+            "cp437_retro": 0.02 + (1 - structure) * 0.03,
+            "misc_symbols": 0.02,
         }
         return self._weighted_choice(weights)
 
@@ -542,48 +615,77 @@ class VisualGrammar:
             "~≈≋",
         ]
 
-        # 几何/圆点
+        # 几何/圆点 (from CHARSETS)
+        _dots = CHARSETS["dots"]
+        _circles = CHARSETS["geometric_circles"]
+        _geo_f = CHARSETS["geometric_filled"]
         geometric = [
-            "·•○◦",
-            "·∙•◦○◎",
-            "◦○◎◉●",
-            "▪▫□■▮",
-            "◆◇◈◉◎",
-            "△▽○□◇",
+            _dots[:4],                   # ·∙•◦
+            _dots[:6],                   # ·∙•◦○◎
+            _circles[:5],                # ●○◉◎◦
+            _geo_f[:4],                  # ■▪▮●
+            _geo_f[4:7],                 # ▲▼◆
         ]
 
-        # Box-drawing 线段
+        # Box-drawing 线段 (from CHARSETS)
+        _box_l = CHARSETS["box_light"]
+        _box_h = CHARSETS["box_heavy"]
+        _box_d = CHARSETS["box_double"]
         box_lines = [
-            "─│┼┄┆",
-            "━┃╋┅┇",
-            "═║╬",
-            "├┤┬┴┼",
-            "┣┫┳┻╋",
-            "╠╣╦╩╬",
-            "╱╲╳",
+            _box_l[:5],                  # ─│┌┐└
+            _box_h[:5],                  # ━┃┏┓┗
+            _box_d[:5],                  # ═║╔╗╚
+            _box_l[6:],                  # ┤┬┴┼
+            _box_h[6:],                  # ┫┳┻╋
+            _box_d[6:],                  # ╣╦╩╬
+            CHARSETS["box_diagonal"],    # ╱╲╳
         ]
 
-        # 方块
+        # 方块 (from CHARSETS)
+        _blk_full = CHARSETS["blocks_full"]
+        _blk_half = CHARSETS["blocks_half"]
+        _blk_quarter = CHARSETS["blocks_quarter"]
         blocks = [
-            "░▒▓",
-            "░▒▓█",
-            "▀▄▌▐█",
-            "▖▗▘▙▚▛▜▝",
+            _blk_full[:3],               # ░▒▓
+            _blk_full,                   # ░▒▓█
+            _blk_half + "█",             # ▀▄▌▐█
+            _blk_quarter,                # ▖▗▘▙▚▛▜▝
         ]
 
-        # 盲文点阵
+        # 盲文点阵 (from CHARSETS)
+        _braille = CHARSETS["braille"]
         braille = [
-            "⠁⠂⠃⠄⠅⠆⠇",
-            "⣀⣁⣂⣃⣄⣅⣆⣇",
+            _braille[1:8],               # ⠁⠂⠃⠄⠅⠆⠇
+            _braille[10:18],             # ⣀⣁⣂⣃⣄⣅⣆⣇
+        ]
+
+        # 星星/闪烁 (from CHARSETS - 新增)
+        _stars = CHARSETS["stars"]
+        _sparkles = CHARSETS["sparkles"]
+        stars_sparkles = [
+            _stars[:5],                  # ✦✧★☆✶
+            _sparkles[:5],               # ⁺⁎∗✦✧
+            _stars[:3] + _sparkles[:3],  # ✦✧★⁺⁎∗
+        ]
+
+        # 箭头/数学 (from CHARSETS - 新增)
+        _arrows = CHARSETS["arrows"]
+        _math_ops = CHARSETS["math_operators"]
+        arrows_math = [
+            _arrows[:6],                 # ←↑→↓↔↕
+            _math_ops[:6],               # ±×÷∓∞≈
+            _arrows[:4] + _math_ops[:2], # ←↑→↓±×
         ]
 
         # Probability-weighted pool (all categories always available)
         pool_weights = [
-            (classic, 0.20),
-            (geometric, 0.15 + (1 - energy) * 0.10),
-            (box_lines, 0.12 + energy * 0.15),
-            (blocks, 0.10 + energy * 0.12),
-            (braille, 0.08 + (1 - energy) * 0.08 + warmth * 0.05),
+            (classic, 0.18),
+            (geometric, 0.13 + (1 - energy) * 0.08),
+            (box_lines, 0.10 + energy * 0.13),
+            (blocks, 0.09 + energy * 0.10),
+            (braille, 0.07 + (1 - energy) * 0.07 + warmth * 0.04),
+            (stars_sparkles, 0.06 + warmth * 0.08),
+            (arrows_math, 0.06 + energy * 0.08),
         ]
 
         total = sum(w for _, w in pool_weights)

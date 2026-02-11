@@ -174,3 +174,64 @@ class TestBuildBoxFrameChars:
         light_corners = {(x, y): c for x, y, c in light if (x, y) in [(0, 0), (4, 0)]}
         heavy_corners = {(x, y): c for x, y, c in heavy if (x, y) in [(0, 0), (4, 0)]}
         assert light_corners != heavy_corners
+
+
+class TestDefaultAlias:
+    def test_default_equals_classic(self):
+        assert GRADIENTS["default"] == GRADIENTS["classic"]
+
+    def test_default_in_gradients(self):
+        assert "default" in GRADIENTS
+
+
+class TestNewGradients:
+    NEW_GRADIENT_NAMES = [
+        "stars_density", "sparkles",
+        "arrows_flow", "arrows_double",
+        "cp437_retro", "misc_symbols",
+    ]
+
+    def test_new_gradients_exist(self):
+        for name in self.NEW_GRADIENT_NAMES:
+            assert name in GRADIENTS, f"missing gradient: {name}"
+
+    def test_new_gradients_non_empty(self):
+        for name in self.NEW_GRADIENT_NAMES:
+            assert len(GRADIENTS[name]) > 0, f"{name} is empty"
+
+    def test_new_gradients_start_with_space(self):
+        for name in self.NEW_GRADIENT_NAMES:
+            assert GRADIENTS[name][0] == " ", f"{name} should start with space"
+
+
+class TestPaletteUnification:
+    def test_palette_gradients_is_box_chars_gradients(self):
+        """palette.ASCII_GRADIENTS should be the same object as box_chars.GRADIENTS"""
+        from procedural.palette import ASCII_GRADIENTS
+        assert ASCII_GRADIENTS is GRADIENTS
+
+    def test_palette_has_default(self):
+        from procedural.palette import ASCII_GRADIENTS
+        assert "default" in ASCII_GRADIENTS
+
+
+class TestGrammarGradientKeysValid:
+    def test_all_gradient_weights_are_valid_keys(self):
+        """Every key in _choose_gradient() weights must exist in GRADIENTS"""
+        from procedural.flexible.grammar import VisualGrammar
+        from procedural.palette import ASCII_GRADIENTS
+
+        grammar = VisualGrammar(seed=1)
+        # Exercise the method at various parameter combos to collect all keys
+        all_keys = set()
+        for e in [0.0, 0.5, 1.0]:
+            for s in [0.0, 0.5, 1.0]:
+                # Access the weights dict via a test-friendly approach:
+                # Call the method many times and collect returned values
+                for seed in range(200):
+                    g = VisualGrammar(seed=seed)
+                    key = g._choose_gradient(e, s)
+                    all_keys.add(key)
+
+        for key in all_keys:
+            assert key in ASCII_GRADIENTS, f"gradient '{key}' selected by grammar but not in ASCII_GRADIENTS"

@@ -26,87 +26,11 @@ __all__ = [
 ]
 
 # ==================== ASCII 梯度定义 ====================
-
-ASCII_GRADIENTS = {
-    # ===== 经典 ASCII =====
-    "classic": " .:-=+*#%@",
-    "smooth": " .':;!>+*%@#█",
-    "matrix": " .:-=+*@#",
-    "plasma": "$?01▄abc+-><:.",
-    "default": " .:-=+*#%@",  # 别名
-
-    # ===== 方块填充 (Block Fill) =====
-    "blocks": " ░▒▓█",
-    "blocks_fine": " ·░▒▓█",
-    "blocks_ultra": " ·⠁░▒▓▓█",
-    "glitch": " ·░▒▓█▀▄▌▐",
-    "vbar": " ▏▎▍▌▋▊▉█",
-    "hbar": " ▁▂▃▄▅▆▇█",
-    "quadrant": " ▖▗▘▝▞▚▙▟█",
-    "halves": " ▔▕▁▖▌▀▐▙▛▜█",
-
-    # ===== Box-Drawing 线框 =====
-    "box_density": " ·┄─┈━░▒▓█",
-    "box_vertical": " ·┆│┊┃░▒▓█",
-    "box_cross": " ·+┼╋╬░▒▓█",
-    "box_thin": " ╶╴╌─│├┤┬┴┼█",
-    "box_thin_corner": " ╵╷│┌┐└┘├┤█",
-    "box_thick": " ╺╸╍━┃┣┫┳┻╋█",
-    "box_thick_corner": " ╹╻┃┏┓┗┛┣┫█",
-    "box_double": " ═║╠╣╦╩╬╔╗█",
-    "box_double_corner": " ═║╚╝╠╣╦╩╬█",
-    "box_rounded": " ·╭╮╯╰○◎●█",
-    "box_mixed_dh": " ╘╒╛╕╪╞╡╧╤█",
-    "box_mixed_dv": " ╙╓╜╖╫╟╢╨╥█",
-    "box_mixed_a": " ┍┑┕┙┿┝┥┷┯█",
-    "box_mixed_b": " ┎┒┖┚╂┠┨┸┰█",
-    "box_complex_a": " ┽┾╀╁╃╄╅╆╇╈█",
-    "box_complex_b": " ┞┟┡┢┦┧┩┪╉█",
-    "box_complex_c": " ┭┮┱┲┵┶┹┺╊█",
-    "box_ends": " ╼╾╽╿╌╍╎╏▒█",
-    "box_weight": " ╎│╏┃║░▒▓█",
-    "diagonal": " ╱╲╳▞▚░▒▓█",
-
-    # ===== 几何/点阵 (Geometric) =====
-    "dots_density": " ·∙•◦○◎◉●█",
-    "geometric": " ·▪□▫▮■▓█",
-    "braille_density": " ⠁⠃⠇⡇⣇⣧⣷⣿",
-    "circles": " ·◦○◎◉●◕█",
-    "circles_half": " ◜◝◞◟◐◑◒◓●",
-    "circles_arc": " ·◠◡◚◛◙◕◖◗█",
-    "squares": " ▫▪□▢▣▬▭▮▯■█",
-    "diamonds": " ·◇◆◊▪■▓█",
-    "triangles": " ·◢◣◤◥▖▙▟█",
-    "quarters_geo": " ◰◱◲◳◴◵◶◷◧◨◩◪◫█",
-    "squares_fill": " ◽◻▤▥▦▧▨▩◼◾█",
-    "arrows_sm": " ▵▴▹▸▿▾◃◂▰▱█",
-    "arrows_lg": " △▷▽◁▻◅▲▶▼◀►◄█",
-    "geo_misc": " ◌◍◈◔◘◬◭◮◯◸◹◺◿█",
-
-    # ===== 文字/排版 (Typography) =====
-    "punctuation": " .,;:¿?¡!\"@#%‰&*'█",
-    "editorial": " ·†‡•−–_¯…█",
-    "math": " ·+-×÷±≈∞∫√█",
-    "math_rel": " ·~≈≠=≤≥<>¬█",
-    "brackets": " ·()[]{}|/⁄\\█",
-    "greek": " ·μπ∂∆∑∏◊Ω█",
-    "currency": " ¢$€£¥¤▪■▓█",
-    "symbols": " ·¦¶§©®™°▓█",
-    "superscript": " ·ªº¹²³¼½¾█",
-    "quotes": " \u2018\u2019\u201a\u201c\u201d\u201e\u2039\u203a\u00ab\u00bb\u2588",
-    "ligature": " ·æœßøəﬁﬂÆŒ█",
-    "diacritics": " ·^¨`Əə°Øø█",
-    "digits": " 0123456789",
-    "alpha_lower": " ijltrcfszvxynoeaukhdpbgqmw█",
-    "alpha_upper": " IJLTCFSEZVXYNOADKHRPBGUQMW█",
-
-    # ===== 混合表现力 (Mixed Expression) =====
-    "tech": " .·:;+*░▒▓█",
-    "cyber": " ·-=≡░▒▓█",
-    "organic": " ·∙•○◎●▒▓█",
-    "noise": " ·⠁⠃░▒▓▓█",
-    "circuit": " ·┄─├┼╋▒▓█",
-}
+# 统一数据源: lib/box_chars.py 是字符/梯度的唯一真相来源
+try:
+    from lib.box_chars import GRADIENTS as ASCII_GRADIENTS
+except ImportError:
+    from viz.lib.box_chars import GRADIENTS as ASCII_GRADIENTS
 
 # ==================== 颜色方案定义 ====================
 
