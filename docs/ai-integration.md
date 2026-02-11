@@ -67,7 +67,7 @@ echo '{"emotion":"panic","video":true}' | python3 viz.py generate
 |------|------|------|
 | `transforms` | list[dict] | 域变换链，如 `[{"type":"kaleidoscope","segments":6}]`；参数可为动画规格 |
 | `postfx` | list[dict] | 后处理链，如 `[{"type":"vignette","strength":0.5,"pulse_speed":0.5}]` |
-| `composition` | string | 合成模式：`blend` / `masked_split` / `radial_masked` / `noise_masked` |
+| `composition` | string | 合成模式：`blend` / `masked_split` / `radial_masked` / `noise_masked` / `sdf_masked` |
 | `mask` | string | 遮罩类型+参数（CLI 格式：`radial:center_x=0.5,radius=0.3`） |
 | `variant` | string | 强制效果变体名（如 `warped`、`alien`、`turbulent`） |
 
@@ -336,7 +336,7 @@ echo '{"emotion": "joy", "variants": 5}' | python3 viz.py generate
 |----|------|
 | 格式 | PNG (quality=95) 或 GIF |
 | 尺寸 | 1080 × 1080 像素 |
-| 内部渲染 | 160 × 160（最近邻上采样），背景通过第二渲染通道生成纹理（~320k 种组合） |
+| 内部渲染 | 160 × 160（最近邻上采样），背景通过第二渲染通道生成纹理（~750k 种组合） |
 | 默认目录 | `./media/` |
 | 文件命名 | `viz_{timestamp}.{png\|gif}` |
 

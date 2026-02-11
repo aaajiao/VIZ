@@ -508,7 +508,7 @@ masked = MaskedCompositeEffect(
 )
 ```
 
-遮罩 `char_idx` 值 0-9 控制混合权重。6 种遮罩类型、9 种域变换、7 种后处理效果。
+遮罩 `char_idx` 值 0-9 控制混合权重。6 种遮罩类型、9 种域变换、7 种后处理效果。5 种合成模式（blend/masked_split/radial_masked/noise_masked/sdf_masked）。
 
 详见 [composition.md](composition.md) 获取完整参考。
 

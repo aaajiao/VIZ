@@ -283,7 +283,7 @@ masked = MaskedCompositeEffect(
 1. **合成/遮罩** — `CompositeEffect` 或 `MaskedCompositeEffect` 混合两个效果
 2. **域变换** — `TransformedEffect` 包装效果，在 `main()` 调用前变换坐标（支持动画 kwargs）
 3. **PostFX 链** — 7 种 buffer 级后处理效果，在 `effect.post()` 后执行（注入 `_time` 实现帧间动画）
-4. **bg_fill 第二渲染通道** — 在独立临时 buffer 上运行另一个 effect（含 variant/transform/postfx/mask/color scheme），填充 `bg=None` 的 cell 背景色（~320k 种纹理组合）
+4. **bg_fill 第二渲染通道** — 在独立临时 buffer 上运行另一个 effect（含 variant/transform/postfx/mask/color scheme），填充 `bg=None` 的 cell 背景色（~750k 种纹理组合）
 
 ```
 Effect → [Composite/Masked] → [TransformedEffect] → PostFX chain(_time) → bg_fill → brightness → buffer_to_image

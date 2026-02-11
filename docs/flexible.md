@@ -227,7 +227,7 @@ class SceneSpec:
     postfx_chain: list[dict]        # 后处理链 [{"type": "vignette", "strength": 0.5, "pulse_speed": 0.5}, ...]
 
     # 合成模式 (Composition mode)
-    composition_mode: str           # "blend" / "masked_split" / "radial_masked" / "noise_masked"
+    composition_mode: str           # "blend" / "masked_split" / "radial_masked" / "noise_masked" / "sdf_masked"
     mask_type: str | None           # 遮罩类型 (horizontal_split/vertical_split/diagonal/radial/noise/sdf)
     mask_params: dict               # 遮罩参数
 
@@ -253,18 +253,18 @@ class SceneSpec:
 | `_choose_gradient()` | **73 种** (全部激活: classic, blocks, box_thin, circles, stars_density, arrows_flow, cp437_retro, ...) | **energy + structure** |
 | `_choose_particle_chars()` | **30+ 组** (经典/几何/box 线段/方块/盲文/星星闪烁/箭头数学，从 CHARSETS 构建) | **energy + warmth** |
 | `_choose_text_elements()` | 8 组情绪词池（中英 + **semigraphic 符号**） | valence × arousal |
-| `_choose_kaomoji_mood()` | 6 象限情绪 | valence × arousal |
+| `_choose_kaomoji_mood()` | 20 种情绪（3D VAD 最近质心） | valence × arousal × dominance |
 | `_choose_domain_transforms()` | mirror_x/y/quad, kaleidoscope, tile, rotate, zoom, spiral_warp, **polar_remap** | structure + energy (概率提高至 30-55%); rotate/zoom/spiral_warp 支持动画 kwargs |
 | `_choose_postfx_chain()` | vignette, scanlines, threshold, edge_detect, invert, color_shift, pixelate | energy + structure + intensity (概率提高, 保底 ≥1); 4 种支持动画参数 |
-| `_choose_composition_mode()` | blend, masked_split, radial_masked, noise_masked | energy + structure (blend 降至 25%); masks 注入 `mask_anim_speed` |
-| `_choose_color_scheme()` | heat, rainbow, cool, matrix, plasma, ocean, fire | warmth + energy |
-| `_choose_bg_fill_spec()` | 13 个候选 effect × variant × 0-2 transform × 0-1 postfx × 0-1 mask × color_mode | energy + structure + warmth |
+| `_choose_composition_mode()` | blend, masked_split, radial_masked, noise_masked, sdf_masked | energy + structure (blend 降至 25%); masks 注入 `mask_anim_speed` |
+| `_choose_color_scheme()` | heat, rainbow, cool, matrix, plasma, ocean, fire, default | warmth + energy |
+| `_choose_bg_fill_spec()` | 13 个候选 effect × variant × 0-2 transform（含 rotate/zoom）× 0-1 postfx（含 invert/edge_detect/pixelate）× 0-1 mask（含 h_split/v_split/sdf）× color_mode | energy + structure + warmth |
 
 详见 [box_chars.md](box_chars.md) 获取完整的字符集和梯度参考。
 
 ### 变体系统集成（Variant Integration）
 
-文法通过 `_sample_variant_params(effect_name)` 从 `VARIANT_REGISTRY`（`procedural/effects/variants.py`）采样结构变体参数。7 个效果共 32 个命名变体，每个变体定义参数范围预设（如 `surface_noise: (0.3, 0.8)`），文法按权重选择变体后在范围内均匀采样。
+文法通过 `_sample_variant_params(effect_name)` 从 `VARIANT_REGISTRY`（`procedural/effects/variants.py`）采样结构变体参数。17 个效果共 86 个命名变体，每个变体定义参数范围预设（如 `surface_noise: (0.3, 0.8)`），文法按权重选择变体后在范围内均匀采样。
 
 辅助方法 `_jitter(base, amount, lo, hi)` 在基础值附近添加高斯随机偏移（σ = amount × 0.6），用于所有连续参数的微调。
 
@@ -276,7 +276,7 @@ class SceneSpec:
 
 ### 组合空间
 
-理论离散组合：17 bg × 32 variants × 7 overlay × 4 blend × 4 composition × 6 mask × 128 postfx × 9 transform × 5 layout × 73 gradient × 8 deco × 70 chars × 13 bg_fill effect × ~4 variant × ~15 transform × 7 postfx × 6 mask × 8 color ≈ **数百亿** 种。加上连续参数（warmth, saturation, deformation, ...）→ 无限变体。详见 [composition.md](composition.md#combinatorial-impact)。
+理论离散组合：17 bg × 86 variants × 7 overlay × 4 blend × 5 composition × 6 mask × 128 postfx × 9 transform × 5 layout × 73 gradient × 8 deco × 70 chars × 13 bg_fill effect × ~5 variant × ~20 transform × 7 postfx × 6 mask × 8 color ≈ **数千亿** 种。加上连续参数（warmth, saturation, deformation, ...）→ 无限变体。详见 [composition.md](composition.md#combinatorial-impact)。
 
 ---
 
@@ -388,18 +388,13 @@ imgs = pipe.generate_variants(text="neutral", count=5)
 6. **氛围文字**：grammar 生成的 `text_elements` 渲染
 7. **标题**：居中大字 + 光晕
 
-### _mood_from_valence_arousal()
+### _choose_kaomoji_mood() — 3D VAD 最近质心
 
-2D 查找表（6 效价段 × 3 唤醒段）：
+使用 3D 最近质心算法（Valence × Arousal × Dominance），计算到 20 个情绪质心的欧几里得距离，选择最近的情绪。Dominance 轴使高支配情绪（angry, proud）和低支配情绪（fear, embarrassed）可被区分。
 
-| valence \ arousal | 高 (>0.3) | 中 | 低 (<-0.3) |
-|---|---|---|---|
-| >0.7 | euphoria, excitement | happy, proud | love, relaxed |
-| 0.3~0.7 | excitement, proud | happy | relaxed |
-| 0~0.3 | surprised, confused | neutral | bored, sleepy |
-| -0.3~0 | anxiety, confused | disappointed | bored |
-| -0.6~-0.3 | anger, anxiety | sad | lonely |
-| <-0.6 | panic, fear | sad, lonely | lonely |
+20 个情绪质心：euphoria, happy, excitement, love, proud, relaxed, angry, anxiety, fear, panic, sad, lonely, disappointed, confused, surprised, thinking, embarrassed, bored, sleepy, neutral。
+
+详见 [kaomoji.md](kaomoji.md) 获取完整质心坐标表。
 
 ### 关键常量
 
