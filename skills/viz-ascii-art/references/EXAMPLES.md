@@ -8,7 +8,6 @@ Complete examples for common use cases.
 
 ```json
 {
-  "source": "market",
   "headline": "BTC BREAKS $100K",
   "emotion": "euphoria",
   "metrics": ["ETH: $5.2k", "SOL: $300", "Volume: $89B"],
@@ -21,7 +20,6 @@ Complete examples for common use cases.
 
 ```json
 {
-  "source": "market",
   "headline": "MARKET CRASH -15%",
   "emotion": "panic",
   "metrics": ["BTC: -12%", "ETH: -18%", "Fear Index: 95"],
@@ -36,7 +34,6 @@ Complete examples for common use cases.
 
 ```json
 {
-  "source": "market",
   "headline": "WILD SWINGS",
   "emotion": "volatile",
   "metrics": ["High: $98k", "Low: $82k", "Range: 16%"],
@@ -52,7 +49,6 @@ Complete examples for common use cases.
 
 ```json
 {
-  "source": "art",
   "headline": "Venice Biennale 2026",
   "emotion": "awe",
   "body": "immersive digital installations exploring human-AI collaboration",
@@ -65,7 +61,6 @@ Complete examples for common use cases.
 
 ```json
 {
-  "source": "art",
   "headline": "Summer Memories",
   "emotion": "nostalgia",
   "effect": "noise_field",
@@ -77,7 +72,6 @@ Complete examples for common use cases.
 
 ```json
 {
-  "source": "art",
   "emotion": "love",
   "title": "For You",
   "effect": "wave",
@@ -93,7 +87,6 @@ Complete examples for common use cases.
 
 ```json
 {
-  "source": "news",
   "headline": "BREAKING: Major Policy Change",
   "emotion": "surprise",
   "body": "Federal Reserve announces unexpected rate decision",
@@ -105,7 +98,6 @@ Complete examples for common use cases.
 
 ```json
 {
-  "source": "news",
   "headline": "EMERGENCY ALERT",
   "emotion": "fear",
   "effect": "flame",
@@ -121,7 +113,6 @@ Complete examples for common use cases.
 
 ```json
 {
-  "source": "mood",
   "emotion": "calm",
   "title": "Sunday Morning",
   "effect": "noise_field",
@@ -134,7 +125,6 @@ Complete examples for common use cases.
 
 ```json
 {
-  "source": "mood",
   "emotion": "anxiety",
   "body": "racing thoughts, can't focus",
   "effect": "moire",
@@ -147,7 +137,6 @@ Complete examples for common use cases.
 
 ```json
 {
-  "source": "mood",
   "emotion": "hope",
   "headline": "Things Will Get Better",
   "effect": "wave",
@@ -163,7 +152,6 @@ Complete examples for common use cases.
 
 ```json
 {
-  "source": "art",
   "headline": "RETRO COMPUTING",
   "emotion": "nostalgia",
   "effect": "ten_print",
@@ -175,7 +163,6 @@ Complete examples for common use cases.
 
 ```json
 {
-  "source": "mood",
   "headline": "EMERGENCE",
   "emotion": "awe",
   "effect": "game_of_life",
@@ -188,7 +175,6 @@ Complete examples for common use cases.
 
 ```json
 {
-  "source": "art",
   "headline": "DIGITAL SCULPTURE",
   "emotion": "excitement",
   "effect": "donut",
@@ -200,7 +186,6 @@ Complete examples for common use cases.
 
 ```json
 {
-  "source": "art",
   "headline": "ALGORITHMIC BEAUTY",
   "emotion": "surprise",
   "effect": "mod_xor",
@@ -212,7 +197,6 @@ Complete examples for common use cases.
 
 ```json
 {
-  "source": "news",
   "headline": "TECH FORWARD",
   "emotion": "trust",
   "effect": "wireframe_cube",
@@ -224,7 +208,6 @@ Complete examples for common use cases.
 
 ```json
 {
-  "source": "mood",
   "emotion": "euphoria",
   "effect": "chroma_spiral",
   "params": {"arms": 5, "chroma_offset": 0.2},
@@ -236,7 +219,6 @@ Complete examples for common use cases.
 
 ```json
 {
-  "source": "mood",
   "headline": "DRIFTING",
   "emotion": "serenity",
   "effect": "wobbly",
@@ -248,7 +230,6 @@ Complete examples for common use cases.
 
 ```json
 {
-  "source": "mood",
   "emotion": "calm",
   "effect": "sand_game",
   "video": true,
@@ -261,7 +242,6 @@ Complete examples for common use cases.
 
 ```json
 {
-  "source": "art",
   "headline": "LIVING SYSTEMS",
   "emotion": "awe",
   "effect": "slime_dish",
@@ -273,7 +253,6 @@ Complete examples for common use cases.
 
 ```json
 {
-  "source": "market",
   "headline": "MOMENTUM",
   "emotion": "excitement",
   "effect": "dyna",
@@ -348,8 +327,7 @@ When predefined emotions don't match, specify exact VAD:
 ```json
 {
   "vad": [0.3, 0.7, -0.2],
-  "headline": "Excited but Uncertain",
-  "source": "mood"
+  "headline": "Excited but Uncertain"
 }
 ```
 
@@ -408,7 +386,6 @@ All JSON fields can also be passed via CLI args:
 # Equivalent to JSON example
 python3 viz.py generate \
   --emotion euphoria \
-  --source market \
   --headline "BTC BREAKS 100K" \
   --metrics "ETH: $5.2k" "SOL: $300" \
   --seed 42

@@ -11,10 +11,10 @@ Usage:
     python3 viz.py generate --emotion euphoria --seed 42
 
     # With content data via stdin JSON
-    echo '{"source":"market","headline":"DOW +600","emotion":"euphoria"}' | python3 viz.py generate
+    echo '{"headline":"DOW +600","emotion":"euphoria"}' | python3 viz.py generate
 
     # With CLI args
-    python3 viz.py generate --emotion panic --title "CRASH" --source market
+    python3 viz.py generate --emotion panic --title "CRASH"
 
     # Image to ASCII conversion
     python3 viz.py convert image.png --charset blocks
@@ -173,6 +173,14 @@ def _validate_overrides(overrides):
         if not isinstance(overrides["variant"], str):
             errors.append(f"variant must be a string, got {type(overrides['variant']).__name__}")
 
+    if overrides.get("color_scheme"):
+        from procedural.palette import COLOR_SCHEMES
+
+        if overrides["color_scheme"] not in COLOR_SCHEMES:
+            errors.append(
+                f"Unknown color_scheme '{overrides['color_scheme']}', valid: {sorted(COLOR_SCHEMES.keys())}"
+            )
+
     return errors
 
 
@@ -190,7 +198,6 @@ def cmd_generate(args):
         VAD_ANCHORS,
     )
     from lib.content import make_content, content_has_data
-    from lib.vocabulary import get_vocabulary
 
     # === 1. Parse input ===
     # Try reading stdin JSON (non-blocking)
@@ -218,8 +225,6 @@ def cmd_generate(args):
 
     if args.emotion:
         content_data["emotion"] = args.emotion
-    if args.source:
-        content_data["source"] = args.source
     if args.title:
         content_data["title"] = args.title
     if args.text:
@@ -328,9 +333,7 @@ def cmd_generate(args):
         pass  # Pipeline handles text_to_emotion
 
     # === 3. Build vocabulary ===
-    source = content.get("source")
-    vocab_overrides = content.get("vocabulary", {})
-    vocab = get_vocabulary(source, vocab_overrides)
+    vocab = content.get("vocabulary", {})
 
     # Build content dict for pipeline
     pipeline_content = {
@@ -338,7 +341,6 @@ def cmd_generate(args):
         "metrics": content.get("metrics", []),
         "timestamp": content.get("timestamp"),
         "body": content.get("body"),
-        "source": source,
         "vocabulary": vocab,
     }
 
@@ -389,6 +391,8 @@ def cmd_generate(args):
             overrides["mask_type"] = str(mask_data)
     if content.get("variant"):
         overrides["variant"] = content["variant"]
+    if content.get("color_scheme"):
+        overrides["color_scheme"] = content["color_scheme"]
 
     # Validate overrides against known values
     errors = _validate_overrides(overrides)
@@ -485,7 +489,6 @@ def cmd_generate(args):
         "status": "ok",
         "results": results,
         "emotion": emotion_name,
-        "source": source,
     }
 
     print(json.dumps(output, ensure_ascii=False))
@@ -592,12 +595,12 @@ def cmd_capabilities(args):
     """
     from procedural.effects import EFFECT_REGISTRY
     from procedural.flexible.emotion import VAD_ANCHORS
-    from lib.vocabulary import VOCABULARIES
     from procedural.transforms import TRANSFORM_REGISTRY
     from procedural.postfx import POSTFX_REGISTRY
     from procedural.masks import MASK_REGISTRY
     from procedural.effects.variants import VARIANT_REGISTRY
-    from procedural.palette import ASCII_GRADIENTS
+    from procedural.palette import ASCII_GRADIENTS, COLOR_SCHEMES
+    from lib.kaomoji_data import KAOMOJI_SINGLE
 
     capabilities = {
         "version": "0.4.0",
@@ -616,7 +619,8 @@ def cmd_capabilities(args):
             for name, ev in sorted(VAD_ANCHORS.items())
         },
         "effects": sorted(EFFECT_REGISTRY.keys()),
-        "sources": sorted(VOCABULARIES.keys()),
+        "kaomoji_moods": sorted(KAOMOJI_SINGLE.keys()),
+        "color_schemes": sorted(COLOR_SCHEMES.keys()),
         "blend_modes": ["ADD", "SCREEN", "OVERLAY", "MULTIPLY"],
         "layouts": [
             "random_scatter",
@@ -654,7 +658,6 @@ def cmd_capabilities(args):
             "money",
         ],
         "input_schema": {
-            "source": "string (market|art|news|mood) - determines visual vocabulary",
             "headline": "string - main title text",
             "metrics": "list[string] - data metrics to display",
             "body": "string - text for emotion inference (fallback)",
@@ -667,8 +670,9 @@ def cmd_capabilities(args):
             "layout": "string - layout algorithm name",
             "decoration": "string - decoration style",
             "gradient": "string - ASCII gradient name",
+            "color_scheme": "string - color scheme name (heat|rainbow|cool|matrix|plasma|ocean|fire|default)",
             "overlay": "dict {effect, blend, mix} - overlay effect config",
-            "vocabulary": "dict - override default vocabulary fields",
+            "vocabulary": "dict - override visual vocabulary {particles, kaomoji_moods, decoration_chars}",
             "video": "bool - output GIF instead of PNG",
             "duration": "float - GIF duration in seconds (default 3.0)",
             "fps": "int - frames per second (default 15)",
@@ -686,13 +690,13 @@ def cmd_capabilities(args):
             "status": "string (ok|error)",
             "results": "list[{path, seed, format, ...}] - always an array, even for single result",
             "emotion": "string|null - emotion used",
-            "source": "string|null - source used",
         },
     }
 
     emotions_dict = cast(dict[str, dict[str, float]], capabilities["emotions"])
     effects_list = cast(list[str], capabilities["effects"])
-    sources_list = cast(list[str], capabilities["sources"])
+    moods_list = cast(list[str], capabilities["kaomoji_moods"])
+    schemes_list = cast(list[str], capabilities["color_schemes"])
     layouts_list = cast(list[str], capabilities["layouts"])
     decorations_list = cast(list[str], capabilities["decorations"])
 
@@ -709,7 +713,8 @@ def cmd_capabilities(args):
                 f"  {name:<15} V={ev['valence']:+.2f} A={ev['arousal']:+.2f} D={ev['dominance']:+.2f}"
             )
         print(f"\nEffects ({len(effects_list)}): {', '.join(effects_list)}")
-        print(f"Sources ({len(sources_list)}): {', '.join(sources_list)}")
+        print(f"Kaomoji Moods ({len(moods_list)}): {', '.join(moods_list)}")
+        print(f"Color Schemes ({len(schemes_list)}): {', '.join(schemes_list)}")
         print(f"Layouts ({len(layouts_list)}): {', '.join(layouts_list)}")
         print(f"Decorations ({len(decorations_list)}): {', '.join(decorations_list)}")
 
@@ -725,11 +730,6 @@ def build_parser():
     # === generate ===
     gen = subparsers.add_parser("generate", help="生成可视化 Generate visualization")
     gen.add_argument("--emotion", help="情绪名称 (如 joy, fear, euphoria)")
-    gen.add_argument(
-        "--source",
-        choices=["market", "art", "news", "mood"],
-        help="信息来源 (决定视觉词汇)",
-    )
     gen.add_argument("--title", help="标题文字")
     gen.add_argument("--text", help="文本输入 (用于情绪推断)")
     gen.add_argument("--headline", help="主标题")

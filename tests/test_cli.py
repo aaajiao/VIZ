@@ -32,7 +32,10 @@ class TestCapabilities:
         data = json.loads(result.stdout)
         assert "emotions" in data
         assert "effects" in data
-        assert "sources" in data
+        assert "kaomoji_moods" in data
+        assert "color_schemes" in data
+        assert "charsets" not in data
+        assert "border_styles" not in data
 
     def test_capabilities_text_output(self):
         result = run_cli(["capabilities", "--format", "text"])
@@ -87,23 +90,16 @@ class TestGenerate:
         assert output["status"] == "ok"
         assert output["results"][0]["path"].endswith(".gif")
 
-    def test_generate_with_source(self, temp_dir):
-        result = run_cli(
-            [
-                "generate",
-                "--emotion",
-                "bull",
-                "--source",
-                "market",
-                "--seed",
-                "42",
-                "--output-dir",
-                temp_dir,
-            ]
-        )
+    def test_generate_with_vocabulary_override(self, temp_dir):
+        stdin_data = json.dumps({
+            "emotion": "bull",
+            "seed": 42,
+            "vocabulary": {"particles": "$€¥₿↑↓"}
+        })
+        result = run_cli(["generate", "--output-dir", temp_dir], stdin=stdin_data)
         assert result.returncode == 0
         output = parse_json_output(result)
-        assert output["source"] == "market"
+        assert output["status"] == "ok"
 
     def test_generate_reproducible(self, temp_dir):
         args = [
@@ -184,6 +180,14 @@ class TestGenerate:
             ]
         )
         assert result.returncode == 0
+
+
+    def test_generate_with_color_scheme(self, temp_dir):
+        stdin_data = json.dumps({"emotion": "calm", "color_scheme": "ocean", "seed": 42})
+        result = run_cli(["generate", "--output-dir", temp_dir], stdin=stdin_data)
+        assert result.returncode == 0
+        output = parse_json_output(result)
+        assert output["status"] == "ok"
 
 
 class TestGenerateValidation:

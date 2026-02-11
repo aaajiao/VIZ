@@ -7,7 +7,6 @@ from lib.content import make_content, content_has_data
 class TestMakeContent:
     def test_empty_input_returns_defaults(self):
         result = make_content()
-        assert result["source"] is None
         assert result["headline"] is None
         assert result["metrics"] == []
         assert result["duration"] == 3.0
@@ -16,12 +15,10 @@ class TestMakeContent:
 
     def test_preserves_provided_values(self):
         data = {
-            "source": "market",
             "headline": "Test Headline",
             "emotion": "bull",
         }
         result = make_content(data)
-        assert result["source"] == "market"
         assert result["headline"] == "Test Headline"
         assert result["emotion"] == "bull"
 

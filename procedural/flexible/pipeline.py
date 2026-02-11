@@ -49,6 +49,7 @@ from __future__ import annotations
 
 import os
 import random
+import sys
 from datetime import datetime
 from typing import Any, cast
 
@@ -237,7 +238,7 @@ class FlexiblePipeline:
         if output_path:
             os.makedirs(os.path.dirname(output_path), exist_ok=True)
             img.save(output_path, quality=95)
-            print(f"已保存: {output_path}")
+            print(f"已保存: {output_path}", file=sys.stderr)
 
         return img
 
@@ -416,6 +417,10 @@ class FlexiblePipeline:
             spec.decoration_style = overrides["decoration"]
         if overrides.get("gradient"):
             spec.gradient_name = overrides["gradient"]
+        if overrides.get("color_scheme"):
+            spec.color_scheme = overrides["color_scheme"]
+            if spec.bg_fill_spec:
+                spec.bg_fill_spec["color_scheme"] = overrides["color_scheme"]
         if overrides.get("overlay"):
             ov = overrides["overlay"]
             if isinstance(ov, dict):
@@ -623,19 +628,9 @@ class FlexiblePipeline:
         )
 
         # === 颜文字精灵 ===
-        # Override moods from content vocabulary if present
-        content_moods = None
-        if hasattr(spec, "content_source") and spec.content_source:
-            try:
-                from lib.vocabulary import get_vocabulary
-
-                vocab = get_vocabulary(spec.content_source)
-                content_moods = vocab.get("kaomoji_moods")
-            except ImportError:
-                pass
-
-        if content_moods and isinstance(content_moods, list):
-            mood_options: list[str] = content_moods
+        # Override moods from vocabulary if present
+        if spec.kaomoji_mood_overrides:
+            mood_options: list[str] = spec.kaomoji_mood_overrides
         else:
             mood_options = self._mood_from_valence_arousal(
                 float(visual_params.get("valence", 0.0)),

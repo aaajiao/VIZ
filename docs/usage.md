@@ -33,13 +33,13 @@ AI 通过 stdin 传入结构化 JSON，CLI 作为纯渲染后端：
 
 ```bash
 # 市场数据可视化
-echo '{"source":"market","headline":"DOW +600","emotion":"bull","metrics":["BTC: $92k","ETH: $4.2k"]}' | python3 viz.py generate
+echo '{"headline":"DOW +600","emotion":"bull","metrics":["BTC: $92k","ETH: $4.2k"],"vocabulary":{"particles":"$€¥₿↑↓"}}' | python3 viz.py generate
 
 # 艺术新闻可视化
-echo '{"source":"art","headline":"Venice Biennale 2026","emotion":"love","body":"immersive installations"}' | python3 viz.py generate
+echo '{"headline":"Venice Biennale 2026","emotion":"love","body":"immersive installations"}' | python3 viz.py generate
 
 # 情绪日记
-echo '{"source":"mood","emotion":"calm","title":"Sunday Morning"}' | python3 viz.py generate --video
+echo '{"emotion":"calm","title":"Sunday Morning"}' | python3 viz.py generate --video
 ```
 
 stdin JSON 字段全部可选，CLI 参数会覆盖 stdin 中的同名值。
@@ -47,7 +47,7 @@ stdin JSON 字段全部可选，CLI 参数会覆盖 stdin 中的同名值。
 ### stdout 输出
 
 ```json
-{"status": "ok", "results": [{"path": "/home/user/VIZ/media/viz_20260203_120000.png", "seed": 42, "format": "png"}], "emotion": "euphoria", "source": "market"}
+{"status": "ok", "results": [{"path": "/home/user/VIZ/media/viz_20260203_120000.png", "seed": 42, "format": "png"}], "emotion": "euphoria"}
 ```
 
 ### 完整参数
@@ -55,7 +55,6 @@ stdin JSON 字段全部可选，CLI 参数会覆盖 stdin 中的同名值。
 | 参数 | 类型 | 默认 | 说明 |
 |------|------|------|------|
 | `--emotion` | str | 推断 | 情绪名称（joy, fear, panic, bull, bear, ...） |
-| `--source` | str | 无 | 内容来源（market, art, news, mood） |
 | `--title` | str | 无 | 标题叠加文字 |
 | `--text` | str | 无 | 文本（用于情绪推断兜底） |
 | `--headline` | str | 无 | 主标题文字 |
@@ -128,16 +127,15 @@ python3 viz.py generate --emotion euphoria --seed 100 \
 
 stdin JSON 同样支持：`transforms`、`postfx`、`composition`、`mask`、`variant` 字段。
 
-### 内容来源词汇（Source Vocabulary）
+### 视觉词汇覆盖（Vocabulary Overrides）
 
-不同来源通过视觉词汇（粒子、颜文字、符号）区分身份，而非固定模板：
+情感系统自动驱动所有视觉选择。通过 stdin JSON 的 `vocabulary` 字段可覆盖任意部分：
 
-| 来源 | 粒子 | 颜文字风格 | 氛围词 |
-|------|------|-----------|--------|
-| `market` | `0123456789$#%↑↓±` | euphoria/anxiety/panic | BULL, RISE / BEAR, SELL / HOLD, WAIT |
-| `art` | `◆◇○●□■△▽✧✦` | love/thinking/proud | CREATE, VISION / VOID, FADE / FORM, SHAPE |
-| `news` | `ABCDEFG!?#@&` | neutral/surprised/confused | BREAKING, UPDATE / ALERT, WARN / NEWS, REPORT |
-| `mood` | `·˚✧♪♫∞~○◦` | happy/sad/love/relaxed | FEEL, FLOW / EMPTY, LOST / THINK, DRIFT |
+```bash
+echo '{"emotion":"bull","vocabulary":{"particles":"$€¥₿↑↓","kaomoji_moods":["euphoria","excitement"]}}' | python3 viz.py generate
+```
+
+可用的颜文字情绪、颜色方案等通过 `capabilities` 命令查询。
 
 ---
 
@@ -182,16 +180,17 @@ python3 viz.py capabilities --format json  # 默认 JSON
 {
   "emotions": {"joy": {"valence": 0.76, "arousal": 0.48, "dominance": 0.35}, "...": "..."},
   "effects": ["cppn", "flame", "moire", "noise_field", "plasma", "sdf_shapes", "wave", "..."],
-  "sources": ["art", "market", "mood", "news"],
+  "kaomoji_moods": ["angry", "anxiety", "bored", "confused", "euphoria", "..."],
+  "color_schemes": ["cool", "default", "fire", "heat", "matrix", "ocean", "plasma", "rainbow"],
   "layouts": ["random_scatter", "grid_jitter", "spiral", "force_directed", "preset"],
   "decorations": ["corners", "edges", "scattered", "minimal", "none", "frame", "grid_lines", "circuit"],
-  "gradients": ["classic", "smooth", "matrix", "plasma", "default", "blocks", "vbar", "hbar", "box_thin", "circles", "punctuation", "math", "stars_density", "sparkles", "arrows_flow", "cp437_retro", "..."],
+  "gradients": ["classic", "smooth", "matrix", "plasma", "default", "blocks", "..."],
   "transforms": ["mirror_x", "mirror_y", "mirror_quad", "kaleidoscope", "tile", "rotate", "zoom", "spiral_warp", "polar_remap"],
   "postfx": ["threshold", "invert", "edge_detect", "scanlines", "vignette", "pixelate", "color_shift"],
   "masks": ["horizontal_split", "vertical_split", "diagonal", "radial", "noise", "sdf"],
   "composition_modes": ["blend", "masked_split", "radial_masked", "noise_masked", "sdf_masked"],
   "variants": {"plasma": ["classic", "warped", "noisy", "turbulent", "slow_morph"], "...": "..."},
-  "input_schema": {"emotion": "string", "source": "string", "transforms": "list[{type, ...params}]", "postfx": "list[{type, ...params}]", "composition": "string", "mask": "string", "variant": "string", "...": "..."},
+  "input_schema": {"emotion": "string", "vocabulary": "dict", "transforms": "list[{type, ...params}]", "...": "..."},
   "output_schema": {"status": "string", "results": "list[{path, seed, format}]", "...": "..."}
 }
 ```
@@ -226,7 +225,7 @@ echo '...' | python3 viz.py generate
 VIZ 渲染（FlexiblePipeline）
     │
     ▼
-stdout JSON（results 数组 + emotion + source）
+stdout JSON（results 数组 + emotion）
 ```
 
 VIZ 是纯渲染后端。数据获取、情感分析、内容组织由 AI 负责。
