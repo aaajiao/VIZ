@@ -92,6 +92,7 @@ def make_content(data=None):
         "composition": data.get("composition", None),
         "mask": data.get("mask", None),
         "variant": data.get("variant", None),
+        "color_scheme": data.get("color_scheme", None),
     }
 
 
