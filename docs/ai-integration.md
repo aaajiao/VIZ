@@ -51,7 +51,7 @@ echo '{"emotion":"panic","video":true}' | python3 viz.py generate
 |------|------|------|
 | `vad` | string / list | 直接 VAD 向量，如 `"0.8,0.5,0.3"` 或 `[0.8, 0.5, 0.3]` |
 | `effect` | string | 背景效果名称 |
-| `seed` | int | 随机种子（可复现） |
+| `seed` | int | 随机种子（可复现）— 不要总用 42，见下方提示 |
 | `layout` | string | 布局算法 |
 | `decoration` | string | 装饰风格 |
 | `gradient` | string | ASCII 字符梯度 |
@@ -85,6 +85,8 @@ echo '{"emotion":"panic","video":true}' | python3 viz.py generate
 ```
 
 可用变形参数因效果而异，详见 [composition.md](composition.md#structural-variants)。
+
+**Seed 提示：** 不要总是使用 `seed: 42`。每个 seed 会产生完全不同的视觉组合（效果、布局、梯度、装饰全部受 seed 驱动）。建议省略 `seed` 让 VIZ 自动随机，或使用多样化的数字（时间戳、随机整数、prompt 哈希等）。只在用户要求复现特定结果时才固定 seed。
 
 ### 输出控制
 

@@ -47,7 +47,7 @@ Run from the VIZ project root. Only dependency: `pillow`.
 | `decoration` | string | `corners` / `edges` / `scattered` / `minimal` / `none` / `frame` / `grid_lines` / `circuit` |
 | `gradient` | string | See gradient list below (73 presets) |
 | `color_scheme` | string | `heat` / `rainbow` / `cool` / `matrix` / `plasma` / `ocean` / `fire` / `default` |
-| `seed` | int | Reproducible output |
+| `seed` | int | Reproducible output — **omit or vary** (see tip below) |
 | `overlay` | object | `{"effect":"wave","blend":"SCREEN","mix":0.3}` — layer two effects |
 | `params` | object | Effect-specific tuning, including deformation params (see references/COMPOSITION.md) |
 | `transforms` | list[dict] | Domain transform chain: `[{"type":"kaleidoscope","segments":6}]` |
@@ -55,6 +55,8 @@ Run from the VIZ project root. Only dependency: `pillow`.
 | `composition` | string | `blend` / `masked_split` / `radial_masked` / `noise_masked` / `sdf_masked` |
 | `mask` | string | Mask type+params (CLI: `radial:center_x=0.5,radius=0.3`) |
 | `variant` | string | Force effect variant name (e.g. `warped`, `alien`, `turbulent`) |
+
+**Seed tip:** Do NOT always use `seed: 42`. Each seed produces a completely different visual — effect, layout, gradient, decoration are all seed-driven. Omit `seed` to let VIZ randomize, or pick a varied number (timestamp, random int, hash of the prompt). Only pin a seed when the user asks to reproduce a specific result.
 
 ### Output Control
 
