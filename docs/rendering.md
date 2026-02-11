@@ -201,7 +201,7 @@ def save_mp4(self, frames, output_path, fps):
    - 用前景色渲染字符
 3. 字体：DejaVuSansMono（等宽，覆盖 Box Drawing / Block Elements / Braille 等 Unicode 区块）
 
-**ASCII 梯度选择：** 系统提供 67 种梯度（含 box-drawing、block fill、geometric、typography 等，覆盖 428 个 Unicode 字符），由 grammar 的 `_choose_gradient()` 选择。详见 [box_chars.md](box_chars.md#2-密度梯度gradients)。
+**ASCII 梯度选择：** 系统提供 73 种梯度（含 box-drawing、block fill、geometric、typography、stars/sparkles、arrows、cp437 等，覆盖 450+ 个 Unicode 字符），全部由 grammar 的 `_choose_gradient()` 自动选择。数据源统一在 `lib/box_chars.py`，`palette.py` 通过导入获取。详见 [box_chars.md](box_chars.md#2-密度梯度gradients)。
 
 ### upscale_image()
 

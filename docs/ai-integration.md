@@ -211,7 +211,7 @@ VIZ 会根据情绪自动选择效果，也可用 `effect` 字段强制指定。
 
 ---
 
-## ASCII 梯度 (67 种)
+## ASCII 梯度 (73 种)
 
 **经典 ASCII:** `classic` / `smooth` / `matrix` / `plasma` / `default`
 
@@ -222,6 +222,10 @@ VIZ 会根据情绪自动选择效果，也可用 `effect` 字段强制指定。
 **几何/点阵:** `dots_density` / `geometric` / `braille_density` / `circles` / `circles_half` / `circles_arc` / `squares` / `diamonds` / `triangles` / `quarters_geo` / `squares_fill` / `arrows_sm` / `arrows_lg` / `geo_misc`
 
 **文字/排版:** `punctuation` / `editorial` / `math` / `math_rel` / `brackets` / `greek` / `currency` / `symbols` / `superscript` / `quotes` / `ligature` / `diacritics` / `digits` / `alpha_lower` / `alpha_upper`
+
+**星星/箭头:** `stars_density` / `sparkles` / `arrows_flow` / `arrows_double`
+
+**CP437/杂项:** `cp437_retro` / `misc_symbols`
 
 **混合表现力:** `tech` / `cyber` / `organic` / `noise` / `circuit`
 

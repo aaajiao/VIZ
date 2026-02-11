@@ -25,9 +25,9 @@ Unicode 制图符号和半图形字符库，穿透整个管线——从底层 AS
 
 | 文件 | 职责 |
 |---|---|
-| `lib/box_chars.py` | 中央字符库：字符集、梯度、边框、情绪选取 API |
-| `procedural/palette.py` | ASCII 梯度定义（67 种） |
-| `procedural/flexible/grammar.py` | 文法规则中的字符选择（装饰、粒子、文字） |
+| `lib/box_chars.py` | 中央字符库：字符集、梯度、边框、情绪选取 API（**唯一数据源**） |
+| `procedural/palette.py` | 从 box_chars 导入 `GRADIENTS` 为 `ASCII_GRADIENTS`，提供颜色函数 |
+| `procedural/flexible/grammar.py` | 从 box_chars 导入 `CHARSETS`/`BORDER_SETS`，文法规则中的字符选择 |
 | `procedural/flexible/pipeline.py` | 装饰精灵渲染（frame、grid_lines、circuit） |
 | `lib/effects.py` | 粒子字符集（10 种命名集） |
 
@@ -111,7 +111,7 @@ chars = get_charset("braille")     # → "⠀⠁⠂⠃⠄⠅⠆⠇⡀⡁..."
 
 ## 2. 密度梯度（GRADIENTS）
 
-从空/稀疏到密/实的字符序列，用于 `char_at_value()` 映射。共 67 种梯度，覆盖 428 个 Unicode 字符。
+从空/稀疏到密/实的字符序列，用于 `char_at_value()` 映射。共 73 种梯度（含 default 别名），覆盖 450+ 个 Unicode 字符。
 
 ### 全部梯度一览
 
@@ -202,6 +202,32 @@ chars = get_charset("braille")     # → "⠀⠁⠂⠃⠄⠅⠆⠇⡀⡁..."
 | `alpha_lower` | ` ijltrcfs...qmw█` | 小写字母 (按视觉重量) |
 | `alpha_upper` | ` IJLTCFSE...QMW█` | 大写字母 (按视觉重量) |
 
+#### 星星/闪烁 (2)
+
+| 名称 | 梯度 | 风格 |
+|---|---|---|
+| `stars_density` | ` ·✧✦☆★✶✴✹✻✼✽█` | 星星密度 |
+| `sparkles` | ` ·⁺⁎∗✦✧✩✫✬✭✮✯✰█` | 闪烁 |
+
+#### 箭头/流动 (2)
+
+| 名称 | 梯度 | 风格 |
+|---|---|---|
+| `arrows_flow` | ` ·←↑→↓↔↕↗↘█` | 箭头流 |
+| `arrows_double` | ` ·⇐⇑⇒⇓⇔⇕⇗⇘█` | 双线箭头 |
+
+#### CP437/复古 (1)
+
+| 名称 | 梯度 | 风格 |
+|---|---|---|
+| `cp437_retro` | ` ·♠♣♥♦•◘☼►◄♪♫█` | CP437 复古 |
+
+#### 杂项符号 (1)
+
+| 名称 | 梯度 | 风格 |
+|---|---|---|
+| `misc_symbols` | ` ·☀☁☂☃☄★☆☎☏█` | 杂项符号 |
+
 #### 混合表现力 (5)
 
 | 名称 | 梯度 | 风格 |
@@ -214,16 +240,16 @@ chars = get_charset("braille")     # → "⠀⠁⠂⠃⠄⠅⠆⠇⡀⡁..."
 
 ### 在管线中的使用
 
-梯度名称通过 `grammar.py` 的 `_choose_gradient()` 选择（44 个进入自动选择池），由 `energy` 和 `structure` 参数驱动权重：
+梯度名称通过 `grammar.py` 的 `_choose_gradient()` 选择（**全部 73 种均在自动选择池中**），由 `energy` 和 `structure` 参数驱动权重：
 
 ```
-高 energy + 高 structure → box_thick, box_cross, diagonal, blocks
-低 energy + 低 structure → organic, circles, editorial, braille_density
-高 energy + 低 structure → glitch, cyber, arrows_lg, quadrant
-低 energy + 高 structure → dots_density, geometric, vbar, hbar, box_double
+高 energy + 高 structure → box_thick, box_cross, box_complex_a, diagonal, blocks
+低 energy + 低 structure → organic, circles, editorial, braille_density, sparkles
+高 energy + 低 structure → glitch, cyber, arrows_lg, arrows_flow, quadrant, cp437_retro
+低 energy + 高 structure → dots_density, geometric, vbar, hbar, box_double, box_double_corner
 ```
 
-其余梯度可通过 Director Mode（CLI `--gradient` 或 JSON `gradient` 字段）精确指定。
+也可通过 Director Mode（CLI `--gradient` 或 JSON `gradient` 字段）精确指定。
 
 渲染时，`renderer.py` 的 `char_at_value(value, gradient_name)` 将 0.0–1.0 的值映射到梯度中的字符：
 
@@ -442,12 +468,12 @@ create_data_particles(draw, w, h, color, density=50, charset="╱╲╳")
 
 ### grammar.py — 文法粒子选择
 
-`_choose_particle_chars()` 根据 energy/warmth 从 25+ 组字符中选择：
+`_choose_particle_chars()` 根据 energy/warmth 从 30+ 组字符中选择（7 个池：经典/几何/box 线段/方块/盲文/**星星闪烁/箭头数学**），从 `CHARSETS` 构建：
 
 ```
-高 energy (>0.7) → box-drawing 线段 + 方块
+高 energy (>0.7) → box-drawing 线段 + 方块 + 箭头数学
 中 energy (0.4-0.7) → 经典 + 几何 + box 混合
-低 energy + 高 warmth → 几何 + 盲文
+低 energy + 高 warmth → 几何 + 盲文 + 星星闪烁
 低 energy + 低 warmth → 经典 + 几何 + 盲文
 ```
 
@@ -473,7 +499,7 @@ create_data_particles(draw, w, h, color, density=50, charset="╱╲╳")
 
 ## 8. 装饰字符的情绪选取
 
-`grammar.py` 的 `_choose_decoration_chars()` 现在有 60+ 种字符组合，按情绪维度组织：
+`grammar.py` 的 `_choose_decoration_chars()` 现在有 70+ 种字符组合（8 个池：经典/box 角/box 线/交叉/方块/点阵/**星星/箭头**），从 `BORDER_SETS`/`CHARSETS` 构建，按情绪维度组织：
 
 ### 高能量 (energy > 0.7)
 
@@ -589,14 +615,16 @@ bbox = font.getbbox("╔═╗")  # 如果返回非零尺寸，表示支持
 
 | 维度 | 旧 | 新 | 增长 |
 |---|---|---|---|
-| ASCII 梯度 | 5 种 | 67 种 | ×13 |
+| ASCII 梯度 | 5 种 | 73 种（全部激活） | ×14.6 |
 | 装饰风格 | 5 种 | 8 种 | ×1.6 |
-| 装饰字符组 | 12 组 | 60+ 组 | ×5 |
-| 粒子字符组 | 9 组 | 25+ 组 | ×2.8 |
+| 装饰字符组 | 12 组 | 70+ 组（8 个池） | ×5.8 |
+| 粒子字符组 | 9 组 | 30+ 组（7 个池） | ×3.3 |
 | 命名粒子集 | 1 种 | 10 种 | ×10 |
 | 氛围文字池 | ~50 | ~100 | ×2 |
 | 边框风格 | 0 种 | 6 种 | 新增 |
 
-**理论离散组合：** 从 ~235,000 增长到 **~3,000,000+** 种。
+**数据源统一**：`lib/box_chars.py` 是字符/梯度/边框的唯一真相来源。`palette.py` 不再维护独立副本，而是导入 `GRADIENTS`。`grammar.py` 的装饰和粒子池从 `CHARSETS`/`BORDER_SETS` 动态构建，不再硬编码。
+
+**理论离散组合：** 从 ~235,000 增长到 **~4,000,000+** 种。
 
 加上连续参数（warmth, saturation, energy, structure, ...）和 15% 随机变异概率 → 实际变体空间趋近无限。

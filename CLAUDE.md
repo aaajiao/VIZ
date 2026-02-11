@@ -50,6 +50,8 @@ No build step. No requirements.txt. Only dependency is `Pillow>=9.0.0`. CI runs 
 
 **Director Mode**: CLI args `--transforms`, `--postfx`, `--blend-mode`, `--overlay`, `--overlay-mix`, `--composition`, `--mask`, `--variant` expose all composition dimensions for precise AI control. Grammar diversity jitter ensures varied output even in delegate mode.
 
+**Character data**: `lib/box_chars.py` is the single source of truth for all character/gradient data (`GRADIENTS`, `CHARSETS`, `BORDER_SETS`). `procedural/palette.py` re-exports `GRADIENTS` as `ASCII_GRADIENTS` and owns color functions. `grammar.py` imports `CHARSETS`/`BORDER_SETS` to build decoration and particle char pools.
+
 **Color scheme**: Grammar selects from 7 named schemes (`heat`, `rainbow`, `cool`, `matrix`, `plasma`, `ocean`, `fire`) via warmth-driven `_choose_color_scheme()`, or uses continuous `value_to_color_continuous(warmth, saturation)`. Stored in `SceneSpec.color_scheme` and passed to both Engine and bg_fill.
 
 ## Forbidden Patterns
@@ -75,9 +77,10 @@ No build step. No requirements.txt. Only dependency is `Pillow>=9.0.0`. CI runs 
 | New CLI command | `viz.py` -> add subparser + command function |
 | New vocabulary source | `lib/vocabulary.py` -> `VOCABULARIES` dict |
 | New background effect | `procedural/effects/` + register in `__init__.py` EFFECT_REGISTRY |
-| Color scheme | `procedural/palette.py` -> `COLOR_SCHEMES`, `ASCII_GRADIENTS` |
+| Color scheme | `procedural/palette.py` -> `COLOR_SCHEMES` + color functions |
+| ASCII gradient | `lib/box_chars.py` -> `GRADIENTS` (single source; `palette.py` re-exports as `ASCII_GRADIENTS`) |
 | Kaomoji faces | `lib/kaomoji_data.py` -> `KAOMOJI_SINGLE` dict |
-| Box-drawing charset | `lib/box_chars.py` -> `CHARSETS` |
+| Box-drawing charset | `lib/box_chars.py` -> `CHARSETS`, `BORDER_SETS` |
 | Video/GIF/MP4 rendering | `procedural/engine.py` -> `render_video()`, `save_gif()`, `save_mp4()` |
 | Emotion mapping | `procedural/flexible/emotion.py` -> VAD anchors |
 | Visual grammar rules | `procedural/flexible/grammar.py` |
