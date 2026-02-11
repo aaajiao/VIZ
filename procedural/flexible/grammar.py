@@ -108,7 +108,7 @@ class SceneSpec:
     content_metrics: list[str] = field(default_factory=list)
     content_timestamp: str | None = None
     content_body: str | None = None
-    content_source: str | None = None
+    kaomoji_mood_overrides: list[str] | None = None
 
     # 域变换 (Domain transforms)
     domain_transforms: list[dict[str, Any]] = field(default_factory=list)
@@ -1064,10 +1064,10 @@ class VisualGrammar:
         spec.content_metrics = content.get("metrics", [])
         spec.content_timestamp = content.get("timestamp")
         spec.content_body = content.get("body")
-        spec.content_source = content.get("source")
-
-        # Override particle chars from vocabulary if present
+        # Override from vocabulary if present
         vocab = content.get("vocabulary", {})
+        if vocab.get("kaomoji_moods"):
+            spec.kaomoji_mood_overrides = list(vocab["kaomoji_moods"])
         if vocab.get("particles"):
             spec.particle_chars = vocab["particles"]
 

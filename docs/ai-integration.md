@@ -17,7 +17,7 @@ VIZ 是面向 AI 的 ASCII 艺术可视化后端。AI 负责理解用户意图�
 echo '{"emotion":"joy"}' | python3 viz.py generate
 
 # 完整示例：市场数据可视化
-echo '{"source":"market","headline":"BTC $95,000","emotion":"euphoria","metrics":["ETH: $4.2k","SOL: $180"]}' | python3 viz.py generate
+echo '{"headline":"BTC $95,000","emotion":"euphoria","metrics":["ETH: $4.2k","SOL: $180"]}' | python3 viz.py generate
 
 # 动画 GIF
 echo '{"emotion":"panic","video":true}' | python3 viz.py generate
@@ -25,7 +25,7 @@ echo '{"emotion":"panic","video":true}' | python3 viz.py generate
 
 **stdout 返回**:
 ```json
-{"status":"ok","results":[{"path":"media/viz_20260203_120000.png","seed":42,"format":"png"}],"emotion":"euphoria","source":"market"}
+{"status":"ok","results":[{"path":"media/viz_20260203_120000.png","seed":42,"format":"png"}],"emotion":"euphoria"}
 ```
 
 ---
@@ -39,7 +39,6 @@ echo '{"emotion":"panic","video":true}' | python3 viz.py generate
 | 字段 | 类型 | 说明 |
 |------|------|------|
 | `emotion` | string | 情绪名称（见下方列表） |
-| `source` | string | 内容来源：`market` / `art` / `news` / `mood` |
 | `headline` | string | 主标题文字 |
 | `metrics` | list[string] | 数据指标（如 `["BTC: $92k", "ETH: $4.2k"]`） |
 | `body` | string | 正文文本（用于情绪推断兜底） |
@@ -154,16 +153,23 @@ echo '{"emotion":"panic","video":true}' | python3 viz.py generate
 
 ---
 
-## 内容来源 (Source Vocabulary)
+## 视觉词汇覆盖 (Vocabulary Overrides)
 
-来源决定视觉词汇（粒子、颜文字风格、氛围词），**而非固定模板**：
+情感系统自动驱动所有视觉选择（粒子、颜文字、装饰）。AI 可通过 `vocabulary` 字段覆盖任意部分：
 
-| 来源 | 粒子字符 | 颜文字风格 | 氛围词 |
-|------|---------|-----------|--------|
-| `market` | `0123456789$#%↑↓±` | euphoria/anxiety/panic | BULL, RISE / BEAR, SELL / HOLD, WAIT |
-| `art` | `◆◇○●□■△▽✧✦` | love/thinking/proud | CREATE, VISION / VOID, FADE / FORM, SHAPE |
-| `news` | `ABCDEFG!?#@&` | neutral/surprised/confused | BREAKING, UPDATE / ALERT, WARN / NEWS, REPORT |
-| `mood` | `·˚✧♪♫∞~○◦` | happy/sad/love/relaxed | FEEL, FLOW / EMPTY, LOST / THINK, DRIFT |
+```json
+{"emotion": "euphoria", "vocabulary": {"particles": "$€¥₿↑↓", "kaomoji_moods": ["euphoria", "excitement"]}}
+```
+
+| 字段 | 类型 | 作用 |
+|------|------|------|
+| `particles` | string | 覆盖粒子字符集 |
+| `kaomoji_moods` | list[string] | 覆盖颜文字情绪池（从 `kaomoji_moods` 列表选择） |
+| `decoration_chars` | list[string] | 覆盖装饰字符 |
+
+不传 `vocabulary` 时，文法系统根据 VAD 情感向量自动选择最优视觉词汇。
+
+完整可用资产清单可通过 `python3 viz.py capabilities --format json` 查询。
 
 ---
 
@@ -243,10 +249,10 @@ VIZ 会根据情绪自动选择效果，也可用 `effect` 字段强制指定。
 
 ```bash
 echo '{
-  "source": "market",
   "headline": "BTC BREAKS $100K",
   "emotion": "euphoria",
   "metrics": ["ETH: $5.2k", "SOL: $300", "Volume: $89B"],
+  "vocabulary": {"particles": "$€¥₿↑↓"},
   "seed": 42
 }' | python3 viz.py generate
 ```
@@ -255,7 +261,6 @@ echo '{
 
 ```bash
 echo '{
-  "source": "art",
   "headline": "Venice Biennale 2026",
   "emotion": "awe",
   "body": "immersive digital installations"
@@ -266,7 +271,6 @@ echo '{
 
 ```bash
 echo '{
-  "source": "market",
   "headline": "MARKET CRASH",
   "emotion": "panic",
   "video": true,
@@ -351,8 +355,7 @@ echo '{"emotion": "joy", "variants": 5}' | python3 viz.py generate
   "results": [
     {"path": "media/viz_20260203_120000.png", "seed": 42, "format": "png"}
   ],
-  "emotion": "euphoria",
-  "source": "market"
+  "emotion": "euphoria"
 }
 ```
 
@@ -365,8 +368,7 @@ echo '{"emotion": "joy", "variants": 5}' | python3 viz.py generate
     {"path": "media/viz_20260203_120000_v1.png", "seed": 43, "format": "png"},
     {"path": "media/viz_20260203_120000_v2.png", "seed": 44, "format": "png"}
   ],
-  "emotion": "joy",
-  "source": null
+  "emotion": "joy"
 }
 ```
 
@@ -385,7 +387,7 @@ AI 可随时查询 VIZ 的完整能力：
 python3 viz.py capabilities --format json
 ```
 
-返回所有可用情绪、效果、来源、布局、装饰、梯度、输入输出 schema。
+返回所有可用情绪、效果、颜文字情绪、字符集、边框样式、颜色方案、布局、装饰、梯度、输入输出 schema。
 
 ---
 
@@ -394,7 +396,7 @@ python3 viz.py capabilities --format json
 stdin JSON 是首选，但 CLI 参数也可用（会覆盖 stdin 同名值）：
 
 ```bash
-python3 viz.py generate --emotion panic --source market --headline "CRASH" --video --seed 42
+python3 viz.py generate --emotion panic --headline "CRASH" --video --seed 42
 ```
 
 ---

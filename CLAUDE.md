@@ -75,7 +75,6 @@ No build step. No requirements.txt. Only dependency is `Pillow>=9.0.0`. CI runs 
 | Task | Location |
 |------|----------|
 | New CLI command | `viz.py` -> add subparser + command function |
-| New vocabulary source | `lib/vocabulary.py` -> `VOCABULARIES` dict |
 | New background effect | `procedural/effects/` + register in `__init__.py` EFFECT_REGISTRY |
 | Color scheme | `procedural/palette.py` -> `COLOR_SCHEMES` + color functions |
 | ASCII gradient | `lib/box_chars.py` -> `GRADIENTS` (single source; `palette.py` re-exports as `ASCII_GRADIENTS`) |

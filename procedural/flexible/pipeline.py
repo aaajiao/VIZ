@@ -623,19 +623,9 @@ class FlexiblePipeline:
         )
 
         # === 颜文字精灵 ===
-        # Override moods from content vocabulary if present
-        content_moods = None
-        if hasattr(spec, "content_source") and spec.content_source:
-            try:
-                from lib.vocabulary import get_vocabulary
-
-                vocab = get_vocabulary(spec.content_source)
-                content_moods = vocab.get("kaomoji_moods")
-            except ImportError:
-                pass
-
-        if content_moods and isinstance(content_moods, list):
-            mood_options: list[str] = content_moods
+        # Override moods from vocabulary if present
+        if spec.kaomoji_mood_overrides:
+            mood_options: list[str] = spec.kaomoji_mood_overrides
         else:
             mood_options = self._mood_from_valence_arousal(
                 float(visual_params.get("valence", 0.0)),

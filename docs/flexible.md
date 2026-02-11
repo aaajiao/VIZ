@@ -358,11 +358,10 @@ img = pipe.generate(
 
 # 单帧 + 内容数据（AI 集成）
 content = {
-    'source': 'market',
     'headline': 'DOW +600',
     'metrics': ['BTC: $92k', 'ETH: $4.2k'],
     'timestamp': '2026-02-03 12:00',
-    'vocabulary': get_vocabulary('market'),
+    'vocabulary': {'particles': '$€¥₿↑↓'},
 }
 img = pipe.generate(emotion="bull", content=content)
 
@@ -414,7 +413,6 @@ AI 传入的结构化内容数据，所有字段可选。
 from lib.content import make_content, content_has_data
 
 content = make_content({
-    'source': 'market',           # 内容来源（market/art/news/mood）
     'headline': 'DOW +600',       # 主标题
     'metrics': ['BTC: $92k'],     # 指标列表
     'timestamp': '2026-02-03',    # 时间戳
@@ -437,46 +435,31 @@ if content_has_data(content):
 | `timestamp` | 4 种角落/底部位置 |
 | `vocabulary.ambient_words` | 随机散布到 `text_elements` 中 |
 
-SceneSpec 新增字段：`content_headline`, `content_metrics`, `content_timestamp`, `content_body`, `content_source`。
+SceneSpec 新增字段：`content_headline`, `content_metrics`, `content_timestamp`, `content_body`, `kaomoji_mood_overrides`。
 
 ---
 
-## 8. Source Vocabulary — 来源词汇
+## 8. Vocabulary Overrides — 视觉词汇覆盖
 
 `lib/vocabulary.py`
 
-不同来源通过视觉词汇（粒子、颜文字、符号）区分身份，而非固定视觉模板。
+情感系统自动驱动所有视觉选择（粒子、颜文字、装饰）。AI 可通过 `vocabulary` 字段覆盖任意部分。
 
 ```python
 from lib.vocabulary import get_vocabulary
 
-vocab = get_vocabulary('market')
-# → {
-#     'particles': '$¥€₿↑↓▲▼◆●',
-#     'kaomoji_moods': {'positive': ['bull','euphoria'], 'negative': ['bear','panic'], 'neutral': ['neutral']},
-#     'symbols': ['$', '¥', '€', '₿', '↑', '↓'],
-#     'decoration_chars': '═║╔╗╚╝╠╣╦╩',
-#     'ambient_words': {'positive': ['HODL','PUMP','APE IN'], 'negative': ['SELL','EXIT','REKT'], 'neutral': ['HOLD','WAIT']}
-# }
+# 纯覆盖模式——不传则为空
+vocab = get_vocabulary({"particles": "$€¥₿↑↓", "kaomoji_moods": ["euphoria", "excitement"]})
+# → {'particles': '$€¥₿↑↓', 'kaomoji_moods': ['euphoria', 'excitement']}
 
-# AI 可覆盖任意字段
-vocab = get_vocabulary('market', overrides={'particles': '★☆●○'})
+vocab = get_vocabulary()
+# → {}
 ```
-
-### 预定义来源
-
-| 来源 | 粒子风格 | 颜文字偏好 | 氛围词 |
-|------|---------|-----------|--------|
-| `market` | 货币符号 + 箭头 | bull/bear/euphoria/panic | 金融术语 |
-| `art` | 几何 + 星号 | love/thinking/proud | 艺术词汇 |
-| `news` | 方块 + 箭头 | surprised/thinking/neutral | 新闻用语 |
-| `mood` | 柔和 + 星点 | 全情绪分类 | 情感词汇 |
 
 ### Vocabulary 如何影响渲染
 
 1. **粒子字符** → `SceneSpec.particle_chars`（覆盖文法默认选择）
-2. **颜文字情绪** → `SceneSpec.kaomoji_mood`（优先于 VAD 推断的情绪）
+2. **颜文字情绪** → `SceneSpec.kaomoji_mood_overrides`（覆盖 VAD 推断的情绪池）
 3. **装饰字符** → `SceneSpec.decoration_chars`
-4. **氛围词** → `SceneSpec.text_elements`（通过 `place_content()` 注入）
 
-词汇是默认值而非强制模板——情绪系统、文法系统仍然驱动整体视觉风格，词汇只提供来源的"指纹"。
+不传 vocabulary 时，文法系统根据 VAD 情感向量自动选择所有视觉词汇。完整可用资产清单通过 `python3 viz.py capabilities --format json` 查询。
