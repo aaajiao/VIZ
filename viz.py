@@ -600,7 +600,7 @@ def cmd_capabilities(args):
     from procedural.palette import ASCII_GRADIENTS
 
     capabilities = {
-        "version": "0.3.0",
+        "version": "0.4.0",
         "description": "VIZ - ASCII Art Visualization CLI. AI is the brain, VIZ is the paintbrush.",
         "commands": {
             "generate": "Generate 1080x1080 PNG/GIF visualization",
