@@ -249,9 +249,9 @@ class SceneSpec:
 | `_choose_kaomoji_count()` | 2-12 | base=4 + energy*4 |
 | `_choose_animations()` | floating, breathing, color_cycle | energy/arousal |
 | `_choose_decoration_style()` | corners, edges, scattered, minimal, none, **frame, grid_lines, circuit** | structure |
-| `_choose_decoration_chars()` | **60+ 组** (box 角/线/交叉/方块/点/经典) | **energy + warmth** |
-| `_choose_gradient()` | **67 种** (classic, blocks, vbar, hbar, box_thin, circles, punctuation, math, ...) | **energy + structure** |
-| `_choose_particle_chars()` | **25+ 组** (经典/几何/box 线段/方块/盲文) | **energy + warmth** |
+| `_choose_decoration_chars()` | **70+ 组** (经典/box 角/box 线/交叉/方块/点/星星/箭头，从 CHARSETS/BORDER_SETS 构建) | **energy + warmth** |
+| `_choose_gradient()` | **73 种** (全部激活: classic, blocks, box_thin, circles, stars_density, arrows_flow, cp437_retro, ...) | **energy + structure** |
+| `_choose_particle_chars()` | **30+ 组** (经典/几何/box 线段/方块/盲文/星星闪烁/箭头数学，从 CHARSETS 构建) | **energy + warmth** |
 | `_choose_text_elements()` | 8 组情绪词池（中英 + **semigraphic 符号**） | valence × arousal |
 | `_choose_kaomoji_mood()` | 6 象限情绪 | valence × arousal |
 | `_choose_domain_transforms()` | mirror_x/y/quad, kaleidoscope, tile, rotate, zoom, spiral_warp, **polar_remap** | structure + energy (概率提高至 30-55%); rotate/zoom/spiral_warp 支持动画 kwargs |
@@ -276,7 +276,7 @@ class SceneSpec:
 
 ### 组合空间
 
-理论离散组合：17 bg × 32 variants × 7 overlay × 4 blend × 4 composition × 6 mask × 128 postfx × 9 transform × 5 layout × 20 gradient × 8 deco × 60 chars × 13 bg_fill effect × ~4 variant × ~15 transform × 7 postfx × 6 mask × 8 color ≈ **数百亿** 种。加上连续参数（warmth, saturation, deformation, ...）→ 无限变体。详见 [composition.md](composition.md#combinatorial-impact)。
+理论离散组合：17 bg × 32 variants × 7 overlay × 4 blend × 4 composition × 6 mask × 128 postfx × 9 transform × 5 layout × 73 gradient × 8 deco × 70 chars × 13 bg_fill effect × ~4 variant × ~15 transform × 7 postfx × 6 mask × 8 color ≈ **数百亿** 种。加上连续参数（warmth, saturation, deformation, ...）→ 无限变体。详见 [composition.md](composition.md#combinatorial-impact)。
 
 ---
 

@@ -203,6 +203,20 @@ GRADIENTS = {
     "alpha_lower": " ijltrcfszvxynoeaukhdpbgqmw█",
     "alpha_upper": " IJLTCFSEZVXYNOADKHRPBGUQMW█",
 
+    # --- Stars / Sparkles ---
+    "stars_density": " ·✧✦☆★✶✴✹✻✼✽█",
+    "sparkles": " ·⁺⁎∗✦✧✩✫✬✭✮✯✰█",
+
+    # --- Arrows / Flow ---
+    "arrows_flow": " ·←↑→↓↔↕↗↘█",
+    "arrows_double": " ·⇐⇑⇒⇓⇔⇕⇗⇘█",
+
+    # --- CP437 Retro ---
+    "cp437_retro": " ·♠♣♥♦•◘☼►◄♪♫█",
+
+    # --- Dingbats / Misc Symbols ---
+    "misc_symbols": " ·☀☁☂☃☄★☆☎☏█",
+
     # --- Mixed expressive ---
     "tech": " .·:;+*░▒▓█",
     "cyber": " ·-=≡░▒▓█",
@@ -210,6 +224,9 @@ GRADIENTS = {
     "noise": " ·⠁⠃░▒▓▓█",
     "circuit": " ·┄─├┼╋▒▓█",
 }
+
+# default 别名 - Default alias pointing to classic
+GRADIENTS["default"] = GRADIENTS["classic"]
 
 
 # ═══════════════════════════════════════════════════════════════

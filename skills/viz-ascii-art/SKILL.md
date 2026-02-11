@@ -46,7 +46,7 @@ Run from the VIZ project root. Only dependency: `pillow`.
 | `vad` | str/list | Direct VAD vector `[0.8, 0.5, 0.3]` — bypasses emotion name |
 | `layout` | string | `random_scatter` / `grid_jitter` / `spiral` / `force_directed` / `preset` |
 | `decoration` | string | `corners` / `edges` / `scattered` / `minimal` / `none` / `frame` / `grid_lines` / `circuit` |
-| `gradient` | string | See gradient list below (20 options) |
+| `gradient` | string | See gradient list below (73 presets) |
 | `seed` | int | Reproducible output |
 | `overlay` | object | `{"effect":"wave","blend":"SCREEN","mix":0.3}` — layer two effects |
 | `params` | object | Effect-specific tuning, including deformation params (see references/COMPOSITION.md) |
@@ -157,7 +157,7 @@ Omit any field to let grammar auto-select it. Full option lists in **references/
 
 ## ASCII Gradients
 
-67 gradient presets (428 unique characters) controlling character density ramps. Set via `gradient` field.
+73 gradient presets (450+ unique characters) controlling character density ramps. Set via `gradient` field. All gradients sourced from `lib/box_chars.py`.
 
 | Category | Gradients |
 |----------|-----------|
@@ -166,6 +166,8 @@ Omit any field to let grammar auto-select it. Full option lists in **references/
 | Box-Drawing (20) | `box_density` / `box_vertical` / `box_cross` / `box_thin` / `box_thin_corner` / `box_thick` / `box_thick_corner` / `box_double` / `box_double_corner` / `box_rounded` / `box_mixed_dh` / `box_mixed_dv` / `box_mixed_a` / `box_mixed_b` / `box_complex_a` / `box_complex_b` / `box_complex_c` / `box_ends` / `box_weight` / `diagonal` |
 | Geometric (14) | `dots_density` / `geometric` / `braille_density` / `circles` / `circles_half` / `circles_arc` / `squares` / `diamonds` / `triangles` / `quarters_geo` / `squares_fill` / `arrows_sm` / `arrows_lg` / `geo_misc` |
 | Typography (15) | `punctuation` / `editorial` / `math` / `math_rel` / `brackets` / `greek` / `currency` / `symbols` / `superscript` / `quotes` / `ligature` / `diacritics` / `digits` / `alpha_lower` / `alpha_upper` |
+| Stars / Arrows (4) | `stars_density` / `sparkles` / `arrows_flow` / `arrows_double` |
+| CP437 / Misc (2) | `cp437_retro` / `misc_symbols` |
 | Mixed (5) | `tech` / `cyber` / `organic` / `noise` / `circuit` |
 
 ## Content Sources

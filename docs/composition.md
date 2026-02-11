@@ -702,7 +702,7 @@ postfx_chain = params.get("_postfx_chain", [])
   x 4 混合模式
   x 6 空间遮罩类型（含连续参数）
   x 5 布局算法
-  x 67 ASCII 梯度
+  x 73 ASCII 梯度
   x 8 装饰风格
   x 13 bg_fill effect（含变体 + 连续参数）
   x ~15 bg_fill transform 组合

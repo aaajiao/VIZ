@@ -185,7 +185,7 @@ python3 viz.py capabilities --format json  # 默认 JSON
   "sources": ["art", "market", "mood", "news"],
   "layouts": ["random_scatter", "grid_jitter", "spiral", "force_directed", "preset"],
   "decorations": ["corners", "edges", "scattered", "minimal", "none", "frame", "grid_lines", "circuit"],
-  "gradients": ["classic", "smooth", "matrix", "plasma", "default", "blocks", "vbar", "hbar", "box_thin", "circles", "punctuation", "math", "..."],
+  "gradients": ["classic", "smooth", "matrix", "plasma", "default", "blocks", "vbar", "hbar", "box_thin", "circles", "punctuation", "math", "stars_density", "sparkles", "arrows_flow", "cp437_retro", "..."],
   "transforms": ["mirror_x", "mirror_y", "mirror_quad", "kaleidoscope", "tile", "rotate", "zoom", "spiral_warp", "polar_remap"],
   "postfx": ["threshold", "invert", "edge_detect", "scanlines", "vignette", "pixelate", "color_shift"],
   "masks": ["horizontal_split", "vertical_split", "diagonal", "radial", "noise", "sdf"],
