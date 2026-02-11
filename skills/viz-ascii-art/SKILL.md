@@ -14,7 +14,7 @@ AI handles intent, data, and emotion; VIZ renders 1080x1080 ASCII art.
 echo '{"emotion":"joy"}' | python3 viz.py generate
 
 # With content
-echo '{"source":"market","headline":"BTC $95K","emotion":"euphoria","metrics":["ETH: $4.2k"]}' | python3 viz.py generate
+echo '{"headline":"BTC $95K","emotion":"euphoria","metrics":["ETH: $4.2k"]}' | python3 viz.py generate
 
 # Animated GIF
 echo '{"emotion":"panic","video":true}' | python3 viz.py generate
@@ -32,7 +32,6 @@ Run from the VIZ project root. Only dependency: `pillow`.
 | Field | Type | Description |
 |-------|------|-------------|
 | `emotion` | string | One of 26 emotions (see references/EMOTIONS.md) |
-| `source` | string | `market` / `art` / `news` / `mood` — sets visual vocabulary |
 | `headline` | string | Main text |
 | `metrics` | list[str] | Data lines: `["BTC: $92k", "ETH: $4.2k"]` |
 | `body` | string | Body text (also used for emotion inference) |
@@ -170,20 +169,27 @@ Omit any field to let grammar auto-select it. Full option lists in **references/
 | CP437 / Misc (2) | `cp437_retro` / `misc_symbols` |
 | Mixed (5) | `tech` / `cyber` / `organic` / `noise` / `circuit` |
 
-## Content Sources
+## Vocabulary Overrides
 
-| Source | Particles | Atmosphere |
-|--------|-----------|------------|
-| `market` | `0123456789$#%↑↓±` | BULL, RISE / BEAR, SELL / HOLD, WAIT |
-| `art` | `◆◇○●□■△▽✧✦` | CREATE, VISION / VOID, FADE / FORM, SHAPE |
-| `news` | `ABCDEFG!?#@&` | BREAKING, UPDATE / ALERT, WARN / NEWS, REPORT |
-| `mood` | `·˚✧♪♫∞~○◦` | FEEL, FLOW / EMPTY, LOST / THINK, DRIFT |
+Emotion drives all visual choices by default. Override via `vocabulary` field:
+
+```json
+{"emotion": "euphoria", "vocabulary": {"particles": "$€¥₿↑↓", "kaomoji_moods": ["euphoria", "excitement"]}}
+```
+
+| Field | Type | Effect |
+|-------|------|--------|
+| `particles` | string | Override particle charset |
+| `kaomoji_moods` | list[str] | Override kaomoji mood pool |
+| `decoration_chars` | list[str] | Override decoration characters |
+
+Run `python3 viz.py capabilities --format json` to discover all available kaomoji moods, charsets, border styles, and color schemes.
 
 ## Output
 
 stdout JSON:
 ```json
-{"status":"ok","results":[{"path":"media/viz_20260203_120000.png","seed":42,"format":"png"}],"emotion":"euphoria","source":"market"}
+{"status":"ok","results":[{"path":"media/viz_20260203_120000.png","seed":42,"format":"png"}],"emotion":"euphoria"}
 ```
 
 Specs: 1080x1080 PNG (quality=95), GIF, or MP4. Internal 160x160 nearest-neighbor upscale. Background filled via second render pass (independent effect + color scheme, ~750k texture combinations). Files in `./media/`.
