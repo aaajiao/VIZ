@@ -438,10 +438,21 @@ class Engine:
                 print("FFmpeg not available, MP4 skipped")
         """
         import os
+        import shutil
         import subprocess
         import tempfile
 
         if not frames:
+            return False
+
+        ffmpeg_bin = os.environ.get("FFMPEG_BIN") or shutil.which("ffmpeg")
+        if not ffmpeg_bin:
+            for p in ("/usr/local/bin/ffmpeg", "/usr/bin/ffmpeg"):
+                if os.path.isfile(p) and os.access(p, os.X_OK):
+                    ffmpeg_bin = p
+                    break
+        if not ffmpeg_bin:
+            print("FFmpeg 未安装，跳过 MP4 输出")
             return False
 
         # Use actual frame dimensions (may not be 1080x1080)
@@ -460,7 +471,7 @@ class Engine:
             print(f"转换 MP4: {output_path}")
             subprocess.run(
                 [
-                    "ffmpeg",
+                    ffmpeg_bin,
                     "-y",
                     "-i",
                     gif_path,
