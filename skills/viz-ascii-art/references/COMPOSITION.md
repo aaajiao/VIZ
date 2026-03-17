@@ -174,5 +174,6 @@ Background fill is fully automatic — no user-facing fields needed. Dim factor 
 viz generate --effect plasma --variant warped \
   --transforms kaleidoscope:segments=6 \
   --postfx vignette:strength=0.5 color_shift:hue_shift=0.1 \
-  --composition radial_masked --mask radial:center_x=0.5,radius=0.3
+  --composition radial_masked --mask radial:center_x=0.5,radius=0.3 \
+  --output-dir ./runs/composition
 ```

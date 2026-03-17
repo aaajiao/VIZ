@@ -18,13 +18,13 @@
 
 ```bash
 # 从情绪名生成（纯视觉）
-python3 viz.py generate --emotion euphoria --seed 42
+python3 viz.py generate --emotion euphoria --seed 42 --output-dir ./runs/euphoria
 
 # 从文本推断情绪
-python3 viz.py generate --text "市场暴跌 恐慌蔓延"
+python3 viz.py generate --text "市场暴跌 恐慌蔓延" --output-dir ./runs/panic
 
 # 直接指定 VAD 向量
-python3 viz.py generate --vad 0.5,-0.3,0.2
+python3 viz.py generate --vad 0.5,-0.3,0.2 --output-dir ./runs/custom-vad
 ```
 
 ### AI 集成（stdin JSON）
@@ -33,13 +33,13 @@ AI 通过 stdin 传入结构化 JSON，CLI 作为纯渲染后端：
 
 ```bash
 # 市场数据可视化
-echo '{"headline":"DOW +600","emotion":"bull","metrics":["BTC: $92k","ETH: $4.2k"],"vocabulary":{"particles":"$€¥₿↑↓"}}' | python3 viz.py generate
+echo '{"headline":"DOW +600","emotion":"bull","metrics":["BTC: $92k","ETH: $4.2k"],"vocabulary":{"particles":"$€¥₿↑↓"}}' | python3 viz.py generate --output-dir ./runs/market
 
 # 艺术新闻可视化
-echo '{"headline":"Venice Biennale 2026","emotion":"love","body":"immersive installations"}' | python3 viz.py generate
+echo '{"headline":"Venice Biennale 2026","emotion":"love","body":"immersive installations"}' | python3 viz.py generate --output-dir ./runs/art
 
 # 情绪日记
-echo '{"emotion":"calm","title":"Sunday Morning"}' | python3 viz.py generate --video
+echo '{"emotion":"calm","title":"Sunday Morning"}' | python3 viz.py generate --video --output-dir ./runs/diary
 ```
 
 stdin JSON 字段全部可选，CLI 参数会覆盖 stdin 中的同名值。
@@ -47,7 +47,7 @@ stdin JSON 字段全部可选，CLI 参数会覆盖 stdin 中的同名值。
 ### stdout 输出
 
 ```json
-{"status": "ok", "results": [{"path": "/home/user/VIZ/media/viz_20260203_120000_s42.png", "seed": 42, "format": "png"}], "emotion": "euphoria"}
+{"status": "ok", "results": [{"path": "/home/user/VIZ/runs/euphoria/viz_20260203_120000_s42.png", "seed": 42, "format": "png"}], "emotion": "euphoria"}
 ```
 
 ### 完整参数
@@ -80,33 +80,33 @@ stdin JSON 字段全部可选，CLI 参数会覆盖 stdin 中的同名值。
 | `--palette` | list | 无 | 自定义调色盘（如 `255,0,0 0,255,0 0,0,255`） |
 | `--width` | int | 1080 | 输出宽度（120-3840 像素） |
 | `--height` | int | 1080 | 输出高度（120-3840 像素） |
-| `--output-dir` | str | ./media | 输出目录 |
+| `--output-dir` | str | 必填 | 输出目录 |
 | `--mp4` | flag | false | 同时输出 MP4（需要系统 FFmpeg） |
 
 ### 模式
 
 **单帧**（默认）：
 ```bash
-python3 viz.py generate --emotion joy --seed 42
-# → media/viz_20260203_120000_s42.png + media/viz_20260203_120000_s42.json
+python3 viz.py generate --emotion joy --seed 42 --output-dir ./runs/joy
+# → ./runs/joy/viz_20260203_120000_s42.png + ./runs/joy/viz_20260203_120000_s42.json
 ```
 
 **多变体**：
 ```bash
-python3 viz.py generate --text "hope" --variants 5
+python3 viz.py generate --text "hope" --variants 5 --output-dir ./runs/hope
 # → 5 张不同种子的 PNG，相同情绪不同视觉组合
 ```
 
 **动画 GIF**：
 ```bash
-python3 viz.py generate --emotion calm --video --duration 3 --fps 15
-# → media/viz_20260203_120000_s{seed}.gif + .json
+python3 viz.py generate --emotion calm --video --duration 3 --fps 15 --output-dir ./runs/calm
+# → ./runs/calm/viz_20260203_120000_s{seed}.gif + .json
 ```
 
 **动画 MP4**（需要系统安装 FFmpeg）：
 ```bash
-python3 viz.py generate --emotion euphoria --video --mp4
-# → media/viz_20260203_120000_s{seed}.gif + .mp4 + .json
+python3 viz.py generate --emotion euphoria --video --mp4 --output-dir ./runs/euphoria
+# → ./runs/euphoria/viz_20260203_120000_s{seed}.gif + .mp4 + .json
 ```
 
 ### 导演模式（Director Mode）
@@ -117,13 +117,15 @@ python3 viz.py generate --emotion euphoria --video --mp4
 # 万花筒 + 暗角后处理
 python3 viz.py generate --emotion joy --seed 42 \
   --transforms kaleidoscope:segments=6 \
-  --postfx vignette:strength=0.5 scanlines:spacing=4
+  --postfx vignette:strength=0.5 scanlines:spacing=4 \
+  --output-dir ./runs/director-joy
 
 # 完整导演模式：指定所有合成维度
 python3 viz.py generate --emotion euphoria --seed 100 \
   --effect plasma --overlay wave --blend-mode SCREEN --overlay-mix 0.4 \
   --composition radial_masked --mask radial:center_x=0.5,radius=0.3 \
-  --transforms mirror_quad --postfx color_shift:hue_shift=0.1 --variant warped
+  --transforms mirror_quad --postfx color_shift:hue_shift=0.1 --variant warped \
+  --output-dir ./runs/director-euphoria
 ```
 
 复合参数格式：`name:key=val,key=val`，如 `kaleidoscope:segments=6`。
@@ -135,7 +137,7 @@ stdin JSON 同样支持：`transforms`、`postfx`、`composition`、`mask`、`va
 情感系统自动驱动所有视觉选择。通过 stdin JSON 的 `vocabulary` 字段可覆盖任意部分：
 
 ```bash
-echo '{"emotion":"bull","vocabulary":{"particles":"$€¥₿↑↓","kaomoji_moods":["euphoria","excitement"]}}' | python3 viz.py generate
+echo '{"emotion":"bull","vocabulary":{"particles":"$€¥₿↑↓","kaomoji_moods":["euphoria","excitement"]}}' | python3 viz.py generate --output-dir ./runs/vocab
 ```
 
 可用的颜文字情绪、颜色方案等通过 `capabilities` 命令查询。
@@ -207,7 +209,7 @@ python3 viz.py capabilities --format json  # 默认 JSON
 | 输出格式 | PNG (quality=95)、GIF 或 MP4 (via FFmpeg) |
 | 画布尺寸 | 默认 1080 × 1080，可通过 `--width`/`--height` 调整（120-3840px） |
 | 内部渲染 | 自动缩放（~输出 ÷ 6.75，最近邻上采样） |
-| 默认目录 | `./media/` |
+| 输出目录 | 必须通过 `--output-dir` 显式指定 |
 | 文件命名 | `viz_{timestamp}_s{seed}.{png\|gif}`，同名 `.json` 保存输入参数 |
 | 可复现性 | `--seed` 参数控制，输入参数自动存档于同名 `.json` |
 
@@ -222,7 +224,7 @@ AI 分析用户请求
 构造 JSON（emotion + 可选内容数据）
     │
     ▼
-echo '...' | python3 viz.py generate
+echo '...' | python3 viz.py generate --output-dir ./runs/job
     │
     ▼
 VIZ 渲染（FlexiblePipeline）

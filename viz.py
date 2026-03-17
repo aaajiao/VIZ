@@ -741,6 +741,7 @@ def cmd_capabilities(args):
             "palette": "list[[r,g,b], ...] - custom color palette (2+ RGB triplets, 0-255), overrides color_scheme",
             "width": "int - output width in pixels (120-3840, default 1080)",
             "height": "int - output height in pixels (120-3840, default 1080)",
+            "output_dir": "string - required output directory for generated files",
         },
         "output_schema": {
             "status": "string (ok|error)",
@@ -813,7 +814,7 @@ def build_parser():
     gen.add_argument("--palette", nargs="*", help="自定义调色盘 (如 255,0,0 0,255,0 0,0,255)")
     gen.add_argument("--width", type=int, help="输出宽度 (120-3840, 默认 1080)")
     gen.add_argument("--height", type=int, help="输出高度 (120-3840, 默认 1080)")
-    gen.add_argument("--output-dir", help="输出目录")
+    gen.add_argument("--output-dir", required=True, help="输出目录（必填）")
     gen.add_argument("--mp4", action="store_true", help="同时输出 MP4 (需要 FFmpeg)")
 
     # === convert ===
@@ -822,7 +823,7 @@ def build_parser():
     conv.add_argument("--charset", help="字符集 (classic, blocks, bull, bear, ...)")
     conv.add_argument("--scale", type=float, help="缩放比例")
     conv.add_argument("--emotion", help="情绪 (bull, bear, neutral)")
-    conv.add_argument("--output-dir", help="输出目录")
+    conv.add_argument("--output-dir", required=True, help="输出目录（必填）")
 
     # === capabilities ===
     cap = subparsers.add_parser("capabilities", help="列出所有可用选项")

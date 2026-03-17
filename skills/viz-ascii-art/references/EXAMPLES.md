@@ -388,14 +388,16 @@ viz generate \
   --emotion euphoria \
   --headline "BTC BREAKS 100K" \
   --metrics "ETH: $5.2k" "SOL: $300" \
-  --seed 42
+  --seed 42 \
+  --output-dir ./runs/market
 
 # Animation
 viz generate \
   --emotion panic \
   --video \
   --duration 5 \
-  --fps 20
+  --fps 20 \
+  --output-dir ./runs/panic
 ```
 
 CLI args override stdin JSON values if both provided.
@@ -411,7 +413,7 @@ import subprocess
 import json
 
 result = subprocess.run(
-    ['viz', 'generate'],
+    ['viz', 'generate', '--output-dir', './runs/joy'],
     input='{"emotion": "joy"}',
     capture_output=True,
     text=True
@@ -427,6 +429,6 @@ if output['status'] == 'ok':
 
 ```bash
 for emotion in joy fear calm panic; do
-  echo "{\"emotion\": \"$emotion\"}" | viz generate
+  echo "{\"emotion\": \"$emotion\"}" | viz generate --output-dir "./runs/$emotion"
 done
 ```

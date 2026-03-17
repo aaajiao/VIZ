@@ -16,19 +16,19 @@ Preferred CLI: `viz`
 
 ```bash
 # Minimal
-echo '{"emotion":"joy"}' | viz generate
+echo '{"emotion":"joy"}' | viz generate --output-dir ./runs/joy
 
 # With content
-echo '{"headline":"BTC $95K","emotion":"euphoria","metrics":["ETH: $4.2k"]}' | viz generate
+echo '{"headline":"BTC $95K","emotion":"euphoria","metrics":["ETH: $4.2k"]}' | viz generate --output-dir ./runs/market
 
 # Animated GIF
-echo '{"emotion":"panic","video":true}' | viz generate
+echo '{"emotion":"panic","video":true}' | viz generate --output-dir ./runs/panic
 
 # Query all available options
 viz capabilities --format json
 ```
 
-Use the installed `viz` command when available. Repo-local fallback works from the VIZ project root. Runtime dependency: `Pillow`.
+Use the installed `viz` command when available. Repo-local fallback works from the VIZ project root. Always pass `--output-dir` explicitly so outputs land in a known location. Runtime dependency: `Pillow`.
 
 ## JSON Input (all fields optional)
 
@@ -75,6 +75,8 @@ Use the installed `viz` command when available. Repo-local fallback works from t
 | `variants` | int | 1 | Generate multiple variants (different seeds) |
 | `width` | int | 1080 | Output width in pixels (120-3840) |
 | `height` | int | 1080 | Output height in pixels (120-3840) |
+
+CLI requirement: `viz generate` and `viz convert` must include `--output-dir <dir>`.
 
 ## Emotions at a Glance
 
@@ -200,10 +202,10 @@ Run `viz capabilities --format json` to discover all available kaomoji moods and
 
 stdout JSON:
 ```json
-{"status":"ok","results":[{"path":"media/viz_20260203_120000_s42.png","seed":42,"format":"png"}],"emotion":"euphoria","resolution":[1080,1080]}
+{"status":"ok","results":[{"path":"./runs/market/viz_20260203_120000_s42.png","seed":42,"format":"png"}],"emotion":"euphoria","resolution":[1080,1080]}
 ```
 
-Specs: Default 1080x1080, configurable via `width`/`height` (120-3840px, supports portrait/landscape). PNG (quality=95), GIF, or MP4. Internal buffer auto-scaled (~6.75x smaller). Background filled via second render pass (independent effect + color scheme, ~750k texture combinations). Files in `./media/`, named `viz_{timestamp}_s{seed}.{ext}`. Each output has a companion `.json` with input params for reproducibility.
+Specs: Default 1080x1080, configurable via `width`/`height` (120-3840px, supports portrait/landscape). PNG (quality=95), GIF, or MP4. Internal buffer auto-scaled (~6.75x smaller). Background filled via second render pass (independent effect + color scheme, ~750k texture combinations). Files go to the explicit `--output-dir`, named `viz_{timestamp}_s{seed}.{ext}`. Each output has a companion `.json` with input params for reproducibility.
 
 ### Custom Palette Example
 

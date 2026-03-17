@@ -59,6 +59,11 @@ class TestCapabilities:
 
 
 class TestGenerate:
+    def test_generate_requires_output_dir(self):
+        result = run_cli(["generate", "--emotion", "joy", "--seed", "42"])
+        assert result.returncode != 0
+        assert "--output-dir" in result.stderr
+
     def test_generate_with_emotion(self, temp_dir):
         result = run_cli(
             ["generate", "--emotion", "joy", "--seed", "42", "--output-dir", temp_dir]
@@ -226,6 +231,13 @@ class TestGenerateValidation:
         )
         output = parse_json_output(result)
         assert output["status"] == "error"
+
+
+class TestConvert:
+    def test_convert_requires_output_dir(self):
+        result = run_cli(["convert", "tests/fixtures/missing.png"])
+        assert result.returncode != 0
+        assert "--output-dir" in result.stderr
 
 
 @pytest.fixture

@@ -33,13 +33,13 @@ viz capabilities --format json
 
 ```bash
 # Generate from emotion
-viz generate --emotion euphoria --seed 42
+viz generate --emotion euphoria --seed 42 --output-dir ./runs/euphoria
 
 # AI integration via stdin JSON
-echo '{"headline":"BTC $95K","emotion":"euphoria","metrics":["ETH: $4.2k"]}' | viz generate
+echo '{"headline":"BTC $95K","emotion":"euphoria","metrics":["ETH: $4.2k"]}' | viz generate --output-dir ./runs/market
 
 # Animated GIF
-echo '{"emotion":"panic","video":true}' | viz generate
+echo '{"emotion":"panic","video":true}' | viz generate --output-dir ./runs/panic
 
 # Discover all options
 viz capabilities --format json
@@ -83,7 +83,7 @@ Emotion drives all visual choices. `vocabulary` overrides specific visual assets
 ## Output
 
 ```json
-{"status": "ok", "results": [{"path": "media/viz_20260203_120000_s42.png", "seed": 42, "format": "png"}], "emotion": "euphoria", "resolution": [1080, 1080]}
+{"status": "ok", "results": [{"path": "/tmp/viz_out/viz_20260203_120000_s42.png", "seed": 42, "format": "png"}], "emotion": "euphoria", "resolution": [1080, 1080]}
 ```
 
 ## Director Mode
