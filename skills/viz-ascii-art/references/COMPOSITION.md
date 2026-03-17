@@ -95,7 +95,7 @@ Grammar picks a named variant per effect and samples params from its ranges.
 | dyna (6) | classic, single, many, long_waves, short_ripples, chaotic |
 | cppn (6) | classic, delicate, intricate, radiant, chaotic, linear |
 
-## Composition Modes (5, auto-selected or via `composition` field)
+## Composition Modes (4, auto-selected or via `composition` field)
 
 | Mode | Description |
 |------|-------------|
@@ -103,7 +103,6 @@ Grammar picks a named variant per effect and samples params from its ranges.
 | `masked_split` | Spatial split via horizontal/vertical/diagonal masks |
 | `radial_masked` | Center vs edges with radial mask |
 | `noise_masked` | Organic noise-based region blending |
-| `sdf_masked` | SDF geometric shapes (circle/box/ring) |
 
 ## Background Fill (auto-selected, ~750k combinations)
 
@@ -172,7 +171,7 @@ Background fill is fully automatic — no user-facing fields needed. Dim factor 
 ### CLI equivalent
 
 ```bash
-python3 viz.py generate --effect plasma --variant warped \
+viz generate --effect plasma --variant warped \
   --transforms kaleidoscope:segments=6 \
   --postfx vignette:strength=0.5 color_shift:hue_shift=0.1 \
   --composition radial_masked --mask radial:center_x=0.5,radius=0.3

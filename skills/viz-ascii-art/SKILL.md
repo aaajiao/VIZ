@@ -7,23 +7,28 @@ description: "Generate ASCII art visualizations (default 1080x1080, variable res
 
 AI handles intent, data, and emotion; VIZ renders ASCII art (default 1080x1080, variable resolution, custom palettes).
 
+Preferred CLI: `viz`
+
+- Published install: `pip install aaajiao-viz`
+- Repo-local fallback from project root: `python3 viz.py ...`
+
 ## Quick Start
 
 ```bash
 # Minimal
-echo '{"emotion":"joy"}' | python3 viz.py generate
+echo '{"emotion":"joy"}' | viz generate
 
 # With content
-echo '{"headline":"BTC $95K","emotion":"euphoria","metrics":["ETH: $4.2k"]}' | python3 viz.py generate
+echo '{"headline":"BTC $95K","emotion":"euphoria","metrics":["ETH: $4.2k"]}' | viz generate
 
 # Animated GIF
-echo '{"emotion":"panic","video":true}' | python3 viz.py generate
+echo '{"emotion":"panic","video":true}' | viz generate
 
 # Query all available options
-python3 viz.py capabilities --format json
+viz capabilities --format json
 ```
 
-Run from the VIZ project root. Only dependency: `pillow`.
+Use the installed `viz` command when available. Repo-local fallback works from the VIZ project root. Runtime dependency: `Pillow`.
 
 ## JSON Input (all fields optional)
 
@@ -46,14 +51,14 @@ Run from the VIZ project root. Only dependency: `pillow`.
 | `layout` | string | `random_scatter` / `grid_jitter` / `spiral` / `force_directed` / `preset` |
 | `decoration` | string | `corners` / `edges` / `scattered` / `minimal` / `none` / `frame` / `grid_lines` / `circuit` |
 | `gradient` | string | See gradient list below (73 presets) |
-| `color_scheme` | string | `heat` / `rainbow` / `cool` / `matrix` / `plasma` / `ocean` / `fire` / `default` |
+| `color_scheme` | string | `heat` / `rainbow` / `cool` / `matrix` / `plasma` / `ocean` / `fire` |
 | `palette` | list[[r,g,b]] | Custom color palette (2+ RGB triplets 0-255), overrides `color_scheme` |
 | `seed` | int | Reproducible output — **omit or vary** (see tip below) |
 | `overlay` | object | `{"effect":"wave","blend":"SCREEN","mix":0.3}` — layer two effects |
 | `params` | object | Effect-specific tuning, including deformation params (see references/COMPOSITION.md) |
 | `transforms` | list[dict] | Domain transform chain: `[{"type":"kaleidoscope","segments":6}]` |
 | `postfx` | list[dict] | PostFX chain: `[{"type":"vignette","strength":0.5}]` |
-| `composition` | string | `blend` / `masked_split` / `radial_masked` / `noise_masked` / `sdf_masked` |
+| `composition` | string | `blend` / `masked_split` / `radial_masked` / `noise_masked` |
 | `mask` | string | Mask type+params (CLI: `radial:center_x=0.5,radius=0.3`) |
 | `variant` | string | Force effect variant name (e.g. `warped`, `alien`, `turbulent`) |
 
@@ -119,7 +124,7 @@ Grammar auto-selects transforms, PostFX, masks, and variants from emotion; Direc
 |-------|------|------------------|
 | `transforms` | list[dict] | Domain transform chain (mirror, kaleidoscope, tile, etc.); params can be animated kwargs |
 | `postfx` | list[dict] | Post-processing chain with optional animation (vignette pulse, scanline scroll, etc.) |
-| `composition` | string | How two effects merge: `blend` / `masked_split` / `radial_masked` / `noise_masked` / `sdf_masked` |
+| `composition` | string | How two effects merge: `blend` / `masked_split` / `radial_masked` / `noise_masked` |
 | `mask` | string | Spatial mask for composition: `radial`, `noise`, `diagonal`, etc. |
 | `variant` | string | Named structural variant per effect (e.g. `warped`, `alien`, `turbulent`) |
 | `params` | object | Effect-specific tuning: deformation, noise, twist, `mask_anim_speed` (see references/COMPOSITION.md) |
@@ -189,7 +194,7 @@ Emotion drives all visual choices by default. Override via `vocabulary` field:
 | `kaomoji_moods` | list[str] | Override kaomoji mood pool |
 | `decoration_chars` | list[str] | Override decoration characters |
 
-Run `python3 viz.py capabilities --format json` to discover all available kaomoji moods and color schemes.
+Run `viz capabilities --format json` to discover all available kaomoji moods and color schemes.
 
 ## Output
 

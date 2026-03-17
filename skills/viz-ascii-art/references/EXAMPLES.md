@@ -384,14 +384,14 @@ All JSON fields can also be passed via CLI args:
 
 ```bash
 # Equivalent to JSON example
-python3 viz.py generate \
+viz generate \
   --emotion euphoria \
   --headline "BTC BREAKS 100K" \
   --metrics "ETH: $5.2k" "SOL: $300" \
   --seed 42
 
 # Animation
-python3 viz.py generate \
+viz generate \
   --emotion panic \
   --video \
   --duration 5 \
@@ -411,7 +411,7 @@ import subprocess
 import json
 
 result = subprocess.run(
-    ['python3', 'viz.py', 'generate'],
+    ['viz', 'generate'],
     input='{"emotion": "joy"}',
     capture_output=True,
     text=True
@@ -427,6 +427,6 @@ if output['status'] == 'ok':
 
 ```bash
 for emotion in joy fear calm panic; do
-  echo "{\"emotion\": \"$emotion\"}" | python3 viz.py generate
+  echo "{\"emotion\": \"$emotion\"}" | viz generate
 done
 ```
