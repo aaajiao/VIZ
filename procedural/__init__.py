@@ -26,6 +26,7 @@ from procedural.params import ParamSpec, resolve_params, create_rng
 
 # 引擎
 from procedural.engine import Engine
+from viz_version import __version__
 
 __all__ = [
     # Types
@@ -40,5 +41,3 @@ __all__ = [
     # Engine
     "Engine",
 ]
-
-__version__ = "0.4.0"

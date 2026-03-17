@@ -4,7 +4,9 @@ import json
 import os
 import subprocess
 import tempfile
+
 import pytest
+from viz_version import __version__
 
 
 def run_cli(args, stdin=None, cwd=None):
@@ -26,6 +28,11 @@ def parse_json_output(result):
 
 
 class TestCapabilities:
+    def test_version_output(self):
+        result = run_cli(["--version"])
+        assert result.returncode == 0
+        assert result.stdout.strip() == f"viz {__version__}"
+
     def test_capabilities_json_output(self):
         result = run_cli(["capabilities", "--format", "json"])
         assert result.returncode == 0
@@ -180,7 +187,6 @@ class TestGenerate:
             ]
         )
         assert result.returncode == 0
-
 
     def test_generate_with_color_scheme(self, temp_dir):
         stdin_data = json.dumps({"emotion": "calm", "color_scheme": "ocean", "seed": 42})

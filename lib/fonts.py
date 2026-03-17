@@ -3,13 +3,18 @@ Font loading utilities with fallback chain
 字体加载工具（带回退链）
 """
 
-from PIL import ImageFont
 import os
+from pathlib import Path
 
-_PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+from PIL import ImageFont
+
+_PROJECT_ROOT = Path(__file__).resolve().parent.parent
+_PACKAGED_FONT = _PROJECT_ROOT / "lib" / "assets" / "unifont_jp.otf"
+_REPO_FONT = _PROJECT_ROOT / "assets" / "fonts" / "unifont_jp.otf"
 
 FONT_FALLBACK_CHAIN = [
-    os.path.join(_PROJECT_ROOT, "assets/fonts/unifont_jp.otf"),
+    str(_PACKAGED_FONT),
+    str(_REPO_FONT),
     "/usr/share/fonts/opentype/unifont/unifont_jp.otf",
     "/usr/share/fonts/opentype/unifont/unifont.otf",
     "/usr/share/fonts/opentype/ipafont-gothic/ipag.ttf",

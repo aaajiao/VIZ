@@ -33,6 +33,8 @@ import sys
 import time
 from typing import Any, cast
 
+from viz_version import __version__
+
 # Ensure project root on path
 _script_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, _script_dir)
@@ -654,7 +656,7 @@ def cmd_capabilities(args):
     from lib.kaomoji_data import KAOMOJI_SINGLE
 
     capabilities = {
-        "version": "0.6.0",
+        "version": __version__,
         "description": "VIZ - ASCII Art Visualization CLI. AI is the brain, VIZ is the paintbrush.",
         "commands": {
             "generate": "Generate 1080x1080 PNG/GIF visualization",
@@ -780,6 +782,7 @@ def build_parser():
         prog="viz",
         description="VIZ - ASCII Art Visualization CLI. AI is the brain, VIZ is the paintbrush.",
     )
+    parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
     subparsers = parser.add_subparsers(dest="command", help="子命令 Subcommand")
 
     # === generate ===
@@ -833,9 +836,9 @@ def build_parser():
     return parser
 
 
-def main():
+def main(argv=None):
     parser = build_parser()
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
     if args.command == "generate":
         cmd_generate(args)

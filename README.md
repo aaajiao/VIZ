@@ -9,27 +9,37 @@ PNG/GIF/MP4 ASCII art. Variable resolution (default 1080x1080, up to 3840px), cu
   <img src="assets/viz_20260211_121607.gif" width="480" alt="VIZ animated output" />
 </p>
 
+## Install
+
+```bash
+pip install .
+```
+
+This installs the official `viz` command locally. For editable development installs:
+
+```bash
+pip install -e ".[dev]"
+```
+
 ## Quick Start
 
 ```bash
-pip install Pillow
-
 # Generate from emotion
-python3 viz.py generate --emotion euphoria --seed 42
+viz generate --emotion euphoria --seed 42
 
 # AI integration via stdin JSON
-echo '{"headline":"BTC $95K","emotion":"euphoria","metrics":["ETH: $4.2k"]}' | python3 viz.py generate
+echo '{"headline":"BTC $95K","emotion":"euphoria","metrics":["ETH: $4.2k"]}' | viz generate
 
 # Animated GIF
-echo '{"emotion":"panic","video":true}' | python3 viz.py generate
+echo '{"emotion":"panic","video":true}' | viz generate
 
 # Discover all options
-python3 viz.py capabilities --format json
+viz capabilities --format json
 ```
 
 ## How It Works
 
-`viz.py` is the single CLI entry — a rendering backend for AI. AI decides *what* to express; VIZ decides *how* it looks.
+`viz` is the installed CLI entry point, backed by [`viz.py`](viz.py). AI decides *what* to express; VIZ decides *how* it looks.
 
 ```
 emotion/text  -->  VAD vector  -->  grammar  -->  SceneSpec  -->  Engine  -->  output
@@ -73,7 +83,7 @@ Emotion drives all visual choices. `vocabulary` overrides specific visual assets
 Grammar auto-selects everything from emotion. Override any dimension for precise control:
 
 ```bash
-python3 viz.py generate --emotion euphoria --seed 100 \
+viz generate --emotion euphoria --seed 100 \
   --effect plasma --variant warped \
   --transforms kaleidoscope:segments=6 \
   --postfx vignette:strength=0.5 scanlines:spacing=4 \
@@ -117,10 +127,11 @@ skills/viz-ascii-art/           # AgentSkills integration
 ## Development
 
 ```bash
-pytest tests/ -v          # 545+ tests
+pytest tests/ -v
+python -m build
 ```
 
-Only dependency: `Pillow>=9.0.0`. All math is pure Python stdlib (no NumPy). MP4 output requires system FFmpeg.
+Runtime dependency: `Pillow>=9.0.0`. All math is pure Python stdlib (no NumPy). MP4 output requires system FFmpeg.
 
 ## License
 
