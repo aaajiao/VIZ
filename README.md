@@ -13,12 +13,27 @@ PNG/GIF/MP4 ASCII art. Variable resolution (default 1080x1080, up to 3840px), cu
 ## Install
 
 ```bash
-pip install aaajiao-viz
+# Preferred: uv tool
+uv tool install aaajiao-viz
+
+# Alternative: pipx
+pipx install aaajiao-viz
 ```
 
 Upgrade an existing install:
 
 ```bash
+# uv tool
+uv tool upgrade aaajiao-viz
+
+# pipx
+pipx upgrade aaajiao-viz
+```
+
+Alternative if you want to install into the current Python environment:
+
+```bash
+pip install aaajiao-viz
 pip install -U aaajiao-viz
 ```
 
