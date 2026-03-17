@@ -4,18 +4,21 @@ This file provides guidance to Codex (Codex.ai/code) when working with code in t
 
 ## What This Is
 
-ASCII art visualization toolkit producing 1080x1080 PNG/GIF/MP4 images with kaomoji, procedural effects, and emotion-driven visual styles. Pure Python 3 + Pillow, no build system. `viz.py` is the single CLI entry point.
+ASCII art visualization toolkit producing 1080x1080 PNG/GIF/MP4 images with kaomoji, procedural effects, and emotion-driven visual styles. Pure Python 3 + Pillow. Packaged as the `aaajiao-viz` CLI, with `viz.py` as the console entry module.
 
 ## Development Workflow
 
-**Always develop new features on the `dev` branch.** PRs target `main`.
+**This repository now uses `main` as the only long-lived branch.** Land changes on `main` unless a temporary feature branch is explicitly needed.
 
 ```bash
-# Dev environment setup (if ffmpeg/pyright not found)
-bash .devcontainer/setup.sh
+# Install editable dev environment
+pip install -e ".[dev]"
 
 # Run all tests
 pytest tests/ -v
+
+# Build wheel + sdist
+python -m build
 
 # Run single test file
 pytest tests/test_emotion.py -v
@@ -24,10 +27,10 @@ pytest tests/test_emotion.py -v
 pytest tests/test_emotion.py::TestEmotionAnchors::test_joy -v
 
 # Generate a test visualization
-python3 viz.py generate --emotion euphoria --seed 42
+viz generate --emotion euphoria --seed 42
 ```
 
-No build step. No requirements.txt. Only dependency is `Pillow>=9.0.0`. CI runs `pytest tests/ -v --tb=short` on Python 3.11.
+Project metadata lives in `pyproject.toml`. Runtime dependency is `Pillow>=9.0.0`. CI runs on `main`, builds distributions, and smoke-tests the installed `viz` command on Python 3.11.
 
 ## Architecture
 

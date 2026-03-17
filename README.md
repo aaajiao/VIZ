@@ -1,6 +1,7 @@
 # viz - ASCII Art Visualization Toolkit
 
 [![Tests](https://github.com/aaajiao/VIZ/actions/workflows/test.yml/badge.svg)](https://github.com/aaajiao/VIZ/actions/workflows/test.yml)
+[![PyPI version](https://img.shields.io/pypi/v/aaajiao-viz.svg)](https://pypi.org/project/aaajiao-viz/)
 
 PNG/GIF/MP4 ASCII art. Variable resolution (default 1080x1080, up to 3840px), custom palettes, kaomoji, procedural effects, emotion-driven styles. Pure Python 3 + Pillow.
 
@@ -12,13 +13,20 @@ PNG/GIF/MP4 ASCII art. Variable resolution (default 1080x1080, up to 3840px), cu
 ## Install
 
 ```bash
-pip install .
+pip install aaajiao-viz
 ```
 
-This installs the official `viz` command locally. For editable development installs:
+Upgrade an existing install:
 
 ```bash
-pip install -e ".[dev]"
+pip install -U aaajiao-viz
+```
+
+Verify the CLI is available:
+
+```bash
+viz --version
+viz capabilities --format json
 ```
 
 ## Quick Start
@@ -39,7 +47,7 @@ viz capabilities --format json
 
 ## How It Works
 
-`viz` is the installed CLI entry point, backed by [`viz.py`](viz.py). AI decides *what* to express; VIZ decides *how* it looks.
+`viz` is an installed CLI for procedural ASCII image generation. AI decides *what* to express; VIZ decides *how* it looks.
 
 ```
 emotion/text  -->  VAD vector  -->  grammar  -->  SceneSpec  -->  Engine  -->  output
@@ -127,9 +135,14 @@ skills/viz-ascii-art/           # AgentSkills integration
 ## Development
 
 ```bash
+git clone https://github.com/aaajiao/VIZ.git
+cd VIZ
+pip install -e ".[dev]"
 pytest tests/ -v
 python -m build
 ```
+
+Published package: [aaajiao-viz on PyPI](https://pypi.org/project/aaajiao-viz/)
 
 Runtime dependency: `Pillow>=9.0.0`. All math is pure Python stdlib (no NumPy). MP4 output requires system FFmpeg.
 
