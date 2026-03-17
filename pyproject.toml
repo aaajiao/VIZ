@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "aaajiao-viz"
-version = "0.6.4"
+version = "0.6.5"
 description = "ASCII art visualization toolkit for PNG, GIF, and MP4 output."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -40,6 +40,8 @@ viz = "viz:main"
 Homepage = "https://github.com/aaajiao/VIZ"
 Repository = "https://github.com/aaajiao/VIZ"
 Issues = "https://github.com/aaajiao/VIZ/issues"
+Releases = "https://github.com/aaajiao/VIZ/releases"
+Changelog = "https://github.com/aaajiao/VIZ/blob/main/CHANGELOG.md"
 
 [tool.setuptools]
 py-modules = ["viz", "viz_version"]

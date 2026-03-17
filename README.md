@@ -22,6 +22,11 @@ Upgrade an existing install:
 pip install -U aaajiao-viz
 ```
 
+Release notes:
+
+- [Changelog](https://github.com/aaajiao/VIZ/blob/main/CHANGELOG.md)
+- [GitHub Releases](https://github.com/aaajiao/VIZ/releases)
+
 Verify the CLI is available:
 
 ```bash
