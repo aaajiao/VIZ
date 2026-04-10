@@ -238,27 +238,25 @@ class SceneSpec:
 
 ### 产生规则
 
-每条规则根据情感参数（energy, structure, valence, arousal）做加权随机选择：
+v0.8.0 起，所有离散选择采用**近均匀随机**，情绪参数仅提供 ≤20% 的轻微偏移（`_biased_choice()`）。这确保每个 seed 都能产出独特的视觉组合。
 
-| 规则 | 选项 | 权重影响 |
-|------|------|----------|
-| `_choose_bg_effect()` | plasma, wave, flame, moire, noise_field, sdf_shapes, cppn | energy + structure |
-| `_choose_overlay_effect()` | plasma, wave, noise_field, moire, cppn | energy，排除已选 bg |
-| `_choose_blend_mode()` | ADD, SCREEN, OVERLAY, MULTIPLY | energy 偏向 |
-| `_choose_layout()` | random_scatter, grid_jitter, spiral, force_directed, preset | structure 偏向 |
+| 规则 | 选项数 | 选择方式 |
+|------|--------|----------|
+| `_choose_bg_effect()` | 17 种效果 | 近均匀随机，从 EFFECT_REGISTRY 动态读取 |
+| `_choose_overlay_effect()` | 16 种（排除 bg） | 均匀随机 |
+| `_choose_blend_mode()` | 4 种 | 均匀随机 |
+| `_choose_layout()` | 5 种 | 均匀随机 |
+| `_choose_decoration_style()` | 8 种 | 均匀随机 |
+| `_choose_gradient()` | 73 种 | 均匀随机，从 ASCII_GRADIENTS 动态读取 |
+| `_choose_domain_transforms()` | 0-3 个，从 9 种中选 | 均匀随机 |
+| `_choose_postfx_chain()` | 0-3 个，从 7 种中选 | 均匀随机（允许空链） |
+| `_choose_composition_mode()` | 5 种 | 均匀随机 |
+| 调色板 | 程序化生成 | `generate_palette(seed, warmth, energy, saturation)` |
 | `_choose_kaomoji_count()` | 2-12 | base=4 + energy*4 |
-| `_choose_animations()` | floating, breathing, color_cycle | energy/arousal |
-| `_choose_decoration_style()` | corners, edges, scattered, minimal, none, **frame, grid_lines, circuit** | structure |
-| `_choose_decoration_chars()` | **70+ 组** (经典/box 角/box 线/交叉/方块/点/星星/箭头，从 CHARSETS/BORDER_SETS 构建) | **energy + warmth** |
-| `_choose_gradient()` | **73 种** (全部激活: classic, blocks, box_thin, circles, stars_density, arrows_flow, cp437_retro, ...) | **energy + structure** |
-| `_choose_particle_chars()` | **30+ 组** (经典/几何/box 线段/方块/盲文/星星闪烁/箭头数学，从 CHARSETS 构建) | **energy + warmth** |
-| `_choose_text_elements()` | 8 组情绪词池（中英 + **semigraphic 符号**） | valence × arousal |
-| `_choose_kaomoji_mood()` | 20 种情绪（3D VAD 最近质心） | valence × arousal × dominance |
-| `_choose_domain_transforms()` | mirror_x/y/quad, kaleidoscope, tile, rotate, zoom, spiral_warp, **polar_remap** | structure + energy (概率提高至 30-55%); rotate/zoom/spiral_warp 支持动画 kwargs |
-| `_choose_postfx_chain()` | vignette, scanlines, threshold, edge_detect, invert, color_shift, pixelate | energy + structure + intensity (概率提高, 保底 ≥1); 4 种支持动画参数 |
-| `_choose_composition_mode()` | blend, masked_split, radial_masked, noise_masked, sdf_masked | energy + structure (blend 降至 25%); masks 注入 `mask_anim_speed` |
-| `_choose_color_scheme()` | heat, rainbow, cool, matrix, plasma, ocean, fire, default | warmth + energy |
-| `_choose_bg_fill_spec()` | 13 个候选 effect × variant × 0-2 transform（含 rotate/zoom）× 0-1 postfx（含 invert/edge_detect/pixelate）× 0-1 mask（含 h_split/v_split/sdf）× color_mode | energy + structure + warmth |
+| `_choose_animations()` | floating, breathing, color_cycle | energy/arousal 概率 |
+| `_choose_text_elements()` | 8 组情绪词池 | valence × arousal |
+| `_choose_kaomoji_mood()` | 20 种情绪质心 | VAD 最近邻 |
+| `_choose_bg_fill_spec()` | 13 effect × 0-2 transform × 0-1 postfx × 0-1 mask | 各层均匀随机，独立程序化调色板 |
 
 详见 [box_chars.md](box_chars.md) 获取完整的字符集和梯度参考。
 
@@ -268,9 +266,7 @@ class SceneSpec:
 
 辅助方法 `_jitter(base, amount, lo, hi)` 在基础值附近添加高斯随机偏移（σ = amount × 0.6），用于所有连续参数的微调。
 
-**多样性抖动**：`_weighted_choice()` 在每次采样前对权重乘以 `uniform(0.5, 1.5)` 因子，让相邻 seed 产生不同结果，同时保持单 seed 可重现。
-
-**导演模式覆盖**：CLI 参数（`--transforms`、`--postfx`、`--composition`、`--mask`、`--variant`）可精确覆盖文法的自动选择。覆盖在 `_apply_overrides()` 中执行，完全替换文法选择的对应字段。
+**导演模式覆盖**：CLI 参数（`--style`、`--transforms`、`--postfx`、`--composition`、`--mask`、`--variant`、`--color-scheme`）可精确覆盖文法的自动选择。Style 预设提供 8 种策划好的 Director Mode 组合（geometric/organic/retro/psychedelic/minimal/brutal/ethereal/glitch）。覆盖在 `_apply_overrides()` 中执行，完全替换文法选择的对应字段。
 
 详见 [composition.md](composition.md#structural-variants) 获取完整变体目录。
 
