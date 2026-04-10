@@ -13,5 +13,5 @@ and explicitly suggests importing AGENTS.md when a repo already uses it.
 - Primary validation commands:
   - `pytest tests/ -v`
   - `python -m build`
-  - `viz generate --emotion euphoria --seed 42`
+  - `viz generate --emotion euphoria --seed 42 --output-dir ./media`
 - Use `CLAUDE.local.md` for uncommitted machine-local preferences, secrets, sandbox URLs, or personal test data.
