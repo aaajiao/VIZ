@@ -46,7 +46,7 @@ from typing import Any
 from procedural.types import Context, Cell, Buffer
 from procedural.core.noise import ValueNoise
 from procedural.core.mathx import clamp
-from procedural.palette import value_to_color, value_to_color_continuous
+from procedural.palette import value_to_color, value_to_color_continuous, resolve_color
 from .base import BaseEffect
 
 __all__ = ["NoiseFieldEffect"]
@@ -147,6 +147,7 @@ class NoiseFieldEffect(BaseEffect):
             "turbulence": turbulence,
             "warmth": warmth,
             "saturation": saturation,
+            "_palette": ctx.params.get("_palette"),
         }
 
     def main(self, x: int, y: int, ctx: Context, state: dict[str, Any]) -> Cell:
@@ -214,16 +215,15 @@ class NoiseFieldEffect(BaseEffect):
 
         # === 映射到颜色 ===
         color_value = (value + t * 0.05) % 1.0
-        if state.get("warmth") is not None:
-            color = value_to_color_continuous(
-                color_value,
-                warmth=state["warmth"],
-                saturation=state.get("saturation", 1.0),
-            )
-        else:
-            # 根据模式选择颜色方案
-            color_scheme = "fire" if turbulence else "plasma"
-            color = value_to_color(color_value, color_scheme)
+        # 根据模式选择默认颜色方案
+        default_scheme = "fire" if turbulence else "plasma"
+        color = resolve_color(
+            color_value,
+            palette=state.get("_palette"),
+            warmth=state.get("warmth"),
+            saturation=state.get("saturation"),
+            color_scheme=state.get("color_scheme", default_scheme),
+        )
 
         # 返回 Cell
         return Cell(

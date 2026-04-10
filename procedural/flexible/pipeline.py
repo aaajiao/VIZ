@@ -229,6 +229,12 @@ class FlexiblePipeline:
         if spec.palette:
             render_params["_palette"] = spec.palette
 
+        # Pass postprocess spec and brightness floor to engine
+        if hasattr(spec, "postprocess_spec") and spec.postprocess_spec:
+            render_params["_postprocess_spec"] = spec.postprocess_spec
+        if hasattr(spec, "brightness_floor"):
+            render_params["_brightness_floor"] = spec.brightness_floor
+
         img = engine.render_frame(
             effect=effect,
             sprites=sprites,
@@ -333,6 +339,12 @@ class FlexiblePipeline:
         # Pass custom palette to engine
         if spec.palette:
             render_params["_palette"] = spec.palette
+
+        # Pass postprocess spec and brightness floor to engine
+        if hasattr(spec, "postprocess_spec") and spec.postprocess_spec:
+            render_params["_postprocess_spec"] = spec.postprocess_spec
+        if hasattr(spec, "brightness_floor"):
+            render_params["_brightness_floor"] = spec.brightness_floor
 
         # 渲染每帧 (带参数漂移)
         total_frames = int(duration * fps)

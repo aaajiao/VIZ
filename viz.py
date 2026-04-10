@@ -197,6 +197,14 @@ def _validate_overrides(overrides):
                 f"Unknown mask '{overrides['mask_type']}', valid: {sorted(MASK_REGISTRY.keys())}"
             )
 
+    if "style" in overrides:
+        from procedural.style_presets import VALID_STYLES
+
+        if overrides["style"] not in VALID_STYLES:
+            errors.append(
+                f"Unknown style '{overrides['style']}', valid: {VALID_STYLES}"
+            )
+
     if "variant" in overrides:
         if not isinstance(overrides["variant"], str):
             errors.append(f"variant must be a string, got {type(overrides['variant']).__name__}")
@@ -317,6 +325,8 @@ def cmd_generate(args):
             _error_exit(f"Invalid --mask value: {e}")
     if args.variant:
         content_data["variant"] = args.variant
+    if args.style:
+        content_data["style"] = args.style
     if args.color_scheme:
         content_data["color_scheme"] = args.color_scheme
     if args.palette:
@@ -450,6 +460,22 @@ def cmd_generate(args):
         overrides["color_scheme"] = content["color_scheme"]
     if content.get("palette"):
         overrides["palette"] = content["palette"]
+
+    # Style preset resolution (after overrides dict is built, before pipeline)
+    style_name = content.get("style") or getattr(args, "style", None)
+    if style_name:
+        from procedural.style_presets import resolve_style, VALID_STYLES
+
+        if style_name not in VALID_STYLES:
+            content_warnings.append(
+                f"Unknown style '{style_name}', valid: {VALID_STYLES}. Ignored."
+            )
+        else:
+            style_overrides = resolve_style(style_name, seed, overrides)
+            # Merge: explicit overrides take priority over style
+            for k, v in style_overrides.items():
+                if k not in overrides:
+                    overrides[k] = v
 
     # Validate overrides against known values
     errors = _validate_overrides(overrides)
@@ -649,6 +675,7 @@ def cmd_capabilities(args):
     from procedural.masks import MASK_REGISTRY
     from procedural.effects.variants import VARIANT_REGISTRY
     from procedural.palette import ASCII_GRADIENTS, COLOR_SCHEMES
+    from procedural.style_presets import VALID_STYLES
     from lib.kaomoji_data import KAOMOJI_SINGLE
 
     capabilities = {
@@ -667,6 +694,7 @@ def cmd_capabilities(args):
             }
             for name, ev in sorted(VAD_ANCHORS.items())
         },
+        "styles": VALID_STYLES,
         "effects": sorted(EFFECT_REGISTRY.keys()),
         "kaomoji_moods": sorted(KAOMOJI_SINGLE.keys()),
         "color_schemes": sorted(COLOR_SCHEMES.keys()),
@@ -698,6 +726,7 @@ def cmd_capabilities(args):
             "emotion": "string - emotion name from emotions list",
             "vad": "string 'V,A,D' or [V,A,D] - direct VAD vector",
             "timestamp": "string - timestamp to display",
+            "style": "string - visual style preset (geometric|organic|retro|psychedelic|minimal|brutal|ethereal|glitch)",
             "effect": "string - background effect name",
             "seed": "int - reproducibility seed",
             "params": "dict - fine-grained effect parameters",
@@ -801,6 +830,8 @@ def build_parser():
     gen.add_argument("--composition", choices=sorted(_VALID_COMPOSITION_MODES), help="合成模式")
     gen.add_argument("--mask", help="遮罩类型+参数 (如 radial:center_x=0.5,radius=0.3)")
     gen.add_argument("--variant", help="强制效果变体名")
+    gen.add_argument("--style", type=str, default=None,
+        help="Visual style preset")
     gen.add_argument("--color-scheme", help="配色方案 (heat|rainbow|cool|matrix|plasma|ocean|fire|default)")
     gen.add_argument("--palette", nargs="*", help="自定义调色盘 (如 255,0,0 0,255,0 0,0,255)")
     gen.add_argument("--width", type=int, help="输出宽度 (120-3840, 默认 1080)")

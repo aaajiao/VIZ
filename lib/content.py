@@ -161,6 +161,8 @@ def make_content(data=None):
         "fps": fps,
         "variants": variants,
         "title": data.get("title", None),
+        # Style preset (middle layer between emotion-only and Director Mode)
+        "style": data.get("style", None),
         # Director mode fields (Path A)
         "transforms": data.get("transforms", None),
         "postfx": data.get("postfx", None),

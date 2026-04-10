@@ -70,6 +70,17 @@ Independent probability per effect. Applied to 160x160 buffer after rendering. 4
 | `color_shift` | hue_shift (0.05-0.25) | `drift_speed` | Hue rotation (drifting) |
 | `pixelate` | block_size (3-6) | `pulse_speed`, `pulse_amp` | Lower resolution blocks (pulsing) |
 
+## Post-Processing Filter Modes
+
+The final image pass supports a `filter` parameter that controls the sharpening/smoothing behavior applied after upscaling. Set via `params.filter` or `--filter` CLI arg.
+
+| Mode | Description |
+|------|-------------|
+| `sharpen` | Default. Enhances edges for crisp ASCII appearance |
+| `blur` | Soft/dreamy look, smooths pixel boundaries |
+| `detail` | Enhanced local contrast, brings out fine structure |
+| `none` | No post-processing filter, raw upscaled output |
+
 ## Spatial Masks (6, auto-selected)
 
 Control how two effects blend across different regions. All masks support `mask_anim_speed` param for GIF/video animation (0 = static, >0 = animated boundaries).

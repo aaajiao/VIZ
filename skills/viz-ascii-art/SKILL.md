@@ -21,13 +21,14 @@ echo '<JSON>' | viz generate --output-dir <dir>
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `emotion` | string | One of 26 emotions (run `viz capabilities` to list) |
+| `emotion` | string | One of 34 emotions (run `viz capabilities` to list) |
 | `headline` | string | Main text overlay |
 | `metrics` | list[str] | Data lines |
 | `body` | string | Body text (fallback for emotion inference) |
 | `title` | string | Title overlay |
 | `vad` | str/list | Direct VAD vector `[V,A,D]` each -1 to +1, bypasses emotion name |
 | `effect` | string | Background effect name |
+| `style` | string | Visual style preset (`geometric`/`organic`/`retro`/`psychedelic`/`minimal`/`brutal`/`ethereal`/`glitch`) |
 | `seed` | int | Reproducibility seed -- **vary it**, don't always use 42 |
 | `video` | bool | Output GIF animation |
 | `mp4` | bool | Also output MP4 (requires FFmpeg) |
@@ -66,8 +67,12 @@ Returns all available emotions, effects, gradients, color schemes, layouts, deco
 ## Quick Examples
 
 ```bash
-# Minimal
+# Minimal — each seed produces unique colors, effects, and composition
 echo '{"emotion":"joy"}' | viz generate --output-dir ./runs/joy
+
+# Style preset — lock visual character while keeping emotion direction
+echo '{"emotion":"joy","style":"geometric"}' | viz generate --output-dir ./runs/joy-geo
+echo '{"emotion":"joy","style":"psychedelic"}' | viz generate --output-dir ./runs/joy-psych
 
 # Market data
 echo '{"headline":"BTC $95K","emotion":"euphoria","metrics":["ETH: $4.2k"]}' | viz generate --output-dir ./runs/market
@@ -79,11 +84,21 @@ echo '{"emotion":"panic","video":true,"duration":3}' | viz generate --output-dir
 echo '{"emotion":"euphoria","effect":"plasma","variant":"warped","transforms":[{"type":"kaleidoscope","segments":6}],"postfx":[{"type":"vignette","strength":0.5}],"composition":"radial_masked"}' | viz generate --output-dir ./runs/director
 ```
 
+## Visual Diversity
+
+Every seed produces a unique visual: procedural palette, randomized effects, varied post-processing. To create distinct visuals:
+
+1. **Omit seed** — simplest. Each call generates completely fresh output
+2. **Use `style`** — consistent visual character with per-seed variation:
+   - `geometric` / `organic` / `retro` / `psychedelic` / `minimal` / `brutal` / `ethereal` / `glitch`
+3. **Director Mode** — override one or more dimensions (effect, gradient, transforms, postfx)
+
 ## References (load on demand)
 
 | File | When to load |
 |------|-------------|
-| **references/EMOTIONS.md** | Need VAD values for all 26 emotions or custom VAD usage |
+| **references/STYLES.md** | Need style preset details: what each style includes |
+| **references/EMOTIONS.md** | Need VAD values for all 34 emotions or custom VAD usage |
 | **references/EFFECTS.md** | Need effect parameters, ranges, or overlay/blend details |
 | **references/COMPOSITION.md** | Need Director Mode: transforms, postfx, masks, variants, deformation params |
 | **references/VISUAL_OPTIONS.md** | Need layouts, decorations, gradients, color schemes, vocabulary overrides |

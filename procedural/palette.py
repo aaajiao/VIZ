@@ -14,13 +14,17 @@ ASCII 梯度和颜色映射 - play.core/palette.js 移植
     color = value_to_color(0.5, 'heat')   # 返回 (r, g, b) 元组
 """
 
+import colorsys
 import math
+import random
 from .core.mathx import clamp
 
 __all__ = [
     "ASCII_GRADIENTS",
     "COLOR_SCHEMES",
     "char_at_value",
+    "generate_palette",
+    "resolve_color",
     "value_to_color",
     "value_to_color_continuous",
     "value_to_color_from_palette",
@@ -198,6 +202,90 @@ def value_to_color_continuous(value, warmth=0.5, saturation=1.0):
 
     r, g, b = colorsys.hsv_to_rgb(hue, eff_sat, value)
     return (int(r * 255), int(g * 255), int(b * 255))
+
+
+def generate_palette(seed, warmth=0.5, energy=0.5, saturation=0.8):
+    """生成程序化调色板 - Generate procedural palette
+
+    从种子生成唯一的 16 色调色板，色温/能量/饱和度驱动色相分布和明度曲线。
+    每个种子产生视觉上独特但内部和谐的调色板。
+
+    Args:
+        seed: 随机种子
+        warmth: 色温偏向 (0=冷色蓝青紫, 0.5=全光谱, 1=暖色红橙黄)
+        energy: 能量 (影响饱和度抖动)
+        saturation: 基础饱和度 (0-1)
+
+    Returns:
+        list: 16 个 (r, g, b) 元组 (0-255)，从暗到亮单调递增
+    """
+    rng = random.Random(seed ^ 0x7A1E77E)
+
+    # --- 生成 4-6 个色相锚点，受 warmth 偏向 ---
+    num_anchors = rng.randint(4, 6)
+    hue_center = (1.0 - warmth) * 0.6
+    hue_spread = 0.15 + (1 - abs(warmth - 0.5) * 2) * 0.35
+    anchors = sorted(
+        (hue_center + rng.gauss(0, hue_spread)) % 1.0
+        for _ in range(num_anchors)
+    )
+
+    # --- 为每个 t 位置插值色相 ---
+    def _interp_hue(t):
+        """在锚点之间按 t 位置线性插值色相"""
+        n = len(anchors)
+        # 每个锚点均匀分布在 [0, 1] 的 t 空间
+        pos = t * (n - 1)
+        idx = int(pos)
+        if idx >= n - 1:
+            return anchors[-1]
+        frac = pos - idx
+        h0 = anchors[idx]
+        h1 = anchors[idx + 1]
+        # 取最短路径插值 (色相是环形的)
+        diff = h1 - h0
+        if diff > 0.5:
+            diff -= 1.0
+        elif diff < -0.5:
+            diff += 1.0
+        return (h0 + frac * diff) % 1.0
+
+    # --- 生成 16 色 ---
+    palette = []
+    for i in range(16):
+        t = i / 15.0
+        lightness = 0.05 + t * 0.90
+        hue = _interp_hue(t)
+        sat_var = rng.uniform(-0.08, 0.08) * energy
+        sat = clamp(saturation + sat_var, 0.0, 1.0)
+        r, g, b = colorsys.hls_to_rgb(hue, lightness, sat)
+        palette.append((int(r * 255), int(g * 255), int(b * 255)))
+
+    return palette
+
+
+def resolve_color(value, palette=None, warmth=None, saturation=None,
+                  color_scheme=None):
+    """统一颜色入口 - Unified color resolution with three-level fallback
+
+    三级回退: 自定义调色盘 → 连续色温 → 命名方案。
+
+    Args:
+        value: 0.0 到 1.0 的像素值
+        palette: 自定义 RGB 调色盘 (优先级最高)
+        warmth: 连续色温 (优先级次之)
+        saturation: 饱和度 (配合 warmth 使用)
+        color_scheme: 命名方案 (回退)
+
+    Returns:
+        tuple: (r, g, b) 元组，0-255
+    """
+    value = clamp(value, 0.0, 1.0)
+    if palette:
+        return value_to_color_from_palette(value, palette)
+    if warmth is not None:
+        return value_to_color_continuous(value, warmth, saturation or 1.0)
+    return value_to_color(value, color_scheme or "heat")
 
 
 # ==================== 颜色映射实现 ====================

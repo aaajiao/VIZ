@@ -122,23 +122,39 @@ class Engine:
             for _ in range(height)
         ]
 
-    def _postprocess(self, image):
+    def _postprocess(self, image, spec=None):
         """
         后处理 - Apply Post-Processing Effects
 
-        可选地应用锐化和对比度增强。
+        支持多种滤镜模式: sharpen / blur / detail / none。
+        对比度和亮度从 spec 或实例默认值获取。
 
         Args:
             image: PIL Image 对象
+            spec: 可选后处理规格 dict (filter_mode, contrast, brightness_adjust)
 
         Returns:
             处理后的 PIL Image
         """
-        if self.sharpen:
-            image = image.filter(ImageFilter.SHARPEN)
+        if spec is None:
+            spec = {}
 
-        if self.contrast != 1.0:
-            image = ImageEnhance.Contrast(image).enhance(self.contrast)
+        filter_mode = spec.get("filter_mode", "sharpen" if self.sharpen else "none")
+        if filter_mode == "sharpen":
+            image = image.filter(ImageFilter.SHARPEN)
+        elif filter_mode == "blur":
+            blur_radius = spec.get("blur_radius", 1.0)
+            image = image.filter(ImageFilter.GaussianBlur(radius=blur_radius))
+        elif filter_mode == "detail":
+            image = image.filter(ImageFilter.DETAIL)
+
+        contrast = spec.get("contrast", self.contrast)
+        if contrast != 1.0:
+            image = ImageEnhance.Contrast(image).enhance(contrast)
+
+        brightness_adjust = spec.get("brightness_adjust", 1.0)
+        if brightness_adjust != 1.0:
+            image = ImageEnhance.Brightness(image).enhance(brightness_adjust)
 
         return image
 
@@ -273,7 +289,8 @@ class Engine:
         # 随机抖动: 同一 seed 一致，不同 seed 有变化
         _jitter_rng = random.Random(seed ^ 0xB817)
         dim_factor = base_factor + _jitter_rng.uniform(-0.12, 0.12)
-        dim_factor = max(0.45, min(1.0, dim_factor))
+        brightness_floor = max(0.08, params.get("_brightness_floor", 0.20))
+        dim_factor = max(brightness_floor, min(1.0, dim_factor))
 
         if dim_factor < 0.98:
             for row in buffer:
@@ -299,8 +316,9 @@ class Engine:
         for sprite in sprites:
             sprite.render(img, time=time)
 
-        # 9. 后处理 (sharpen + contrast)
-        img = self._postprocess(img)
+        # 9. 后处理 (多模式: sharpen/blur/detail/none + contrast + brightness)
+        _pp_spec = params.get("_postprocess_spec", {})
+        img = self._postprocess(img, spec=_pp_spec)
 
         return img
 

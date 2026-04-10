@@ -2,6 +2,31 @@
 
 Complete examples for common use cases.
 
+## Diversity & Style Examples
+
+### Same Emotion, Different Seeds -- All Unique
+```json
+{"emotion": "joy", "seed": 1}
+{"emotion": "joy", "seed": 2}
+{"emotion": "joy", "seed": 3}
+```
+Each produces completely different colors, effects, and composition.
+
+### Style Presets
+```json
+{"emotion": "euphoria", "style": "geometric"}
+{"emotion": "euphoria", "style": "psychedelic"}
+{"emotion": "euphoria", "style": "ethereal"}
+```
+
+### Style + Director Mode Override
+```json
+{"emotion": "panic", "style": "glitch", "color_scheme": "fire"}
+```
+Style picks effects and transforms; explicit `color_scheme` overrides the style's color choice.
+
+---
+
 ## Market Visualizations
 
 ### Bull Market Celebration

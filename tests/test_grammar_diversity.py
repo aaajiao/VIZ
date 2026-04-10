@@ -125,14 +125,19 @@ class TestDomainTransforms:
 
 
 class TestPostFXGuarantee:
-    """B4: PostFX chain should always have at least 1 effect"""
+    """B4: PostFX chain allows empty (no postfx = valid style)"""
 
-    def test_postfx_never_empty(self):
-        """PostFX chain should never be empty"""
-        for seed in range(200):
+    def test_postfx_mostly_present(self):
+        """PostFX chain should be present in most renders (>70%)"""
+        has_fx = 0
+        total = 200
+        for seed in range(total):
             grammar = VisualGrammar(seed=seed)
-            spec = grammar.generate(energy=0.1, structure=0.1, intensity=0.1)
-            assert len(spec.postfx_chain) >= 1, f"Seed {seed}: empty postfx chain"
+            spec = grammar.generate(energy=0.5, structure=0.5, intensity=0.5)
+            if spec.postfx_chain:
+                has_fx += 1
+        rate = has_fx / total
+        assert rate > 0.70, f"PostFX rate {rate:.1%} too low (expected >70%)"
 
     def test_postfx_variety(self):
         """Multiple postfx types should appear"""
@@ -199,3 +204,79 @@ class TestCompositionModeBalance:
         expected = {"blend", "masked_split", "radial_masked", "noise_masked", "sdf_masked"}
         missing = expected - modes
         assert not missing, f"Missing composition modes: {missing}"
+
+
+class TestEffectDistributionTighter:
+    """After the diversity overhaul, distribution should be much flatter"""
+
+    def test_no_single_effect_over_12_percent(self):
+        """With near-uniform selection, no effect should exceed 12%"""
+        counter = Counter()
+        for seed in range(500):
+            grammar = VisualGrammar(seed=seed)
+            spec = grammar.generate(energy=0.5, warmth=0.5, structure=0.5)
+            counter[spec.bg_effect] += 1
+        total = sum(counter.values())
+        for effect, count in counter.items():
+            ratio = count / total
+            assert ratio < 0.12, f"{effect} appeared {ratio:.1%} (>12%) in 500 seeds"
+
+    def test_at_least_14_effects_appear(self):
+        """Near-uniform selection should produce at least 14 distinct effects"""
+        effects = set()
+        for seed in range(200):
+            grammar = VisualGrammar(seed=seed)
+            spec = grammar.generate(energy=0.5, warmth=0.5, structure=0.5)
+            effects.add(spec.bg_effect)
+        assert len(effects) >= 14, f"Only {len(effects)} distinct effects in 200 runs"
+
+
+class TestProceduralPaletteInGrammar:
+    """Grammar should always generate a procedural palette"""
+
+    def test_palette_always_generated(self):
+        """Every grammar.generate() should produce a non-None palette"""
+        for seed in range(50):
+            grammar = VisualGrammar(seed=seed)
+            spec = grammar.generate(energy=0.5, warmth=0.5)
+            assert spec.palette is not None, f"Seed {seed}: palette is None"
+            assert len(spec.palette) == 16, f"Seed {seed}: palette has {len(spec.palette)} colors"
+
+    def test_different_seeds_different_palettes(self):
+        """Different seeds should produce different palettes"""
+        palettes = set()
+        for seed in range(50):
+            grammar = VisualGrammar(seed=seed)
+            spec = grammar.generate(energy=0.5, warmth=0.5)
+            palettes.add(tuple(tuple(c) for c in spec.palette))
+        assert len(palettes) >= 45, f"Only {len(palettes)} unique palettes in 50 seeds"
+
+
+class TestOverlayMixFullRange:
+    """overlay_mix should span a wider range"""
+
+    def test_overlay_mix_can_exceed_0_7(self):
+        """At least one seed should produce overlay_mix > 0.7"""
+        found_high = False
+        for seed in range(200):
+            grammar = VisualGrammar(seed=seed)
+            spec = grammar.generate(energy=0.7)
+            if spec.overlay_mix and spec.overlay_mix > 0.7:
+                found_high = True
+                break
+        assert found_high, "No overlay_mix > 0.7 found in 200 seeds"
+
+
+class TestPostfxChainLengthDistribution:
+    """PostFX chain should have varied lengths including 0"""
+
+    def test_all_chain_lengths_appear(self):
+        """Chain lengths 0, 1, 2, 3 should all appear"""
+        lengths = set()
+        for seed in range(200):
+            grammar = VisualGrammar(seed=seed)
+            spec = grammar.generate(energy=0.5, structure=0.5, intensity=0.5)
+            lengths.add(len(spec.postfx_chain))
+        assert 0 in lengths, "Chain length 0 never appeared"
+        assert 1 in lengths, "Chain length 1 never appeared"
+        assert 2 in lengths, "Chain length 2 never appeared"

@@ -41,7 +41,7 @@ from procedural.types import Context, Cell, Buffer
 from procedural.core.vec import Vec2, dot, length, sub
 from procedural.core.mathx import clamp, map_range, mix
 from procedural.core.noise import ValueNoise
-from procedural.palette import char_at_value, value_to_color, value_to_color_continuous
+from procedural.palette import char_at_value, value_to_color, value_to_color_continuous, resolve_color
 from .base import BaseEffect
 
 __all__ = ["PlasmaEffect"]
@@ -121,6 +121,7 @@ class PlasmaEffect(BaseEffect):
             "aspect": aspect,
             "warmth": warmth,
             "saturation": saturation,
+            "_palette": ctx.params.get("_palette"),
             "self_warp": self_warp,
             "noise_injection": noise_injection,
             "noise_fn": noise_fn,
@@ -218,14 +219,13 @@ class PlasmaEffect(BaseEffect):
         # === 映射到颜色 ===
         # 使用连续颜色空间 (当 warmth/saturation 可用时) 或 plasma 方案
         color_value = (value + t * 0.05 + color_phase) % 1.0
-        if state["warmth"] is not None:
-            color = value_to_color_continuous(
-                color_value,
-                warmth=state["warmth"],
-                saturation=state.get("saturation", 1.0),
-            )
-        else:
-            color = value_to_color(color_value, "plasma")
+        color = resolve_color(
+            color_value,
+            palette=state.get("_palette"),
+            warmth=state.get("warmth"),
+            saturation=state.get("saturation"),
+            color_scheme=state.get("color_scheme", "plasma"),
+        )
 
         # 返回 Cell
         return Cell(

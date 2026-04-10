@@ -33,7 +33,7 @@ from typing import Any
 from procedural.types import Context, Cell, Buffer
 from procedural.core.mathx import clamp, fract
 from procedural.core.noise import ValueNoise
-from procedural.palette import value_to_color, value_to_color_continuous
+from procedural.palette import value_to_color, value_to_color_continuous, resolve_color
 from .base import BaseEffect
 
 __all__ = ["WobblyEffect"]
@@ -88,6 +88,7 @@ class WobblyEffect(BaseEffect):
             "noise_final": noise_final,
             "warmth": warmth,
             "saturation": saturation,
+            "_palette": ctx.params.get("_palette"),
         }
 
     def main(self, x: int, y: int, ctx: Context, state: dict[str, Any]) -> Cell:
@@ -129,14 +130,13 @@ class WobblyEffect(BaseEffect):
 
         # Color mapping
         color_value = fract(value + t * 0.04)
-        if state["warmth"] is not None:
-            color = value_to_color_continuous(
-                color_value,
-                warmth=state["warmth"],
-                saturation=state.get("saturation", 1.0),
-            )
-        else:
-            color = value_to_color(color_value, "ocean")
+        color = resolve_color(
+            color_value,
+            palette=state.get("_palette"),
+            warmth=state.get("warmth"),
+            saturation=state.get("saturation"),
+            color_scheme=state.get("color_scheme", "ocean"),
+        )
 
         return Cell(char_idx=char_idx, fg=color, bg=None)
 

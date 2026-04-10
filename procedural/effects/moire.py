@@ -39,7 +39,7 @@ from typing import Any
 from procedural.types import Context, Cell, Buffer
 from procedural.core.mathx import clamp
 from procedural.core.noise import ValueNoise
-from procedural.palette import value_to_color, value_to_color_continuous
+from procedural.palette import value_to_color, value_to_color_continuous, resolve_color
 from .base import BaseEffect
 
 __all__ = ["MoireEffect"]
@@ -146,6 +146,7 @@ class MoireEffect(BaseEffect):
             "color_scheme": color_scheme,
             "warmth": warmth,
             "saturation": saturation,
+            "_palette": ctx.params.get("_palette"),
             "distortion": distortion,
             "noise_fn": noise_fn,
             "multi_center": multi_center,
@@ -256,14 +257,13 @@ class MoireEffect(BaseEffect):
         char_idx = int(clamp(char_idx, 0, 9))
 
         # === 映射到颜色 ===
-        if state.get("warmth") is not None:
-            color = value_to_color_continuous(
-                value,
-                warmth=state["warmth"],
-                saturation=state.get("saturation", 1.0),
-            )
-        else:
-            color = value_to_color(value, color_scheme)
+        color = resolve_color(
+            value,
+            palette=state.get("_palette"),
+            warmth=state.get("warmth"),
+            saturation=state.get("saturation"),
+            color_scheme=state.get("color_scheme", "rainbow"),
+        )
 
         # 返回 Cell
         return Cell(

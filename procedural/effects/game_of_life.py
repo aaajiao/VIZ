@@ -33,7 +33,7 @@ from typing import Any
 from procedural.types import Context, Cell, Buffer
 from procedural.core.mathx import clamp
 from procedural.core.noise import ValueNoise
-from procedural.palette import value_to_color, value_to_color_continuous
+from procedural.palette import value_to_color, value_to_color_continuous, resolve_color
 from .base import BaseEffect
 
 __all__ = ["GameOfLifeEffect"]
@@ -159,6 +159,7 @@ class GameOfLifeEffect(BaseEffect):
             "age": self._age,
             "warmth": warmth,
             "saturation": saturation,
+            "_palette": ctx.params.get("_palette"),
         }
 
     def main(self, x: int, y: int, ctx: Context, state: dict[str, Any]) -> Cell:
@@ -186,14 +187,13 @@ class GameOfLifeEffect(BaseEffect):
             value = 0.4 + 0.6 * age_val
             char_idx = int(clamp(value * 9, 0, 9))
 
-            if state["warmth"] is not None:
-                color = value_to_color_continuous(
-                    value,
-                    warmth=state["warmth"],
-                    saturation=state.get("saturation", 1.0),
-                )
-            else:
-                color = value_to_color(value, "matrix")
+            color = resolve_color(
+                value,
+                palette=state.get("_palette"),
+                warmth=state.get("warmth"),
+                saturation=state.get("saturation"),
+                color_scheme=state.get("color_scheme", "matrix"),
+            )
         else:
             # Dead cell: dim glow based on nearby alive cells
             glow = 0
@@ -209,14 +209,13 @@ class GameOfLifeEffect(BaseEffect):
             if glow > 0:
                 glow_val = clamp(glow / 8.0, 0.0, 0.15)
                 char_idx = 0
-                if state["warmth"] is not None:
-                    color = value_to_color_continuous(
-                        glow_val,
-                        warmth=state["warmth"],
-                        saturation=state.get("saturation", 1.0),
-                    )
-                else:
-                    color = value_to_color(glow_val, "matrix")
+                color = resolve_color(
+                    glow_val,
+                    palette=state.get("_palette"),
+                    warmth=state.get("warmth"),
+                    saturation=state.get("saturation"),
+                    color_scheme=state.get("color_scheme", "matrix"),
+                )
             else:
                 char_idx = 0
                 color = (0, 0, 0)

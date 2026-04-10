@@ -94,6 +94,8 @@ class SceneSpec:
     sharpen: bool = True
     contrast: float = 1.2
     gradient_name: str = "classic"
+    postprocess_spec: dict[str, Any] = field(default_factory=dict)
+    brightness_floor: float = 0.20
 
     # 粒子字符
     particle_chars: str = "01·"
@@ -183,7 +185,7 @@ class VisualGrammar:
                 spec.overlay_effect, energy * 0.7, structure
             )
             spec.overlay_blend = self._choose_blend_mode(energy)
-            spec.overlay_mix = self.rng.uniform(0.10, 0.65)
+            spec.overlay_mix = self.rng.uniform(0.05, 0.95)
 
         # === 域变换 ===
         spec.domain_transforms = self._choose_domain_transforms(energy, structure)
@@ -227,9 +229,27 @@ class VisualGrammar:
         # === ASCII 梯度 ===
         spec.gradient_name = self._choose_gradient(energy, structure)
 
-        # === 后处理 ===
-        spec.sharpen = self.rng.random() < 0.7
-        spec.contrast = 1.0 + intensity * 0.4
+        # === 后处理 — 随机选择滤镜模式，拓宽对比度范围 ===
+        filter_mode = self.rng.choice(["sharpen", "sharpen", "none", "blur", "detail"])
+        spec.sharpen = (filter_mode == "sharpen")
+        spec.contrast = _clamp(0.7 + self.rng.uniform(0, 1.1), 0.7, 1.8)
+        spec.postprocess_spec = {"filter_mode": filter_mode, "contrast": spec.contrast}
+        if filter_mode == "blur":
+            spec.postprocess_spec["blur_radius"] = self.rng.uniform(0.5, 2.0)
+        # 极端情绪微调亮度
+        if valence < -0.5 and arousal < -0.3:
+            spec.postprocess_spec["brightness_adjust"] = self.rng.uniform(0.75, 0.92)
+        elif valence > 0.7 and arousal > 0.5:
+            spec.postprocess_spec["brightness_adjust"] = self.rng.uniform(1.03, 1.15)
+
+        # === 亮度地板 (emotion 驱动动态范围) ===
+        if valence < -0.3:
+            floor_base = 0.10 + (1 + valence) * 0.12
+        else:
+            floor_base = 0.18 + valence * 0.08
+        spec.brightness_floor = _clamp(
+            floor_base + self.rng.uniform(-0.05, 0.05), 0.08, 0.40
+        )
 
         # === 粒子字符 ===
         spec.particle_chars = self._choose_particle_chars(warmth, energy)
@@ -240,12 +260,23 @@ class VisualGrammar:
         # === 颜文字情绪 ===
         spec.kaomoji_mood = self._choose_kaomoji_mood(valence, arousal, dominance)
 
-        # === 颜色方案 ===
-        spec.color_scheme = self._choose_color_scheme(warmth, energy)
+        # === 程序化调色板 (每个 seed 独特配色) ===
+        try:
+            from procedural.palette import generate_palette
+        except ImportError:
+            from viz.procedural.palette import generate_palette
+        palette_seed = self.rng.randint(0, 0xFFFFFF)
+        spec.palette = generate_palette(palette_seed, warmth, energy, spec.saturation)
+        spec.color_scheme = "heat"  # 回退默认，仅 Director Mode 显式指定时使用
 
-        # === 背景填充 (第二渲染通道) ===
+        # === 背景填充 (第二渲染通道，独立调色板) ===
         spec.bg_fill_spec = self._choose_bg_fill_spec(
             energy, structure, warmth, spec.bg_effect
+        )
+        # bg_fill 用独立的程序化调色板
+        bg_palette_seed = self.rng.randint(0, 0xFFFFFF)
+        spec.bg_fill_spec["palette"] = generate_palette(
+            bg_palette_seed, warmth, energy * 0.7, spec.saturation * 0.8
         )
         spec.bg_fill_spec["color_scheme"] = spec.color_scheme
 
@@ -255,77 +286,49 @@ class VisualGrammar:
 
     def _choose_bg_effect(self, energy: float, structure: float) -> str:
         """
-        选择背景效果
+        选择背景效果 — 近均匀随机，情绪仅微偏
 
-        高能量偏向 flame/plasma，高结构偏向 moire/sdf_shapes，
-        低能量偏向 noise_field/wave。
+        17 种效果接近等概率。energy/structure 只提供 ≤20% 的轻微倾向。
         """
-        weights = {
-            "plasma": 0.28 + energy * 0.12,
-            "wave": 0.28 + (1 - energy) * 0.12,
-            "flame": 0.25 + energy * 0.15,
-            "moire": 0.27 + structure * 0.13,
-            "noise_field": 0.28 + (1 - energy) * 0.12,
-            "sdf_shapes": 0.25 + structure * 0.13,
-            "cppn": 0.27,
-            "ten_print": 0.27 + structure * 0.13,
-            "game_of_life": 0.26 + energy * 0.12,
-            "donut": 0.25 + structure * 0.10,
-            "mod_xor": 0.26 + structure * 0.13,
-            "wireframe_cube": 0.25 + structure * 0.10,
-            "chroma_spiral": 0.26 + energy * 0.12,
-            "wobbly": 0.27 + (1 - structure) * 0.12,
-            "sand_game": 0.25 + (1 - energy) * 0.10,
-            "slime_dish": 0.25 + (1 - energy) * 0.10,
-            "dyna": 0.25 + energy * 0.12,
-        }
-        return self._weighted_choice(weights)
+        try:
+            from procedural.effects import EFFECT_REGISTRY
+        except ImportError:
+            from viz.procedural.effects import EFFECT_REGISTRY
+        effects = sorted(EFFECT_REGISTRY.keys())
+        boost: dict[str, float] = {}
+        if energy > 0.6:
+            for e in ["flame", "chroma_spiral", "dyna", "game_of_life"]:
+                boost[e] = 0.15
+        elif energy < 0.4:
+            for e in ["noise_field", "wave", "wobbly", "sand_game", "slime_dish"]:
+                boost[e] = 0.15
+        if structure > 0.6:
+            for e in ["sdf_shapes", "wireframe_cube", "mod_xor", "ten_print", "moire"]:
+                boost[e] = 0.12
+        elif structure < 0.4:
+            for e in ["wobbly", "noise_field", "cppn", "plasma"]:
+                boost[e] = 0.12
+        return self._biased_choice(effects, boost)
 
     def _choose_overlay_effect(self, bg_effect: str, energy: float) -> str:
         """
-        选择叠加效果 (避免与背景相同)
+        选择叠加效果 — 从全部效果中均匀选择 (排除与背景相同的)
         """
-        candidates = {
-            "plasma": 0.3,
-            "wave": 0.3,
-            "noise_field": 0.4,
-            "moire": 0.2,
-            "cppn": 0.3,
-            # 适合叠加的新效果
-            "ten_print": 0.25,
-            "mod_xor": 0.3,
-            "chroma_spiral": 0.25,
-            "wobbly": 0.2,
-            "dyna": 0.2,
-        }
-        # 移除与背景相同的效果
-        candidates.pop(bg_effect, None)
-        return self._weighted_choice(candidates)
+        try:
+            from procedural.effects import EFFECT_REGISTRY
+        except ImportError:
+            from viz.procedural.effects import EFFECT_REGISTRY
+        candidates = [e for e in sorted(EFFECT_REGISTRY.keys()) if e != bg_effect]
+        return self.rng.choice(candidates)
 
     def _choose_blend_mode(self, energy: float) -> str:
-        """选择混合模式"""
-        weights = {
-            "ADD": 0.3 + energy * 0.3,
-            "SCREEN": 0.3,
-            "OVERLAY": 0.2 + energy * 0.2,
-            "MULTIPLY": 0.2 + (1 - energy) * 0.2,
-        }
-        return self._weighted_choice(weights)
+        """选择混合模式 — 均匀随机"""
+        return self.rng.choice(["ADD", "SCREEN", "OVERLAY", "MULTIPLY"])
 
     def _choose_layout(self, structure: float) -> str:
-        """
-        选择布局算法
-
-        高结构 → grid/preset, 低结构 → scatter/spiral
-        """
-        weights = {
-            "random_scatter": 0.3 + (1 - structure) * 0.3,
-            "grid_jitter": 0.2 + structure * 0.4,
-            "spiral": 0.3,
-            "force_directed": 0.2,
-            "preset": 0.2 + structure * 0.3,
-        }
-        return self._weighted_choice(weights)
+        """选择布局算法 — 均匀随机"""
+        return self.rng.choice(["random_scatter", "grid_jitter", "spiral",
+                                "force_directed", "preset"])
 
     def _choose_kaomoji_count(self, energy: float, structure: float) -> int:
         """选择颜文字数量"""
@@ -374,19 +377,9 @@ class VisualGrammar:
         return anims
 
     def _choose_decoration_style(self, structure: float) -> str:
-        """选择装饰风格 (含 box-drawing 边框/网格/电路风格)"""
-        weights = {
-            "corners": 0.20 + structure * 0.15,
-            "edges": 0.12 + structure * 0.12,
-            "scattered": 0.20 + (1 - structure) * 0.15,
-            "minimal": 0.12,
-            "none": 0.06,
-            # 新增 box-drawing 装饰风格
-            "frame": 0.10 + structure * 0.20,
-            "grid_lines": 0.06 + structure * 0.15,
-            "circuit": 0.08 + (1 - structure) * 0.08,
-        }
-        return self._weighted_choice(weights)
+        """选择装饰风格 — 均匀随机"""
+        return self.rng.choice(["corners", "edges", "scattered", "minimal",
+                                "none", "frame", "grid_lines", "circuit"])
 
     def _choose_decoration_chars(self, energy: float, warmth: float) -> list[str]:
         """选择装饰字符 (含 box-drawing 和 semigraphic 字符)"""
@@ -519,93 +512,12 @@ class VisualGrammar:
         return self.rng.choice(selected_pool)
 
     def _choose_gradient(self, energy: float, structure: float) -> str:
-        """选择 ASCII 梯度 (含 box-drawing、几何、排版梯度)"""
-        weights = {
-            # 经典
-            "classic": 0.06,
-            "default": 0.03,
-            "smooth": 0.06,
-            "matrix": 0.04 + energy * 0.06,
-            "plasma": 0.03 + energy * 0.08,
-            # 方块填充
-            "blocks": 0.05 + structure * 0.08,
-            "blocks_fine": 0.04 + structure * 0.06,
-            "blocks_ultra": 0.02 + structure * 0.04,
-            "glitch": 0.03 + energy * 0.10,
-            "vbar": 0.04 + structure * 0.06,
-            "hbar": 0.04 + structure * 0.06,
-            "quadrant": 0.03 + energy * 0.05,
-            "halves": 0.02 + energy * 0.04,
-            # Box-drawing
-            "box_density": 0.03 + structure * 0.06,
-            "box_vertical": 0.02 + structure * 0.05,
-            "box_cross": 0.02 + structure * 0.05 + energy * 0.04,
-            "box_thin": 0.02 + structure * 0.05,
-            "box_thick": 0.02 + structure * 0.04 + energy * 0.04,
-            "box_double": 0.02 + structure * 0.06,
-            "box_rounded": 0.02 + (1 - energy) * 0.04,
-            "box_weight": 0.02 + structure * 0.04,
-            "diagonal": 0.03 + energy * 0.06,
-            "circuit": 0.02 + structure * 0.06 + energy * 0.04,
-            # 几何/点阵
-            "dots_density": 0.03 + (1 - energy) * 0.05,
-            "geometric": 0.03 + structure * 0.05,
-            "braille_density": 0.02 + (1 - structure) * 0.04,
-            "circles": 0.03 + (1 - structure) * 0.05,
-            "circles_half": 0.02 + (1 - structure) * 0.03,
-            "circles_arc": 0.02 + (1 - energy) * 0.03,
-            "squares": 0.02 + structure * 0.04,
-            "diamonds": 0.02 + structure * 0.03,
-            "triangles": 0.02 + energy * 0.03,
-            "quarters_geo": 0.02 + structure * 0.03,
-            "squares_fill": 0.02 + structure * 0.04,
-            "arrows_sm": 0.02 + energy * 0.04,
-            "arrows_lg": 0.02 + energy * 0.05,
-            # 文字/排版
-            "punctuation": 0.02 + (1 - energy) * 0.03,
-            "editorial": 0.02 + (1 - energy) * 0.04,
-            "math": 0.02 + energy * 0.03,
-            "greek": 0.02 + energy * 0.03,
-            "quotes": 0.02 + (1 - structure) * 0.03,
-            "digits": 0.02 + energy * 0.03,
-            # 混合
-            "tech": 0.03 + energy * 0.04,
-            "cyber": 0.02 + energy * 0.05,
-            "organic": 0.03 + (1 - structure) * 0.05,
-            "noise": 0.02 + energy * 0.04,
-            # --- 之前遗漏的 box-drawing 复杂组合 ---
-            "box_thin_corner": 0.02 + structure * 0.04,
-            "box_thick_corner": 0.02 + structure * 0.04 + energy * 0.03,
-            "box_double_corner": 0.02 + structure * 0.05,
-            "box_mixed_dh": 0.02 + structure * 0.04,
-            "box_mixed_dv": 0.02 + structure * 0.04,
-            "box_mixed_a": 0.02 + structure * 0.03 + energy * 0.03,
-            "box_mixed_b": 0.02 + structure * 0.03,
-            "box_complex_a": 0.02 + structure * 0.05 + energy * 0.04,
-            "box_complex_b": 0.02 + structure * 0.04 + energy * 0.03,
-            "box_complex_c": 0.02 + structure * 0.04,
-            "box_ends": 0.02 + structure * 0.03,
-            # 遗漏的几何
-            "geo_misc": 0.02 + energy * 0.03,
-            # 遗漏的排版
-            "math_rel": 0.02 + structure * 0.03,
-            "brackets": 0.02 + (1 - energy) * 0.03,
-            "currency": 0.02,
-            "symbols": 0.02 + (1 - energy) * 0.02,
-            "superscript": 0.02,
-            "ligature": 0.02 + (1 - structure) * 0.03,
-            "diacritics": 0.02 + (1 - structure) * 0.02,
-            "alpha_lower": 0.02 + (1 - structure) * 0.03,
-            "alpha_upper": 0.02 + energy * 0.03,
-            # --- 新增类别 ---
-            "stars_density": 0.02 + (1 - structure) * 0.04,
-            "sparkles": 0.02 + (1 - structure) * 0.03,
-            "arrows_flow": 0.02 + energy * 0.05,
-            "arrows_double": 0.02 + energy * 0.04,
-            "cp437_retro": 0.02 + (1 - structure) * 0.03,
-            "misc_symbols": 0.02,
-        }
-        return self._weighted_choice(weights)
+        """选择 ASCII 梯度 — 从全部 73 种中均匀随机"""
+        try:
+            from procedural.palette import ASCII_GRADIENTS
+        except ImportError:
+            from viz.procedural.palette import ASCII_GRADIENTS
+        return self.rng.choice(sorted(ASCII_GRADIENTS.keys()))
 
     def _choose_particle_chars(self, warmth: float, energy: float) -> str:
         """选择粒子字符 (含 box-drawing 和 semigraphic 字符)"""
@@ -1187,65 +1099,53 @@ class VisualGrammar:
     def _choose_domain_transforms(
         self, energy: float, structure: float
     ) -> list[dict[str, Any]]:
-        """选择域变换 - Choose domain transforms"""
+        """选择域变换 — 自由叠加，从全部 9 种中均匀选取
+
+        变换数量 0-3 随机，每种变换的参数从连续空间生成。
+        """
+        all_types = ["mirror_x", "mirror_y", "mirror_quad", "kaleidoscope",
+                     "tile", "spiral_warp", "rotate", "zoom", "polar_remap"]
+        # 变换数量: 0-3
+        max_count = self.rng.choices([0, 1, 2, 3], weights=[20, 35, 30, 15])[0]
+        self.rng.shuffle(all_types)
         transforms: list[dict[str, Any]] = []
+        for t_type in all_types[:max_count]:
+            transforms.append(self._generate_transform_params(t_type, energy))
+        return transforms
 
-        # Mirror symmetry: 30-55% chance (higher with structure)
-        mirror_chance = 0.30 + structure * 0.25
-        if self.rng.random() < mirror_chance:
-            mirror_type = self._weighted_choice({
-                "mirror_x": 0.3,
-                "mirror_y": 0.3,
-                "mirror_quad": 0.2,
-                "kaleidoscope": 0.2,
-            })
-            if mirror_type == "kaleidoscope":
-                transforms.append({
-                    "type": "kaleidoscope",
-                    "segments": self.rng.choice([3, 4, 5, 6, 8]),
-                })
-            else:
-                transforms.append({"type": mirror_type})
-
-        # Tiling: 20-40%
-        if self.rng.random() < 0.20 + structure * 0.20:
-            transforms.append({
+    def _generate_transform_params(self, t_type: str, energy: float) -> dict[str, Any]:
+        """为单个域变换生成随机参数"""
+        if t_type == "kaleidoscope":
+            return {
+                "type": "kaleidoscope",
+                "segments": self.rng.choice([3, 4, 5, 6, 8, 10, 12]),
+            }
+        elif t_type == "tile":
+            return {
                 "type": "tile",
                 "cols": self.rng.choice([2, 3, 4]),
                 "rows": self.rng.choice([2, 3, 4]),
-            })
-
-        # Spiral warp: 15-35%
-        if self.rng.random() < 0.15 + energy * 0.20:
-            twist_base = self.rng.uniform(0.3, 1.5)
+            }
+        elif t_type == "spiral_warp":
+            twist_base = self.rng.uniform(0.2, 2.0)
             twist_val: Any = twist_base
             if energy > 0.3 and self.rng.random() < 0.6:
                 twist_val = {
                     "base": twist_base, "speed": 0.1 + energy * 0.3,
                     "mode": "linear",
                 }
-            transforms.append({
-                "type": "spiral_warp",
-                "twist": twist_val,
-            })
-
-        # Rotation: 25%
-        if self.rng.random() < 0.25:
-            angle_base = self.rng.uniform(-0.5, 0.5)
+            return {"type": "spiral_warp", "twist": twist_val}
+        elif t_type == "rotate":
+            angle_base = self.rng.uniform(-1.0, 1.0)
             angle_val: Any = angle_base
             if energy > 0.2 and self.rng.random() < 0.65:
                 angle_val = {
                     "base": angle_base, "speed": 0.15 + energy * 0.4,
                     "mode": "linear",
                 }
-            transforms.append({
-                "type": "rotate",
-                "angle": angle_val,
-            })
-
-        # Zoom: 18-30%
-        if self.rng.random() < 0.18 + energy * 0.12:
-            factor_base = self.rng.uniform(1.2, 3.0)
+            return {"type": "rotate", "angle": angle_val}
+        elif t_type == "zoom":
+            factor_base = self.rng.uniform(1.1, 4.0)
             factor_val: Any = factor_base
             if self.rng.random() < 0.5:
                 factor_val = {
@@ -1254,117 +1154,81 @@ class VisualGrammar:
                     "amp": self.rng.uniform(0.2, 0.6),
                     "mode": "oscillate",
                 }
-            transforms.append({
-                "type": "zoom",
-                "factor": factor_val,
-            })
-
-        # Polar remap: 8-15%
-        if self.rng.random() < 0.08 + energy * 0.07:
-            transforms.append({
-                "type": "polar_remap",
-            })
-
-        return transforms
+            return {"type": "zoom", "factor": factor_val}
+        elif t_type == "polar_remap":
+            return {"type": "polar_remap"}
+        else:
+            # mirror_x, mirror_y, mirror_quad
+            return {"type": t_type}
 
     def _choose_postfx_chain(
         self, energy: float, structure: float, intensity: float
     ) -> list[dict[str, Any]]:
-        """选择后处理链 - Choose post-FX chain"""
-        chain: list[dict[str, Any]] = []
+        """选择后处理链 — 自由组合，均匀随机选择类型
 
-        # Vignette: 35-55%
-        if self.rng.random() < 0.35 + intensity * 0.20:
-            vignette_params: dict[str, Any] = {
+        链长度 0-3 随机，从全部 7 种 postfx 中均匀选取（不重复）。
+        允许空链 — 没有后处理也是一种风格。
+        """
+        all_types = ["vignette", "scanlines", "threshold", "edge_detect",
+                     "invert", "color_shift", "pixelate"]
+        # 链长度: 0-3
+        max_count = self.rng.choices([0, 1, 2, 3], weights=[15, 35, 30, 20])[0]
+        self.rng.shuffle(all_types)
+        chain: list[dict[str, Any]] = []
+        for fx_type in all_types[:max_count]:
+            chain.append(self._generate_postfx_params(fx_type, energy))
+        return chain
+
+    def _generate_postfx_params(self, fx_type: str, energy: float) -> dict[str, Any]:
+        """为单个 postfx 生成随机参数"""
+        if fx_type == "vignette":
+            params: dict[str, Any] = {
                 "type": "vignette",
-                "strength": self.rng.uniform(0.3, 0.7),
+                "strength": self.rng.uniform(0.2, 0.8),
             }
             if energy > 0.3 and self.rng.random() < 0.5:
-                vignette_params["pulse_speed"] = 0.3 + energy * 0.7
-                vignette_params["pulse_amp"] = self.rng.uniform(0.1, 0.25)
-            chain.append(vignette_params)
-
-        # Scanlines: 22-35%
-        if self.rng.random() < 0.22 + energy * 0.13:
-            scanline_params: dict[str, Any] = {
+                params["pulse_speed"] = 0.3 + energy * 0.7
+                params["pulse_amp"] = self.rng.uniform(0.1, 0.25)
+            return params
+        elif fx_type == "scanlines":
+            params = {
                 "type": "scanlines",
                 "spacing": self.rng.choice([3, 4, 5, 6]),
-                "darkness": self.rng.uniform(0.2, 0.4),
+                "darkness": self.rng.uniform(0.15, 0.45),
             }
             if energy > 0.25 and self.rng.random() < 0.55:
-                scanline_params["scroll_speed"] = 0.5 + energy * 2.0
-            chain.append(scanline_params)
-
-        # Threshold: 14-30% (structure-dependent)
-        if self.rng.random() < 0.14 + structure * 0.16:
-            chain.append({
-                "type": "threshold",
-                "threshold": self.rng.uniform(0.3, 0.7),
-            })
-
-        # Edge detect: 10-22%
-        if self.rng.random() < 0.10 + structure * 0.12:
-            chain.append({"type": "edge_detect"})
-
-        # Invert: 8-16%
-        if self.rng.random() < 0.08 + energy * 0.08:
-            chain.append({"type": "invert"})
-
-        # Color shift: 18-30%
-        if self.rng.random() < 0.18 + energy * 0.12:
-            cs_params: dict[str, Any] = {
+                params["scroll_speed"] = 0.5 + energy * 2.0
+            return params
+        elif fx_type == "threshold":
+            return {"type": "threshold", "threshold": self.rng.uniform(0.25, 0.75)}
+        elif fx_type == "edge_detect":
+            return {"type": "edge_detect"}
+        elif fx_type == "invert":
+            return {"type": "invert"}
+        elif fx_type == "color_shift":
+            params = {
                 "type": "color_shift",
-                "hue_shift": self.rng.uniform(0.05, 0.25),
+                "hue_shift": self.rng.uniform(0.05, 0.3),
             }
             if energy > 0.3 and self.rng.random() < 0.5:
-                cs_params["drift_speed"] = self.rng.uniform(0.02, 0.1 + energy * 0.1)
-            chain.append(cs_params)
-
-        # Pixelate: 9-19%
-        if self.rng.random() < 0.09 + (1 - structure) * 0.10:
-            pix_params: dict[str, Any] = {
+                params["drift_speed"] = self.rng.uniform(0.02, 0.2)
+            return params
+        else:  # pixelate
+            params = {
                 "type": "pixelate",
                 "block_size": self.rng.choice([3, 4, 5, 6]),
             }
             if energy > 0.4 and self.rng.random() < 0.4:
-                pix_params["pulse_speed"] = 0.3 + energy * 0.5
-                pix_params["pulse_amp"] = self.rng.uniform(1.0, 2.0)
-            chain.append(pix_params)
-
-        # Guarantee at least 1 postfx
-        if not chain:
-            fallback = self.rng.choice(["vignette", "color_shift", "scanlines"])
-            if fallback == "vignette":
-                chain.append({
-                    "type": "vignette",
-                    "strength": self.rng.uniform(0.3, 0.5),
-                })
-            elif fallback == "color_shift":
-                chain.append({
-                    "type": "color_shift",
-                    "hue_shift": self.rng.uniform(0.05, 0.15),
-                })
-            else:
-                chain.append({
-                    "type": "scanlines",
-                    "spacing": self.rng.choice([4, 5, 6]),
-                    "darkness": self.rng.uniform(0.15, 0.3),
-                })
-
-        return chain
+                params["pulse_speed"] = 0.3 + energy * 0.5
+                params["pulse_amp"] = self.rng.uniform(1.0, 2.0)
+            return params
 
     def _choose_composition_mode(
         self, energy: float, structure: float
     ) -> dict[str, Any]:
-        """选择合成模式 - Choose composition mode"""
-        weights = {
-            "blend": 0.22,
-            "masked_split": 0.22 + structure * 0.10,
-            "radial_masked": 0.20 + (1 - structure) * 0.08,
-            "noise_masked": 0.20 + energy * 0.08,
-            "sdf_masked": 0.12,
-        }
-        mode = self._weighted_choice(weights)
+        """选择合成模式 — 均匀随机"""
+        mode = self.rng.choice(["blend", "masked_split", "radial_masked",
+                                "noise_masked", "sdf_masked"])
 
         result: dict[str, Any] = {"mode": mode}
 
@@ -1374,11 +1238,7 @@ class VisualGrammar:
             anim_speed = self.rng.uniform(0.3, 0.8 + energy * 1.2)
 
         if mode == "masked_split":
-            mask_type = self._weighted_choice({
-                "horizontal_split": 0.3,
-                "vertical_split": 0.3,
-                "diagonal": 0.4,
-            })
+            mask_type = self.rng.choice(["horizontal_split", "vertical_split", "diagonal"])
             result["mask_type"] = mask_type
             result["mask_params"] = {
                 "mask_split": self.rng.uniform(0.3, 0.7),
@@ -1410,11 +1270,7 @@ class VisualGrammar:
             }
 
         elif mode == "sdf_masked":
-            sdf_shape = self._weighted_choice({
-                "circle": 0.35,
-                "box": 0.30,
-                "ring": 0.35,
-            })
+            sdf_shape = self.rng.choice(["circle", "box", "ring"])
             result["mask_type"] = "sdf"
             sdf_params: dict[str, Any] = {
                 "sdf_shape": sdf_shape,
@@ -1453,188 +1309,76 @@ class VisualGrammar:
         main_effect: str,
     ) -> dict[str, Any]:
         """
-        选择背景填充规格 - Choose bg_fill spec (second render pass)
+        选择背景填充规格 — 均匀随机生成
 
-        组装完整的 bg_fill 规格，grammar 用 rng 在各层独立随机。
+        各层独立掷骰子，从全部可用空间自由生成。
         """
         rng = self.rng
 
-        # 1. 选择背景 effect (避开主 effect，排除重量级)
-        bg_candidates = {
-            "plasma": 0.25 + energy * 0.10,
-            "wave": 0.25 + (1 - energy) * 0.08,
-            "noise_field": 0.28 + (1 - energy) * 0.10,
-            "moire": 0.22 + structure * 0.12,
-            "mod_xor": 0.22 + structure * 0.10,
-            "chroma_spiral": 0.22 + energy * 0.10,
-            "wobbly": 0.22 + (1 - structure) * 0.10,
-            "ten_print": 0.20 + structure * 0.10,
-            "sdf_shapes": 0.22 + structure * 0.10,
-            "cppn": 0.22,
-            "flame": 0.15 + energy * 0.08,
-            "donut": 0.12 + structure * 0.08,
-            "wireframe_cube": 0.12 + structure * 0.08,
-        }
-        bg_candidates.pop(main_effect, None)
-        bg_effect_name = self._weighted_choice(bg_candidates)
+        # 1. 效果 — 均匀选择 (排除主 effect 和重量级模拟效果)
+        bg_pool = ["plasma", "wave", "noise_field", "moire", "mod_xor",
+                    "chroma_spiral", "wobbly", "ten_print", "sdf_shapes",
+                    "cppn", "flame", "donut", "wireframe_cube"]
+        bg_pool = [e for e in bg_pool if e != main_effect]
+        bg_effect_name = rng.choice(bg_pool)
 
-        # 2. 选择 variant (如果 VARIANT_REGISTRY 有该 effect)
+        # 2. 效果参数
         effect_params = self._generate_effect_params(bg_effect_name, energy, structure)
 
-        # 3. 选择 transforms (0~2 个)
+        # 3. 变换 (0-2 个，均匀选取)
+        all_types = ["mirror_x", "mirror_y", "mirror_quad", "kaleidoscope",
+                     "tile", "spiral_warp", "rotate", "zoom", "polar_remap"]
+        t_count = rng.choices([0, 1, 2], weights=[30, 40, 30])[0]
+        rng.shuffle(all_types)
         transforms: list[dict[str, Any]] = []
-        if rng.random() < 0.40:
-            mirror_type = rng.choice(["mirror_x", "mirror_y", "mirror_quad"])
-            transforms.append({"type": mirror_type})
-        if rng.random() < 0.30:
-            transforms.append({
-                "type": "tile",
-                "cols": rng.choice([2, 3]),
-                "rows": rng.choice([2, 3]),
-            })
-        if rng.random() < 0.20 and len(transforms) < 2:
-            transforms.append({
-                "type": "kaleidoscope",
-                "segments": rng.choice([4, 5, 6, 8]),
-            })
-        if rng.random() < 0.12 and len(transforms) < 2:
-            transforms.append({
-                "type": "spiral_warp",
-                "twist": rng.uniform(0.3, 1.0),
-            })
-        if rng.random() < 0.10 and len(transforms) < 2:
-            transforms.append({"type": "polar_remap"})
-        if rng.random() < 0.10 and len(transforms) < 2:
-            transforms.append({
-                "type": "rotate",
-                "angle": rng.uniform(-0.5, 0.5),
-            })
-        if rng.random() < 0.08 and len(transforms) < 2:
-            transforms.append({
-                "type": "zoom",
-                "factor": rng.uniform(1.2, 2.5),
-            })
-        transforms = transforms[:2]
+        for t_type in all_types[:t_count]:
+            transforms.append(self._generate_transform_params(t_type, energy))
 
-        # 4. 选择 postfx (0~1 个，概率 40%)
+        # 4. 后处理 (0-1 个，均匀选取)
         postfx: list[dict[str, Any]] = []
-        if rng.random() < 0.40:
-            fx_type = self._weighted_choice({
-                "vignette": 0.22,
-                "color_shift": 0.17,
-                "scanlines": 0.17,
-                "threshold": 0.10,
-                "invert": 0.10,
-                "edge_detect": 0.10,
-                "pixelate": 0.07,
-            })
-            if fx_type == "vignette":
-                postfx.append({
-                    "type": "vignette",
-                    "strength": rng.uniform(0.3, 0.6),
-                })
-            elif fx_type == "color_shift":
-                postfx.append({
-                    "type": "color_shift",
-                    "hue_shift": rng.uniform(0.05, 0.2),
-                })
-            elif fx_type == "scanlines":
-                postfx.append({
-                    "type": "scanlines",
-                    "spacing": rng.choice([3, 4, 5]),
-                    "darkness": rng.uniform(0.2, 0.3),
-                })
-            elif fx_type == "threshold":
-                postfx.append({
-                    "type": "threshold",
-                    "threshold": rng.uniform(0.3, 0.6),
-                })
-            elif fx_type == "invert":
-                postfx.append({"type": "invert"})
-            elif fx_type == "edge_detect":
-                postfx.append({"type": "edge_detect"})
-            elif fx_type == "pixelate":
-                postfx.append({
-                    "type": "pixelate",
-                    "block_size": rng.choice([3, 4, 5]),
-                })
-            else:
-                postfx.append({
-                    "type": "threshold",
-                    "threshold": rng.uniform(0.3, 0.6),
-                })
+        if rng.random() < 0.45:
+            fx_type = rng.choice(["vignette", "color_shift", "scanlines",
+                                  "threshold", "invert", "edge_detect", "pixelate"])
+            postfx.append(self._generate_postfx_params(fx_type, energy))
 
-        # 5. 选择 mask (0~1 个，概率 35%)
+        # 5. 蒙版 (0-1 个，均匀选取)
         mask: dict[str, Any] | None = None
-        if rng.random() < 0.35:
-            mask_type = self._weighted_choice({
-                "radial": 0.20,
-                "noise": 0.18,
-                "diagonal": 0.12,
-                "horizontal_split": 0.15,
-                "vertical_split": 0.15,
-                "sdf": 0.10,
-            })
+        if rng.random() < 0.40:
+            mask_type = rng.choice(["radial", "noise", "diagonal",
+                                    "horizontal_split", "vertical_split", "sdf"])
             if mask_type == "radial":
-                mask = {
-                    "type": "radial",
-                    "radius": rng.uniform(0.3, 0.6),
-                    "softness": rng.uniform(0.15, 0.35),
-                }
+                mask = {"type": "radial", "radius": rng.uniform(0.2, 0.7),
+                        "softness": rng.uniform(0.1, 0.4)}
             elif mask_type == "noise":
-                mask = {
-                    "type": "noise",
-                    "noise_scale": rng.uniform(0.03, 0.08),
-                    "noise_octaves": rng.randint(2, 4),
-                    "softness": rng.uniform(0.1, 0.25),
-                }
+                mask = {"type": "noise", "noise_scale": rng.uniform(0.02, 0.1),
+                        "noise_octaves": rng.randint(2, 5),
+                        "softness": rng.uniform(0.1, 0.3)}
             elif mask_type == "diagonal":
-                mask = {
-                    "type": "diagonal",
-                    "softness": rng.uniform(0.1, 0.25),
-                    "angle": rng.uniform(-0.5, 0.5),
-                }
-            elif mask_type == "horizontal_split":
-                mask = {
-                    "type": "horizontal_split",
-                    "split": rng.uniform(0.3, 0.7),
-                    "softness": rng.uniform(0.1, 0.25),
-                }
-            elif mask_type == "vertical_split":
-                mask = {
-                    "type": "vertical_split",
-                    "split": rng.uniform(0.3, 0.7),
-                    "softness": rng.uniform(0.1, 0.25),
-                }
-            elif mask_type == "sdf":
+                mask = {"type": "diagonal", "softness": rng.uniform(0.05, 0.3),
+                        "angle": rng.uniform(-1.0, 1.0)}
+            elif mask_type in ("horizontal_split", "vertical_split"):
+                mask = {"type": mask_type, "split": rng.uniform(0.2, 0.8),
+                        "softness": rng.uniform(0.05, 0.3)}
+            else:
                 sdf_shape = rng.choice(["circle", "box", "ring"])
-                mask = {
-                    "type": "sdf",
-                    "sdf_shape": sdf_shape,
-                    "sdf_size": rng.uniform(0.2, 0.5),
-                    "softness": rng.uniform(0.05, 0.2),
-                }
+                mask = {"type": "sdf", "sdf_shape": sdf_shape,
+                        "sdf_size": rng.uniform(0.15, 0.6),
+                        "softness": rng.uniform(0.05, 0.25)}
                 if sdf_shape == "ring":
-                    mask["sdf_thickness"] = rng.uniform(0.05, 0.15)
+                    mask["sdf_thickness"] = rng.uniform(0.03, 0.2)
 
-        # 6. 选择调色板模式
-        if rng.random() < 0.55:
-            color_mode = "scheme"
-        else:
-            color_mode = "continuous"
-
-        # 7. dim 系数 (高能量稍亮)
-        dim_val = rng.uniform(0.22, 0.38) + energy * 0.05
+        # 6. dim 系数 — 更宽范围
+        dim_val = rng.uniform(0.10, 0.55)
 
         spec: dict[str, Any] = {
             "effect": bg_effect_name,
             "effect_params": effect_params,
             "transforms": transforms,
             "postfx": postfx,
-            "color_mode": color_mode,
+            "color_mode": "continuous",
             "warmth": warmth,
-            "saturation": _clamp(0.6 + energy * 0.4, 0.0, 1.0),
-            "dim": _clamp(dim_val, 0.18, 0.45),
+            "saturation": _clamp(0.4 + rng.uniform(0, 0.6), 0.0, 1.0),
+            "dim": _clamp(dim_val, 0.08, 0.55),
         }
         if mask is not None:
             spec["mask"] = mask
@@ -1693,21 +1437,35 @@ class VisualGrammar:
         return params
 
     def _weighted_choice(self, weights: dict[str, float]) -> str:
-        """加权随机选择 (带多样性抖动) - Weighted choice with diversity jitter"""
+        """加权随机选择 (保留用于内部参数选择) - Weighted choice for internal params"""
         items = list(weights.items())
-        # Apply diversity jitter: multiply each weight by uniform(0.5, 1.5)
-        jittered = [(name, w * self.rng.uniform(0.5, 1.5)) for name, w in items]
-        total = sum(w for _, w in jittered)
+        total = sum(w for _, w in items)
         if total <= 0:
             return items[0][0]
-
         r = self.rng.random() * total
         cumulative = 0.0
-        for name, w in jittered:
+        for name, w in items:
             cumulative += w
             if r <= cumulative:
                 return name
         return items[-1][0]
+
+    def _biased_choice(self, items: list[str], boost: dict[str, float] | None = None) -> str:
+        """均匀为主的随机选择，情绪只提供微偏 - Uniform random with slight emotion bias
+
+        base 权重为 1.0，boost 值不超过 ±0.2，使任何选项最多比基准概率高 20%。
+        """
+        if not boost or not items:
+            return self.rng.choice(items)
+        weights = [(name, 1.0 + boost.get(name, 0.0)) for name in items]
+        total = sum(w for _, w in weights)
+        r = self.rng.random() * total
+        cumulative = 0.0
+        for name, w in weights:
+            cumulative += w
+            if r <= cumulative:
+                return name
+        return items[-1]
 
 
 def _clamp(v: float, lo: float, hi: float) -> float:

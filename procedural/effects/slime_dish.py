@@ -35,7 +35,7 @@ from typing import Any
 
 from procedural.types import Context, Cell, Buffer
 from procedural.core.mathx import clamp
-from procedural.palette import value_to_color, value_to_color_continuous
+from procedural.palette import value_to_color, value_to_color_continuous, resolve_color
 from .base import BaseEffect
 
 __all__ = ["SlimeDishEffect"]
@@ -171,6 +171,7 @@ class SlimeDishEffect(BaseEffect):
             "trail_map": self._trail_map,
             "warmth": warmth,
             "saturation": saturation,
+            "_palette": ctx.params.get("_palette"),
         }
 
     def main(self, x: int, y: int, ctx: Context, state: dict[str, Any]) -> Cell:
@@ -194,14 +195,13 @@ class SlimeDishEffect(BaseEffect):
 
         char_idx = int(clamp(value * 9, 0, 9))
 
-        if state["warmth"] is not None:
-            color = value_to_color_continuous(
-                value,
-                warmth=state["warmth"],
-                saturation=state.get("saturation", 1.0),
-            )
-        else:
-            color = value_to_color(value, "cool")
+        color = resolve_color(
+            value,
+            palette=state.get("_palette"),
+            warmth=state.get("warmth"),
+            saturation=state.get("saturation"),
+            color_scheme=state.get("color_scheme", "cool"),
+        )
 
         return Cell(char_idx=char_idx, fg=color, bg=None)
 

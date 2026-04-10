@@ -32,7 +32,7 @@ from typing import Any
 
 from procedural.types import Context, Cell, Buffer
 from procedural.core.mathx import clamp
-from procedural.palette import value_to_color, value_to_color_continuous
+from procedural.palette import value_to_color, value_to_color_continuous, resolve_color
 from .base import BaseEffect
 
 __all__ = ["SandGameEffect"]
@@ -147,6 +147,7 @@ class SandGameEffect(BaseEffect):
             "grid": self._grid,
             "warmth": warmth,
             "saturation": saturation,
+            "_palette": ctx.params.get("_palette"),
             "height": ctx.height,
         }
 
@@ -176,20 +177,22 @@ class SandGameEffect(BaseEffect):
 
         char_idx = int(clamp(value * 9, 0, 9))
 
-        if state["warmth"] is not None:
-            # Use continuous color with type-based hue shift
+        if state.get("_palette") or state.get("warmth") is not None:
+            # Use resolve_color with type-based hue shift
             shifted_value = (value + (particle - 1) * 0.3) % 1.0
-            color = value_to_color_continuous(
+            color = resolve_color(
                 shifted_value,
-                warmth=state["warmth"],
-                saturation=state.get("saturation", 1.0),
+                palette=state.get("_palette"),
+                warmth=state.get("warmth"),
+                saturation=state.get("saturation"),
+                color_scheme=state.get("color_scheme"),
             )
         else:
             # Use predefined sand colors
             type_idx = (particle - 1) % len(_SAND_COLORS)
-            palette = _SAND_COLORS[type_idx]
-            brightness_idx = int(clamp(height_ratio * (len(palette) - 1), 0, len(palette) - 1))
-            color = palette[brightness_idx]
+            sand_palette = _SAND_COLORS[type_idx]
+            brightness_idx = int(clamp(height_ratio * (len(sand_palette) - 1), 0, len(sand_palette) - 1))
+            color = sand_palette[brightness_idx]
 
         return Cell(char_idx=char_idx, fg=color, bg=None)
 

@@ -58,6 +58,9 @@ viz generate --emotion euphoria --seed 42 --output-dir ./runs/euphoria
 # AI integration via stdin JSON
 echo '{"headline":"BTC $95K","emotion":"euphoria","metrics":["ETH: $4.2k"]}' | viz generate --output-dir ./runs/market
 
+# Style preset
+echo '{"emotion":"joy","style":"geometric"}' | viz generate --output-dir ./media
+
 # Animated GIF
 echo '{"emotion":"panic","video":true}' | viz generate --output-dir ./runs/panic
 
@@ -75,9 +78,9 @@ emotion/text  -->  VAD vector  -->  grammar  -->  SceneSpec  -->  Engine  -->  o
                                                                   scaled)     variable res)
 ```
 
-Everything is driven by the **VAD emotion model** (Valence-Arousal-Dominance). 26 named emotions map to points in continuous 3D space. The grammar system samples visual choices weighted by emotion — same emotion + different seed = different output.
+Everything is driven by the **VAD emotion model** (Valence-Arousal-Dominance). 34 named emotions map to points in continuous 3D space. The grammar system samples visual choices weighted by emotion — same emotion + different seed = different output.
 
-Combinatorial space: 17 effects x 86 variants x 9 transforms x 7 postfx x 6 masks x 73 gradients x 8 decorations x bg_fill combos x continuous params = effectively infinite.
+Combinatorial space: 17 effects x 86 variants x 9 transforms x 7 postfx x 6 masks x 73 gradients x 8 decorations x bg_fill combos x procedural per-seed palette generation x 8 style presets (geometric/organic/retro/psychedelic/minimal/brutal/ethereal/glitch) x continuous params = effectively infinite.
 
 ## Commands
 
@@ -133,7 +136,7 @@ procedural/
   postfx.py                     # 7 buffer-level post-FX (vignette, scanlines, ...)
   masks.py                      # 6 spatial masks (radial, noise, sdf, ...)
   flexible/
-    emotion.py                  # VAD continuous emotion space (26 anchors)
+    emotion.py                  # VAD continuous emotion space (34 anchors)
     grammar.py                  # Stochastic visual grammar
     pipeline.py                 # Main pipeline orchestrator
 docs/                           # Detailed documentation

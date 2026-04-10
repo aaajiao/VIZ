@@ -36,7 +36,7 @@ from typing import Any
 from procedural.types import Context, Cell, Buffer
 from procedural.core.mathx import clamp, mix
 from procedural.core.noise import ValueNoise
-from procedural.palette import value_to_color, value_to_color_continuous
+from procedural.palette import value_to_color, value_to_color_continuous, resolve_color
 from .base import BaseEffect
 
 __all__ = ["WaveEffect"]
@@ -134,6 +134,7 @@ class WaveEffect(BaseEffect):
             "color_scheme": color_scheme,
             "warmth": warmth,
             "saturation": saturation,
+            "_palette": ctx.params.get("_palette"),
             "self_warp": self_warp,
             "noise_injection": noise_injection,
             "noise_fn": noise_fn,
@@ -213,14 +214,13 @@ class WaveEffect(BaseEffect):
         char_idx = int(clamp(char_idx, 0, 9))
 
         # === 映射到颜色 ===
-        if state.get("warmth") is not None:
-            color = value_to_color_continuous(
-                value,
-                warmth=state["warmth"],
-                saturation=state.get("saturation", 1.0),
-            )
-        else:
-            color = value_to_color(value, color_scheme)
+        color = resolve_color(
+            value,
+            palette=state.get("_palette"),
+            warmth=state.get("warmth"),
+            saturation=state.get("saturation"),
+            color_scheme=state.get("color_scheme", "ocean"),
+        )
 
         # 返回 Cell
         return Cell(

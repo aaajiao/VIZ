@@ -33,7 +33,7 @@ from typing import Any
 from procedural.types import Context, Cell, Buffer
 from procedural.core.mathx import clamp, fract
 from procedural.core.noise import ValueNoise
-from procedural.palette import value_to_color, value_to_color_continuous
+from procedural.palette import value_to_color, value_to_color_continuous, resolve_color
 from .base import BaseEffect
 
 __all__ = ["ModXorEffect"]
@@ -114,6 +114,7 @@ class ModXorEffect(BaseEffect):
             "zoom": zoom,
             "warmth": warmth,
             "saturation": saturation,
+            "_palette": ctx.params.get("_palette"),
             "distortion": distortion,
             "noise_fn": noise_fn,
         }
@@ -174,14 +175,13 @@ class ModXorEffect(BaseEffect):
 
         # Color mapping - use value with time-based phase shift
         color_value = fract(value + t * 0.03)
-        if state["warmth"] is not None:
-            color = value_to_color_continuous(
-                color_value,
-                warmth=state["warmth"],
-                saturation=state.get("saturation", 1.0),
-            )
-        else:
-            color = value_to_color(color_value, "rainbow")
+        color = resolve_color(
+            color_value,
+            palette=state.get("_palette"),
+            warmth=state.get("warmth"),
+            saturation=state.get("saturation"),
+            color_scheme=state.get("color_scheme", "rainbow"),
+        )
 
         return Cell(char_idx=char_idx, fg=color, bg=None)
 

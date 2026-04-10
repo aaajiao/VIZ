@@ -38,16 +38,16 @@ Project metadata lives in `pyproject.toml`. Runtime dependency is `Pillow>=9.0.0
 
 **Rendering pipeline** (the critical path):
 1. `viz.py generate` parses CLI args + stdin JSON -> calls `FlexiblePipeline`
-2. `FlexiblePipeline` (`procedural/flexible/pipeline.py`) orchestrates: emotion -> VAD vector -> visual grammar -> effect selection -> sprite layout -> decoration
-3. `Engine` (`procedural/engine.py`) renders: creates Buffer of Cells (default 160x160, auto-scaled from output resolution) -> effect fills buffer -> PostFX chain -> **bg_fill second render pass** -> brightness scaling -> `buffer_to_image()` -> sprites overlay -> upscale to output resolution (default 1080x1080) via NEAREST -> sharpen + contrast -> save
+2. `FlexiblePipeline` (`procedural/flexible/pipeline.py`) orchestrates: emotion -> VAD vector -> visual grammar -> effect selection -> sprite layout -> decoration. Grammar uses near-uniform random selection for effects, gradients, layouts, decorations, postfx, transforms, composition modes. Emotion parameters provide <=20% bias, not deterministic selection.
+3. `Engine` (`procedural/engine.py`) renders: creates Buffer of Cells (default 160x160, auto-scaled from output resolution) -> effect fills buffer -> PostFX chain -> **bg_fill second render pass** -> brightness scaling (floor parameterized 0.08-0.40, emotion-driven) -> `buffer_to_image()` -> sprites overlay -> upscale to output resolution (default 1080x1080) via NEAREST -> filter + contrast -> save. Filter modes: sharpen/blur/detail/none (grammar selects randomly). Contrast range: 0.7-1.8.
 
 **Composition layer**: `procedural/transforms.py` (9 domain transforms + `TransformedEffect`), `procedural/postfx.py` (7 buffer-level post-FX), `procedural/masks.py` (6 spatial masks + `MaskedCompositeEffect`), `procedural/effects/variants.py` (86 structural variants across 17 effects). Grammar auto-selects all composition features; CLI also exposes them via `--transforms`, `--postfx`, `--composition`, `--mask`, `--variant` for precise control ("Director Mode"). All three composition layers support **time-aware animation** for GIF/video output: transforms use animated kwargs (`_resolve_animated_kwargs`), PostFX receive `_time` from Engine, masks read `mask_anim_speed` from params. Static PNG (time=0) is unaffected. See `docs/composition.md`.
 
-**Background fill** (`procedural/bg_fill.py`): Second render pass that fills `bg=None` cells. Runs a separate effect (with variant + transforms + postfx + mask + color scheme) on a temp buffer, extracts `char_idx` as intensity, maps through color scheme, dims to ~30%, and blends with fg. Grammar selects all layers independently via `_choose_bg_fill_spec()`. Combinatorial space: 13 effects x variants x transforms (incl. rotate/zoom) x postfx (incl. invert/edge_detect/pixelate) x masks (incl. horizontal_split/vertical_split/sdf) x 7 color schemes = ~750k discrete combos. Excludes heavy simulation effects (game_of_life, sand_game, slime_dish, dyna).
+**Background fill** (`procedural/bg_fill.py`): Second render pass that fills `bg=None` cells. Runs a separate effect (with variant + transforms + postfx + mask + color scheme) on a temp buffer, extracts `char_idx` as intensity, maps through color scheme, dims to ~30%, and blends with fg. Grammar selects all layers independently via `_choose_bg_fill_spec()`. Combinatorial space: 13 effects x variants x transforms (incl. rotate/zoom) x postfx (incl. invert/edge_detect/pixelate) x masks (incl. horizontal_split/vertical_split/sdf) x color schemes (7 named + procedural generation default) = effectively infinite combos. Excludes heavy simulation effects (game_of_life, sand_game, slime_dish, dyna).
 
 **Key types** (in `procedural/types.py`): `Context` (immutable by convention), `Cell` (char_idx 0-9, fg RGB, bg RGB|None), `Buffer` (2D Cell grid), `Effect` (Protocol: pre/main/post).
 
-**Emotion system**: VAD (Valence-Arousal-Dominance) continuous space with 26 anchors in `procedural/flexible/emotion.py`. Each axis -1 to +1. Drives all visual parameters.
+**Emotion system**: VAD (Valence-Arousal-Dominance) continuous space with 34 anchors in `procedural/flexible/emotion.py`. Each axis -1 to +1. Drives all visual parameters.
 
 **Content flow**: stdin JSON or CLI args -> `make_content()` sanitizes + warns -> `FlexiblePipeline` -> rendered image -> stdout JSON with path. Errors exit code 1 with `{"status":"error"}`. Successful output includes optional `"warnings"` list when inputs were clamped/truncated. Output schema is per-command (`generate` vs `convert`).
 
@@ -55,7 +55,7 @@ Project metadata lives in `pyproject.toml`. Runtime dependency is `Pillow>=9.0.0
 
 **Character data**: `lib/box_chars.py` is the single source of truth for all character/gradient data (`GRADIENTS`, `CHARSETS`, `BORDER_SETS`). `procedural/palette.py` re-exports `GRADIENTS` as `ASCII_GRADIENTS` and owns color functions. `grammar.py` imports `CHARSETS`/`BORDER_SETS` to build decoration and particle char pools.
 
-**Color scheme**: Grammar selects from 8 named schemes (`heat`, `rainbow`, `cool`, `matrix`, `plasma`, `ocean`, `fire`, `default`) via warmth-driven `_choose_color_scheme()`, or uses continuous `value_to_color_continuous(warmth, saturation)`. Custom palettes (`palette` field: list of RGB tuples) override named schemes via `value_to_color_from_palette()`. Stored in `SceneSpec.color_scheme` / `SceneSpec.palette` and passed to both Engine and bg_fill.
+**Color scheme**: Grammar defaults to procedural per-seed palette generation (`generate_palette()`); named schemes (`heat`, `rainbow`, `cool`, `matrix`, `plasma`, `ocean`, `fire`, `default`) are Director Mode overrides via `--color-scheme`. Continuous coloring via `value_to_color_continuous(warmth, saturation)` and custom palettes (`palette` field: list of RGB tuples) via `value_to_color_from_palette()` also supported. Stored in `SceneSpec.color_scheme` / `SceneSpec.palette` and passed to both Engine and bg_fill.
 
 **Variable resolution**: Output size configurable via `width`/`height` (120-3840px, default 1080x1080). Internal buffer auto-computed as output ÷ 6.75 (minimum 40px). Supports non-square (portrait 1080x1920, preview 540x540). `FlexiblePipeline` already parameterized; `viz.py` computes sizes and passes through.
 
@@ -72,7 +72,7 @@ Project metadata lives in `pyproject.toml`. Runtime dependency is `Pillow>=9.0.0
 - **Naming**: `SCREAMING_SNAKE` constants, `snake_case` functions, `PascalCase` classes, `snake_case` dict keys.
 - **Docstrings**: Bilingual Chinese/English format: `"""生成可视化 - Generate visualization"""`
 - **Font loading**: Always provide fallback with `try: truetype() except: load_default()`
-- **Canvas**: Default 1080x1080 (configurable via `--width`/`--height`, 120-3840px), post-process with sharpen + contrast 1.4
+- **Canvas**: Default 1080x1080 (configurable via `--width`/`--height`, 120-3840px), post-process with filter (sharpen/blur/detail/none) + contrast (0.7-1.8)
 - **Output paths**: `viz_{timestamp}_s{seed}.{png|gif}` in `--output-dir` (required), with companion `.json` containing input params for reproducibility
 
 ## Where to Make Changes
@@ -81,7 +81,8 @@ Project metadata lives in `pyproject.toml`. Runtime dependency is `Pillow>=9.0.0
 |------|----------|
 | New CLI command | `viz.py` -> add subparser + command function |
 | New background effect | `procedural/effects/` + register in `__init__.py` EFFECT_REGISTRY |
-| Color scheme | `procedural/palette.py` -> `COLOR_SCHEMES` + color functions |
+| Color scheme | `procedural/palette.py` -> `COLOR_SCHEMES` + `generate_palette()` + color functions |
+| Style preset | `procedural/style_presets.py` -> `STYLE_PRESETS` dict |
 | ASCII gradient | `lib/box_chars.py` -> `GRADIENTS` (single source; `palette.py` re-exports as `ASCII_GRADIENTS`) |
 | Kaomoji faces | `lib/kaomoji_data.py` -> `KAOMOJI_SINGLE` dict |
 | Box-drawing charset | `lib/box_chars.py` -> `CHARSETS`, `BORDER_SETS` |

@@ -33,7 +33,7 @@ from typing import Any
 from procedural.types import Context, Cell, Buffer
 from procedural.core.mathx import clamp, fract, TAU
 from procedural.core.noise import ValueNoise
-from procedural.palette import value_to_color, value_to_color_continuous
+from procedural.palette import value_to_color, value_to_color_continuous, resolve_color
 from .base import BaseEffect
 
 __all__ = ["ChromaSpiralEffect"]
@@ -105,6 +105,7 @@ class ChromaSpiralEffect(BaseEffect):
             "center_y": center_y,
             "warmth": warmth,
             "saturation": saturation,
+            "_palette": ctx.params.get("_palette"),
             "distortion": distortion,
             "noise_fn": noise_fn,
             "multi_center": multi_center,
@@ -207,13 +208,15 @@ class ChromaSpiralEffect(BaseEffect):
         char_idx = int(clamp(avg_value * 9, 0, 9))
 
         # Build color from the three channel values
-        if state["warmth"] is not None:
-            # Use continuous color with average value
+        if state.get("_palette") or state.get("warmth") is not None:
+            # Use resolve_color with average value
             color_value = fract(avg_value + t * 0.05)
-            color = value_to_color_continuous(
+            color = resolve_color(
                 color_value,
-                warmth=state["warmth"],
-                saturation=state.get("saturation", 1.0),
+                palette=state.get("_palette"),
+                warmth=state.get("warmth"),
+                saturation=state.get("saturation"),
+                color_scheme=state.get("color_scheme"),
             )
         else:
             # Direct RGB from spiral channels for chromatic effect

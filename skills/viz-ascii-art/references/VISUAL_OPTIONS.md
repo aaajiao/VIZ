@@ -31,6 +31,15 @@ Run `viz capabilities --format json` for the authoritative, version-accurate lis
 
 Set via `color_scheme` field in JSON or `--color-scheme` CLI arg. Custom palettes (`palette` field: 2+ RGB triplets) override named schemes.
 
+### Procedural Palette Generation
+
+Every seed generates a unique 16-color palette derived from the emotion's VAD vector and the seed value. This means two renders with the same emotion but different seeds will have completely different color palettes.
+
+**Priority order (highest wins):**
+1. **Custom palette** (`palette` field) -- explicit list of RGB triplets, full user control
+2. **Named color scheme** (`color_scheme` field) -- Director Mode override (`heat`/`rainbow`/`cool`/`matrix`/`plasma`/`ocean`/`fire`)
+3. **Procedural palette** (default) -- auto-generated from seed + emotion, guarantees unique colors per render
+
 ## Blend Modes (overlay effects)
 
 `ADD` / `SCREEN` / `OVERLAY` / `MULTIPLY`

@@ -48,7 +48,7 @@ from procedural.types import Context, Cell, Buffer
 from procedural.core.vec import Vec2
 from procedural.core.sdf import sd_circle, sd_box, op_smooth_union
 from procedural.core.mathx import clamp, map_range
-from procedural.palette import value_to_color, value_to_color_continuous
+from procedural.palette import value_to_color, value_to_color_continuous, resolve_color
 from .base import BaseEffect
 
 __all__ = ["SDFShapesEffect"]
@@ -144,6 +144,7 @@ class SDFShapesEffect(BaseEffect):
             "speed": speed,
             "warmth": warmth,
             "saturation": saturation,
+            "_palette": ctx.params.get("_palette"),
         }
 
     def main(self, x: int, y: int, ctx: Context, state: dict[str, Any]) -> Cell:
@@ -231,14 +232,13 @@ class SDFShapesEffect(BaseEffect):
 
         # === 映射到颜色 ===
         color_value = (value + t * 0.05) % 1.0
-        if state.get("warmth") is not None:
-            color = value_to_color_continuous(
-                color_value,
-                warmth=state["warmth"],
-                saturation=state.get("saturation", 1.0),
-            )
-        else:
-            color = value_to_color(color_value, "plasma")
+        color = resolve_color(
+            color_value,
+            palette=state.get("_palette"),
+            warmth=state.get("warmth"),
+            saturation=state.get("saturation"),
+            color_scheme=state.get("color_scheme", "plasma"),
+        )
 
         # 返回 Cell
         return Cell(

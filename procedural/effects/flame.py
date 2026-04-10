@@ -46,7 +46,7 @@ from typing import Any
 from procedural.types import Context, Cell, Buffer
 from procedural.core.noise import ValueNoise
 from procedural.core.mathx import clamp, map_range
-from procedural.palette import value_to_color, value_to_color_continuous
+from procedural.palette import value_to_color, value_to_color_continuous, resolve_color
 from .base import BaseEffect
 
 __all__ = ["DoomFlameEffect"]
@@ -143,6 +143,7 @@ class DoomFlameEffect(BaseEffect):
             "heat_map": self.heat_map,
             "warmth": warmth,
             "saturation": saturation,
+            "_palette": ctx.params.get("_palette"),
         }
 
     def main(self, x: int, y: int, ctx: Context, state: dict[str, Any]) -> Cell:
@@ -181,14 +182,13 @@ class DoomFlameEffect(BaseEffect):
 
         # === 映射到颜色 ===
         heat_norm = clamp(heat / 50, 0.0, 1.0)
-        if state.get("warmth") is not None:
-            color = value_to_color_continuous(
-                heat_norm,
-                warmth=state["warmth"],
-                saturation=state.get("saturation", 1.0),
-            )
-        else:
-            color = value_to_color(heat_norm, "heat")
+        color = resolve_color(
+            heat_norm,
+            palette=state.get("_palette"),
+            warmth=state.get("warmth"),
+            saturation=state.get("saturation"),
+            color_scheme=state.get("color_scheme", "heat"),
+        )
 
         return Cell(
             char_idx=char_idx,
