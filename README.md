@@ -80,7 +80,11 @@ emotion/text  -->  VAD vector  -->  grammar  -->  SceneSpec  -->  Engine  -->  o
 
 Everything is driven by the **VAD emotion model** (Valence-Arousal-Dominance). 34 named emotions map to points in continuous 3D space. The grammar system samples visual choices weighted by emotion — same emotion + different seed = different output.
 
-Combinatorial space: 17 effects x 86 variants x 9 transforms x 7 postfx x 6 masks x 73 gradients x 8 decorations x bg_fill combos x procedural per-seed palette generation x 8 style presets (geometric/organic/retro/psychedelic/minimal/brutal/ethereal/glitch) x continuous params = effectively infinite.
+Every seed generates a **unique 16-color palette procedurally**. Named color schemes (heat/rainbow/cool/matrix/plasma/ocean/fire/default) are available as Director Mode overrides.
+
+**8 style presets** shape the overall visual character: `geometric` / `organic` / `retro` / `psychedelic` / `minimal` / `brutal` / `ethereal` / `glitch`. Pass via `"style"` in stdin JSON or let the grammar pick based on emotion.
+
+Combinatorial space: 17 effects x 86 variants x 9 transforms x 7 postfx x 6 masks x 73 gradients x 8 decorations x bg_fill combos x per-seed palette x 8 style presets x continuous params = effectively infinite.
 
 ## Commands
 
@@ -148,13 +152,11 @@ skills/viz-ascii-art/           # AgentSkills integration
 | Doc | Content |
 |-----|---------|
 | [ai-integration.md](docs/ai-integration.md) | **Start here.** JSON protocol, capabilities, examples |
-| [usage.md](docs/usage.md) | CLI args, all commands |
 | [flexible.md](docs/flexible.md) | VAD model, grammar, SceneSpec |
 | [composition.md](docs/composition.md) | Transforms, masks, PostFX, variants |
 | [effects.md](docs/effects.md) | 17 effects with params |
 | [kaomoji.md](docs/kaomoji.md) | 22 moods, 336 faces |
 | [box_chars.md](docs/box_chars.md) | 73 gradients, 37 charsets |
-| [rendering.md](docs/rendering.md) | Engine internals |
 
 ## Development
 

@@ -136,4 +136,4 @@ Release: push to `main`, then `git tag v{X.Y.Z}` + `git push origin v{X.Y.Z}`. T
 
 ## Further Reference
 
-Detailed docs in `docs/`: `ai-integration.md` (start here), `rendering.md`, `flexible.md`, `effects.md`, `composition.md`, `kaomoji.md`, `box_chars.md`, `usage.md`.
+Detailed docs in `docs/`: `ai-integration.md` (start here), `flexible.md`, `effects.md`, `composition.md`, `kaomoji.md`, `box_chars.md`.

@@ -47,7 +47,7 @@ The composition system provides four composable layers of structural transformat
 4. **PostFX Chain** — 缓冲区级后处理（暗角、扫描线、边缘检测等）
 5. **Background Fill** — 第二渲染通道，在临时 buffer 上运行独立 effect + color scheme 着色 → 填充 `bg=None` cell
 
-每层独立概率启用，层间可自由组合。详见 [rendering.md](rendering.md) 管线概览和 [effects.md](effects.md) 基础效果列表。
+每层独立概率启用，层间可自由组合。详见 [effects.md](effects.md) 基础效果列表。
 
 ---
 
@@ -254,7 +254,7 @@ buffer_to_image(buffer) → 低分辨率 PIL Image
 upscale → sprites → sharpen + contrast → 最终输出
 ```
 
-PostFX 链通过 `params["_postfx_chain"]` 传递给 Engine，Engine 在 `render_frame()` 中按列表顺序逐个执行。参见 [rendering.md](rendering.md) 完整管线。
+PostFX 链通过 `params["_postfx_chain"]` 传递给 Engine，Engine 在 `render_frame()` 中按列表顺序逐个执行。
 
 ### 后处理注册表 — POSTFX_REGISTRY
 
