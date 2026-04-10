@@ -27,7 +27,7 @@ pytest tests/test_emotion.py -v
 pytest tests/test_emotion.py::TestEmotionAnchors::test_joy -v
 
 # Generate a test visualization
-viz generate --emotion euphoria --seed 42
+viz generate --emotion euphoria --seed 42 --output-dir ./media
 ```
 
 Project metadata lives in `pyproject.toml`. Runtime dependency is `Pillow>=9.0.0`. CI runs on `main`, builds distributions, and smoke-tests the installed `viz` command on Python 3.11.
@@ -73,7 +73,7 @@ Project metadata lives in `pyproject.toml`. Runtime dependency is `Pillow>=9.0.0
 - **Docstrings**: Bilingual Chinese/English format: `"""生成可视化 - Generate visualization"""`
 - **Font loading**: Always provide fallback with `try: truetype() except: load_default()`
 - **Canvas**: Default 1080x1080 (configurable via `--width`/`--height`, 120-3840px), post-process with sharpen + contrast 1.4
-- **Output paths**: `viz_{timestamp}_s{seed}.{png|gif}` in `./media/`, with companion `.json` containing input params for reproducibility
+- **Output paths**: `viz_{timestamp}_s{seed}.{png|gif}` in `--output-dir` (required), with companion `.json` containing input params for reproducibility
 
 ## Where to Make Changes
 
@@ -96,7 +96,8 @@ Project metadata lives in `pyproject.toml`. Runtime dependency is `Pillow>=9.0.0
 | New post-FX | `procedural/postfx.py` -> add function + POSTFX_REGISTRY |
 | New spatial mask | `procedural/masks.py` -> add class + MASK_REGISTRY |
 | New effect variant | `procedural/effects/variants.py` -> VARIANT_REGISTRY dict |
-| Composition mode | `procedural/flexible/grammar.py` -> `_choose_composition_mode()` |
+| Composition mode | `viz.py` -> `_VALID_COMPOSITION_MODES` + `procedural/flexible/grammar.py` -> `_choose_composition_mode()` |
+| New layout/decoration/blend mode | `viz.py` -> `_VALID_LAYOUTS` / `_VALID_DECORATIONS` / `_VALID_BLEND_MODES` (capabilities, argparse, validation auto-sync) |
 | Background fill logic | `procedural/bg_fill.py` -> `bg_fill()` |
 | Background fill grammar | `procedural/flexible/grammar.py` -> `_choose_bg_fill_spec()`, `_choose_color_scheme()` |
 
@@ -120,6 +121,17 @@ EFFECT_REGISTRY['my_effect'] = MyEffect
 ## MP4 Output
 
 MP4 uses FFmpeg subprocess (not a Python library). Gracefully degrades to GIF-only if FFmpeg unavailable. Triggered via `--video --mp4` flags.
+
+## Version & Release
+
+Version lives in three files — all must match:
+1. `viz_version.py` → `__version__` (imported by `viz.py` and tests)
+2. `pyproject.toml` → `version`
+3. `VERSION` (root, plain text)
+
+`viz.py capabilities` reads `__version__` dynamically.
+
+Release: push to `main`, then `git tag v{X.Y.Z}` + `git push origin v{X.Y.Z}`. The `v*` tag triggers `.github/workflows/release.yml` → build → GitHub Release + PyPI publish.
 
 ## Further Reference
 
