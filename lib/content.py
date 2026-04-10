@@ -21,6 +21,8 @@ def make_content(data=None):
     if data is None:
         data = {}
 
+    warnings = []
+
     # Truncate text fields to safe lengths for rendering
     _MAX_HEADLINE = 120
     _MAX_TITLE = 80
@@ -29,40 +31,67 @@ def make_content(data=None):
     _MAX_METRICS = 10
 
     if data.get("headline") and len(data["headline"]) > _MAX_HEADLINE:
+        orig_len = len(data["headline"])
         data["headline"] = data["headline"][:_MAX_HEADLINE] + "..."
+        warnings.append(f"headline truncated from {orig_len} to {_MAX_HEADLINE} chars")
     if data.get("title") and len(data["title"]) > _MAX_TITLE:
+        orig_len = len(data["title"])
         data["title"] = data["title"][:_MAX_TITLE] + "..."
+        warnings.append(f"title truncated from {orig_len} to {_MAX_TITLE} chars")
     if data.get("body") and len(data["body"]) > _MAX_BODY:
+        orig_len = len(data["body"])
         data["body"] = data["body"][:_MAX_BODY] + "..."
+        warnings.append(f"body truncated from {orig_len} to {_MAX_BODY} chars")
     if data.get("metrics"):
+        orig_count = len(data["metrics"])
         metrics = data["metrics"][:_MAX_METRICS]
-        data["metrics"] = [
-            m[:_MAX_METRIC_LEN] + "..." if len(m) > _MAX_METRIC_LEN else m
-            for m in metrics
-            if isinstance(m, str)
-        ]
+        if orig_count > _MAX_METRICS:
+            warnings.append(f"metrics trimmed from {orig_count} to {_MAX_METRICS} items")
+        truncated_metrics = []
+        for m in metrics:
+            if not isinstance(m, str):
+                warnings.append(f"non-string metric dropped: {m!r}")
+                continue
+            if len(m) > _MAX_METRIC_LEN:
+                warnings.append(f"metric truncated from {len(m)} to {_MAX_METRIC_LEN} chars")
+                truncated_metrics.append(m[:_MAX_METRIC_LEN] + "...")
+            else:
+                truncated_metrics.append(m)
+        data["metrics"] = truncated_metrics
 
     # Clamp numeric params to safe ranges
-    duration = data.get("duration", 3.0)
+    raw_duration = data.get("duration", 3.0)
     try:
-        duration = float(duration)
+        duration = float(raw_duration)
     except (TypeError, ValueError):
+        warnings.append(f"duration ignored: invalid value {raw_duration!r}, using default 3.0")
         duration = 3.0
-    duration = max(0.1, min(duration, 30.0))
+    if duration < 0.1 or duration > 30.0:
+        clamped = max(0.1, min(duration, 30.0))
+        warnings.append(f"duration clamped from {duration} to {clamped} (range 0.1-30.0)")
+        duration = clamped
 
-    fps = data.get("fps", 15)
+    raw_fps = data.get("fps", 15)
     try:
-        fps = int(fps)
+        fps = int(raw_fps)
     except (TypeError, ValueError):
+        warnings.append(f"fps ignored: invalid value {raw_fps!r}, using default 15")
         fps = 15
-    fps = max(1, min(fps, 60))
+    if fps < 1 or fps > 60:
+        clamped = max(1, min(fps, 60))
+        warnings.append(f"fps clamped from {fps} to {clamped} (range 1-60)")
+        fps = clamped
 
-    variants = data.get("variants", 1)
+    raw_variants = data.get("variants", 1)
     try:
-        variants = int(variants)
+        variants = int(raw_variants)
     except (TypeError, ValueError):
+        warnings.append(f"variants ignored: invalid value {raw_variants!r}, using default 1")
         variants = 1
-    variants = max(1, min(variants, 20))
+    if variants < 1 or variants > 20:
+        clamped = max(1, min(variants, 20))
+        warnings.append(f"variants clamped from {variants} to {clamped} (range 1-20)")
+        variants = clamped
 
     # Validate palette if provided
     palette = data.get("palette", None)
@@ -78,24 +107,37 @@ def make_content(data=None):
                         max(0, min(255, b)),
                     ))
             palette = validated if len(validated) >= 2 else None
+            if palette is None:
+                warnings.append("palette dropped: fewer than 2 valid RGB triplets after validation")
         else:
+            warnings.append("palette dropped: need list of 2+ RGB triplets")
             palette = None
 
     # Validate output resolution if provided
     width = data.get("width", None)
     if width is not None:
         try:
+            raw_width = width
             width = int(width)
-            width = max(120, min(3840, width))
+            if width < 120 or width > 3840:
+                clamped = max(120, min(3840, width))
+                warnings.append(f"width clamped from {width} to {clamped} (range 120-3840)")
+                width = clamped
         except (TypeError, ValueError):
+            warnings.append(f"width ignored: invalid value {raw_width!r}")
             width = None
 
     height = data.get("height", None)
     if height is not None:
         try:
+            raw_height = height
             height = int(height)
-            height = max(120, min(3840, height))
+            if height < 120 or height > 3840:
+                clamped = max(120, min(3840, height))
+                warnings.append(f"height clamped from {height} to {clamped} (range 120-3840)")
+                height = clamped
         except (TypeError, ValueError):
+            warnings.append(f"height ignored: invalid value {raw_height!r}")
             height = None
 
     return {
@@ -105,7 +147,6 @@ def make_content(data=None):
         "emotion": data.get("emotion", None),
         "vad": data.get("vad", None),
         "timestamp": data.get("timestamp", datetime.now().strftime("%Y-%m-%d %H:%M")),
-        "meta": data.get("meta", {}),
         "vocabulary": data.get("vocabulary", {}),
         "effect": data.get("effect", None),
         "seed": data.get("seed", None),
@@ -131,6 +172,8 @@ def make_content(data=None):
         "palette": palette,
         "width": width,
         "height": height,
+        # Sanitization metadata
+        "_warnings": warnings,
     }
 
 

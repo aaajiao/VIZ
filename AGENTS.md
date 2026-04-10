@@ -49,9 +49,9 @@ Project metadata lives in `pyproject.toml`. Runtime dependency is `Pillow>=9.0.0
 
 **Emotion system**: VAD (Valence-Arousal-Dominance) continuous space with 26 anchors in `procedural/flexible/emotion.py`. Each axis -1 to +1. Drives all visual parameters.
 
-**Content flow**: stdin JSON or CLI args -> `FlexiblePipeline` -> rendered image -> stdout JSON with path.
+**Content flow**: stdin JSON or CLI args -> `make_content()` sanitizes + warns -> `FlexiblePipeline` -> rendered image -> stdout JSON with path. Errors exit code 1 with `{"status":"error"}`. Successful output includes optional `"warnings"` list when inputs were clamped/truncated. Output schema is per-command (`generate` vs `convert`).
 
-**Director Mode**: CLI args `--transforms`, `--postfx`, `--blend-mode`, `--overlay`, `--overlay-mix`, `--composition`, `--mask`, `--variant` expose all composition dimensions for precise AI control. Grammar diversity jitter ensures varied output even in delegate mode.
+**Director Mode**: CLI args `--transforms`, `--postfx`, `--blend-mode`, `--overlay`, `--overlay-mix`, `--composition`, `--mask`, `--variant`, `--color-scheme` expose all composition dimensions for precise AI control. Grammar diversity jitter ensures varied output even in delegate mode.
 
 **Character data**: `lib/box_chars.py` is the single source of truth for all character/gradient data (`GRADIENTS`, `CHARSETS`, `BORDER_SETS`). `procedural/palette.py` re-exports `GRADIENTS` as `ASCII_GRADIENTS` and owns color functions. `grammar.py` imports `CHARSETS`/`BORDER_SETS` to build decoration and particle char pools.
 

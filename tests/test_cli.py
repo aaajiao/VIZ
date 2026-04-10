@@ -57,6 +57,24 @@ class TestCapabilities:
         for emotion in required:
             assert emotion in emotions
 
+    def test_capabilities_output_schema_per_command(self):
+        result = run_cli(["capabilities", "--format", "json"])
+        data = json.loads(result.stdout)
+        schema = data["output_schema"]
+        assert "generate" in schema
+        assert "convert" in schema
+        assert "status" in schema["generate"]
+        assert "results" in schema["generate"]
+        assert "path" in schema["convert"]
+
+    def test_capabilities_composition_modes_dynamic(self):
+        result = run_cli(["capabilities", "--format", "json"])
+        data = json.loads(result.stdout)
+        modes = data["composition_modes"]
+        assert "sdf_masked" in modes
+        assert "blend" in modes
+        assert "radial_masked" in modes
+
 
 class TestGenerate:
     def test_generate_requires_output_dir(self):
@@ -106,7 +124,7 @@ class TestGenerate:
         stdin_data = json.dumps({
             "emotion": "bull",
             "seed": 42,
-            "vocabulary": {"particles": "$€¥₿↑↓"}
+            "vocabulary": {"particles": "$\u20ac\u00a5\u20bf\u2191\u2193"}
         })
         result = run_cli(["generate", "--output-dir", temp_dir], stdin=stdin_data)
         assert result.returncode == 0
@@ -200,6 +218,15 @@ class TestGenerate:
         output = parse_json_output(result)
         assert output["status"] == "ok"
 
+    def test_generate_with_color_scheme_cli(self, temp_dir):
+        result = run_cli([
+            "generate", "--emotion", "calm", "--color-scheme", "ocean",
+            "--seed", "42", "--output-dir", temp_dir,
+        ])
+        assert result.returncode == 0
+        output = parse_json_output(result)
+        assert output["status"] == "ok"
+
 
 class TestGenerateValidation:
     def test_invalid_effect_returns_error_status(self, temp_dir):
@@ -214,6 +241,7 @@ class TestGenerateValidation:
                 temp_dir,
             ]
         )
+        assert result.returncode != 0
         output = parse_json_output(result)
         assert output["status"] == "error"
 
@@ -229,8 +257,97 @@ class TestGenerateValidation:
                 temp_dir,
             ]
         )
+        assert result.returncode != 0
         output = parse_json_output(result)
         assert output["status"] == "error"
+
+    def test_malformed_stdin_json_exits_nonzero(self, temp_dir):
+        result = run_cli(
+            ["generate", "--output-dir", temp_dir],
+            stdin="not valid json {{{",
+        )
+        assert result.returncode != 0
+        output = parse_json_output(result)
+        assert output["status"] == "error"
+        assert "Invalid stdin JSON" in output["message"]
+
+    def test_bad_vad_wrong_count(self, temp_dir):
+        result = run_cli([
+            "generate", "--vad", "0.5,0.5",
+            "--seed", "42", "--output-dir", temp_dir,
+        ])
+        assert result.returncode != 0
+        output = parse_json_output(result)
+        assert output["status"] == "error"
+
+    def test_bad_vad_out_of_range(self, temp_dir):
+        result = run_cli([
+            "generate", "--vad", "2.0,0.5,0.5",
+            "--seed", "42", "--output-dir", temp_dir,
+        ])
+        assert result.returncode != 0
+        output = parse_json_output(result)
+        assert output["status"] == "error"
+
+    def test_bad_vad_non_numeric(self, temp_dir):
+        result = run_cli([
+            "generate", "--vad", "abc,def,ghi",
+            "--seed", "42", "--output-dir", temp_dir,
+        ])
+        assert result.returncode != 0
+        output = parse_json_output(result)
+        assert output["status"] == "error"
+
+    def test_bad_palette_non_numeric(self, temp_dir):
+        result = run_cli([
+            "generate", "--emotion", "joy", "--seed", "42",
+            "--palette", "abc,def,ghi", "0,255,0",
+            "--output-dir", temp_dir,
+        ])
+        assert result.returncode != 0
+        output = parse_json_output(result)
+        assert output["status"] == "error"
+
+    def test_bad_palette_insufficient(self, temp_dir):
+        result = run_cli([
+            "generate", "--emotion", "joy", "--seed", "42",
+            "--palette", "255,0,0",
+            "--output-dir", temp_dir,
+        ])
+        assert result.returncode != 0
+        output = parse_json_output(result)
+        assert output["status"] == "error"
+        assert "at least 2" in output["message"]
+
+    def test_bad_palette_wrong_format(self, temp_dir):
+        result = run_cli([
+            "generate", "--emotion", "joy", "--seed", "42",
+            "--palette", "255,0", "0,255,0",
+            "--output-dir", temp_dir,
+        ])
+        assert result.returncode != 0
+        output = parse_json_output(result)
+        assert output["status"] == "error"
+
+
+class TestGenerateWarnings:
+    def test_warnings_for_clamped_duration(self, temp_dir):
+        stdin_data = json.dumps({"duration": 100, "emotion": "joy", "seed": 42})
+        result = run_cli(["generate", "--output-dir", temp_dir], stdin=stdin_data)
+        assert result.returncode == 0
+        output = parse_json_output(result)
+        assert output["status"] == "ok"
+        assert "warnings" in output
+        assert any("duration" in w for w in output["warnings"])
+
+    def test_no_warnings_for_valid_input(self, temp_dir):
+        result = run_cli([
+            "generate", "--emotion", "joy", "--seed", "42", "--output-dir", temp_dir,
+        ])
+        assert result.returncode == 0
+        output = parse_json_output(result)
+        assert output["status"] == "ok"
+        assert "warnings" not in output
 
 
 class TestConvert:

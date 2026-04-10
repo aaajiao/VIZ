@@ -51,6 +51,18 @@ class TestParseCompoundArg:
         assert result["b"] == 0.5
         assert result["c"] == "hello"
 
+    def test_empty_string_raises(self):
+        with pytest.raises(ValueError, match="Empty argument"):
+            _parse_compound_arg("")
+
+    def test_whitespace_only_raises(self):
+        with pytest.raises(ValueError, match="Empty argument"):
+            _parse_compound_arg("   ")
+
+    def test_missing_type_name_raises(self):
+        with pytest.raises(ValueError, match="Missing type name"):
+            _parse_compound_arg(":key=val")
+
 
 # === Unit tests for _validate_overrides with new fields ===
 
@@ -80,6 +92,11 @@ class TestValidateOverridesDirector:
 
     def test_valid_composition_mode(self):
         overrides = {"composition_mode": "radial_masked"}
+        errors = _validate_overrides(overrides)
+        assert errors == []
+
+    def test_sdf_masked_composition_mode(self):
+        overrides = {"composition_mode": "sdf_masked"}
         errors = _validate_overrides(overrides)
         assert errors == []
 
@@ -295,6 +312,7 @@ class TestDirectorModeCLI:
             "--transforms", "nonexistent",
             "--output-dir", temp_dir,
         ])
+        assert result.returncode != 0
         output = parse_json_output(result)
         assert output["status"] == "error"
 
@@ -304,8 +322,19 @@ class TestDirectorModeCLI:
             "--postfx", "nonexistent",
             "--output-dir", temp_dir,
         ])
+        assert result.returncode != 0
         output = parse_json_output(result)
         assert output["status"] == "error"
+
+    def test_sdf_masked_composition_via_cli(self, temp_dir):
+        result = run_cli([
+            "generate", "--emotion", "joy", "--seed", "42",
+            "--composition", "sdf_masked",
+            "--output-dir", temp_dir,
+        ])
+        assert result.returncode == 0
+        output = parse_json_output(result)
+        assert output["status"] == "ok"
 
     def test_stdin_json_with_new_fields(self, temp_dir):
         stdin_data = json.dumps({
@@ -354,3 +383,8 @@ class TestCapabilitiesDirector:
         assert "composition" in schema
         assert "mask" in schema
         assert "variant" in schema
+
+    def test_capabilities_includes_sdf_masked(self):
+        result = run_cli(["capabilities", "--format", "json"])
+        data = json.loads(result.stdout)
+        assert "sdf_masked" in data["composition_modes"]

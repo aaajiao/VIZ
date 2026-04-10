@@ -54,6 +54,7 @@ _VALID_DECORATIONS = {
     "circuit",
 }
 _VALID_BLEND_MODES = {"ADD", "SCREEN", "OVERLAY", "MULTIPLY"}
+_VALID_COMPOSITION_MODES = {"blend", "masked_split", "radial_masked", "noise_masked", "sdf_masked"}
 
 
 def _save_input_json(json_path, content_data, variant_seed):
@@ -67,11 +68,25 @@ def _save_input_json(json_path, content_data, variant_seed):
         pass
 
 
+def _error_exit(message, errors=None):
+    """输出结构化 JSON 错误并退出 - Print structured JSON error to stdout and exit 1"""
+    result = {"status": "error", "message": message}
+    if errors:
+        result["errors"] = errors
+    print(json.dumps(result))
+    sys.exit(1)
+
+
 def _parse_compound_arg(arg_str):
     """解析复合参数 - Parse 'name:key=val,key=val' into dict"""
+    if not arg_str or not arg_str.strip():
+        raise ValueError("Empty argument")
+    arg_str = arg_str.strip()
     if ":" not in arg_str:
         return {"type": arg_str}
     name, rest = arg_str.split(":", 1)
+    if not name:
+        raise ValueError(f"Missing type name in '{arg_str}'")
     result = {"type": name}
     for pair in rest.split(","):
         if "=" in pair:
@@ -169,10 +184,9 @@ def _validate_overrides(overrides):
                 )
 
     if "composition_mode" in overrides:
-        valid_modes = {"blend", "masked_split", "radial_masked", "noise_masked"}
-        if overrides["composition_mode"] not in valid_modes:
+        if overrides["composition_mode"] not in _VALID_COMPOSITION_MODES:
             errors.append(
-                f"Unknown composition mode '{overrides['composition_mode']}', valid: {sorted(valid_modes)}"
+                f"Unknown composition mode '{overrides['composition_mode']}', valid: {sorted(_VALID_COMPOSITION_MODES)}"
             )
 
     if "mask_type" in overrides:
@@ -224,15 +238,7 @@ def cmd_generate(args):
                 if raw.strip():
                     stdin_data = json.loads(raw)
         except json.JSONDecodeError as e:
-            print(
-                json.dumps(
-                    {
-                        "status": "error",
-                        "message": f"Invalid stdin JSON: {e}",
-                    }
-                ),
-                file=sys.stderr,
-            )
+            _error_exit(f"Invalid stdin JSON: {e}")
         except (IOError, OSError):
             pass
 
@@ -273,9 +279,15 @@ def cmd_generate(args):
         content_data["mp4"] = True
         content_data["video"] = True  # MP4 implies video mode
     if args.transforms:
-        content_data["transforms"] = [_parse_compound_arg(t) for t in args.transforms]
+        try:
+            content_data["transforms"] = [_parse_compound_arg(t) for t in args.transforms]
+        except ValueError as e:
+            _error_exit(f"Invalid --transforms value: {e}")
     if args.postfx:
-        content_data["postfx"] = [_parse_compound_arg(p) for p in args.postfx]
+        try:
+            content_data["postfx"] = [_parse_compound_arg(p) for p in args.postfx]
+        except ValueError as e:
+            _error_exit(f"Invalid --postfx value: {e}")
     if args.overlay_effect:
         overlay = content_data.get("overlay", {})
         if not isinstance(overlay, dict):
@@ -299,23 +311,34 @@ def cmd_generate(args):
     if args.composition:
         content_data["composition"] = args.composition
     if args.mask:
-        content_data["mask"] = _parse_compound_arg(args.mask)
+        try:
+            content_data["mask"] = _parse_compound_arg(args.mask)
+        except ValueError as e:
+            _error_exit(f"Invalid --mask value: {e}")
     if args.variant:
         content_data["variant"] = args.variant
+    if args.color_scheme:
+        content_data["color_scheme"] = args.color_scheme
     if args.palette:
         parsed_palette = []
         for p in args.palette:
             parts = p.split(",")
-            if len(parts) == 3:
+            if len(parts) != 3:
+                _error_exit(f"Invalid palette value '{p}': expected 3 comma-separated integers like '255,0,0'")
+            try:
                 parsed_palette.append([int(x) for x in parts])
-        if len(parsed_palette) >= 2:
-            content_data["palette"] = parsed_palette
+            except ValueError:
+                _error_exit(f"Invalid palette value '{p}': expected 3 integers like '255,0,0'")
+        if len(parsed_palette) < 2:
+            _error_exit("Palette requires at least 2 RGB triplets (e.g. --palette 255,0,0 0,255,0)")
+        content_data["palette"] = parsed_palette
     if args.width:
         content_data["width"] = args.width
     if args.height:
         content_data["height"] = args.height
 
     content = make_content(content_data)
+    content_warnings = content.pop("_warnings", [])
 
     # === 2. Resolve emotion ===
     emotion_vector = None
@@ -345,15 +368,7 @@ def cmd_generate(args):
 
             emotion_vector = EmotionVector(*parts)
         except ValueError as e:
-            print(
-                json.dumps(
-                    {
-                        "status": "error",
-                        "message": f"Invalid --vad: {e}",
-                    }
-                )
-            )
-            return
+            _error_exit(f"Invalid --vad: {e}")
     elif emotion_name:
         emotion_name = emotion_name  # Will be passed to pipeline
     elif content.get("body"):
@@ -439,16 +454,7 @@ def cmd_generate(args):
     # Validate overrides against known values
     errors = _validate_overrides(overrides)
     if errors:
-        print(
-            json.dumps(
-                {
-                    "status": "error",
-                    "message": "Invalid override values",
-                    "errors": errors,
-                }
-            )
-        )
-        return
+        _error_exit("Invalid override values", errors=errors)
 
     results: list[dict[str, Any]] = []
 
@@ -541,6 +547,8 @@ def cmd_generate(args):
         "emotion": emotion_name,
         "resolution": [out_w, out_h],
     }
+    if content_warnings:
+        output["warnings"] = content_warnings
 
     print(json.dumps(output, ensure_ascii=False))
 
@@ -557,9 +565,7 @@ def cmd_convert(args):
         from viz.lib.ascii_convert import image_to_ascii_art, add_market_overlay  # pyright: ignore[reportMissingImports]
 
     if not os.path.exists(args.image):
-        result = {"status": "error", "message": f"Image not found: {args.image}"}
-        print(json.dumps(result))
-        return
+        _error_exit(f"Image not found: {args.image}")
 
     # Parse options
     charset = args.charset or "classic"
@@ -594,9 +600,7 @@ def cmd_convert(args):
             bg_color=bg_color,
         )
     except Exception as e:
-        result = {"status": "error", "message": f"Failed to process image: {e}"}
-        print(json.dumps(result))
-        return
+        _error_exit(f"Failed to process image: {e}")
 
     # Optional overlay from stdin (non-blocking)
     overlay_data = {}
@@ -608,15 +612,7 @@ def cmd_convert(args):
                 if raw.strip():
                     overlay_data = json.loads(raw)
         except json.JSONDecodeError as e:
-            print(
-                json.dumps(
-                    {
-                        "status": "error",
-                        "message": f"Invalid stdin JSON: {e}",
-                    }
-                ),
-                file=sys.stderr,
-            )
+            _error_exit(f"Invalid stdin JSON: {e}")
         except (IOError, OSError):
             pass
 
@@ -674,29 +670,14 @@ def cmd_capabilities(args):
         "effects": sorted(EFFECT_REGISTRY.keys()),
         "kaomoji_moods": sorted(KAOMOJI_SINGLE.keys()),
         "color_schemes": sorted(COLOR_SCHEMES.keys()),
-        "blend_modes": ["ADD", "SCREEN", "OVERLAY", "MULTIPLY"],
-        "layouts": [
-            "random_scatter",
-            "grid_jitter",
-            "spiral",
-            "force_directed",
-            "preset",
-        ],
-        "decorations": [
-            "corners",
-            "edges",
-            "scattered",
-            "minimal",
-            "none",
-            "frame",
-            "grid_lines",
-            "circuit",
-        ],
+        "blend_modes": sorted(_VALID_BLEND_MODES),
+        "layouts": sorted(_VALID_LAYOUTS),
+        "decorations": sorted(_VALID_DECORATIONS),
         "gradients": sorted(ASCII_GRADIENTS.keys()),
         "transforms": sorted(TRANSFORM_REGISTRY.keys()),
         "postfx": sorted(POSTFX_REGISTRY.keys()),
         "masks": sorted(MASK_REGISTRY.keys()),
-        "composition_modes": ["blend", "masked_split", "radial_masked", "noise_masked"],
+        "composition_modes": sorted(_VALID_COMPOSITION_MODES),
         "variants": {
             effect: [v["name"] for v in variants]
             for effect, variants in sorted(VARIANT_REGISTRY.items())
@@ -735,7 +716,7 @@ def cmd_capabilities(args):
             "postfx": "list[str] - post-FX chain, e.g. ['vignette:strength=0.5']",
             "blend_mode": "string (ADD|SCREEN|OVERLAY|MULTIPLY) - blend mode for overlay",
             "overlay_mix": "float 0.0-1.0 - overlay mix ratio",
-            "composition": "string (blend|masked_split|radial_masked|noise_masked)",
+            "composition": "string (blend|masked_split|radial_masked|noise_masked|sdf_masked)",
             "mask": "string - mask type+params, e.g. 'radial:center_x=0.5,radius=0.3'",
             "variant": "string - force effect variant name",
             "palette": "list[[r,g,b], ...] - custom color palette (2+ RGB triplets, 0-255), overrides color_scheme",
@@ -744,10 +725,19 @@ def cmd_capabilities(args):
             "output_dir": "string - required output directory for generated files",
         },
         "output_schema": {
-            "status": "string (ok|error)",
-            "results": "list[{path, seed, format, ...}] - always an array, even for single result",
-            "emotion": "string|null - emotion used",
-            "resolution": "[width, height] - actual output resolution",
+            "generate": {
+                "status": "string (ok|error)",
+                "results": "list[{path, seed, format, ...}] - always an array, even for single result",
+                "emotion": "string|null - emotion used",
+                "resolution": "[width, height] - actual output resolution",
+                "warnings": "list[string]|absent - present when inputs were sanitized",
+            },
+            "convert": {
+                "status": "string (ok|error)",
+                "path": "string - absolute path to output PNG",
+                "size": "[width, height] - output image dimensions",
+                "charset": "string - character set used",
+            },
         },
     }
 
@@ -808,9 +798,10 @@ def build_parser():
     gen.add_argument("--blend-mode", choices=["ADD", "SCREEN", "OVERLAY", "MULTIPLY"], help="混合模式")
     gen.add_argument("--overlay", help="叠加效果名", dest="overlay_effect")
     gen.add_argument("--overlay-mix", type=float, help="叠加混合比 0.0-1.0")
-    gen.add_argument("--composition", choices=["blend", "masked_split", "radial_masked", "noise_masked"], help="合成模式")
+    gen.add_argument("--composition", choices=sorted(_VALID_COMPOSITION_MODES), help="合成模式")
     gen.add_argument("--mask", help="遮罩类型+参数 (如 radial:center_x=0.5,radius=0.3)")
     gen.add_argument("--variant", help="强制效果变体名")
+    gen.add_argument("--color-scheme", help="配色方案 (heat|rainbow|cool|matrix|plasma|ocean|fire|default)")
     gen.add_argument("--palette", nargs="*", help="自定义调色盘 (如 255,0,0 0,255,0 0,0,255)")
     gen.add_argument("--width", type=int, help="输出宽度 (120-3840, 默认 1080)")
     gen.add_argument("--height", type=int, help="输出高度 (120-3840, 默认 1080)")

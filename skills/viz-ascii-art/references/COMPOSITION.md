@@ -2,6 +2,18 @@
 
 Transforms, PostFX, masks, and variants are **auto-selected by grammar** by default. You can also **precisely control** them via Director Mode fields: `transforms`, `postfx`, `composition`, `mask`, `variant`. Use `params` to fine-tune deformation parameters that are passed directly to effects.
 
+All Director Mode fields work via both stdin JSON and CLI args:
+
+| JSON field | CLI arg | Description |
+|-----------|---------|-------------|
+| `transforms` | `--transforms` | Domain transform chain |
+| `postfx` | `--postfx` | Post-processing chain |
+| `composition` | `--composition` | Composition mode |
+| `mask` | `--mask` | Spatial mask type + params |
+| `variant` | `--variant` | Named structural variant |
+| `color_scheme` | `--color-scheme` | Color scheme override |
+| `params` | *(stdin only)* | Effect-specific tuning |
+
 ## Deformation Params (user-settable via `params`)
 
 | Effect | Param | Range | Description |
@@ -95,7 +107,7 @@ Grammar picks a named variant per effect and samples params from its ranges.
 | dyna (6) | classic, single, many, long_waves, short_ripples, chaotic |
 | cppn (6) | classic, delicate, intricate, radiant, chaotic, linear |
 
-## Composition Modes (4, auto-selected or via `composition` field)
+## Composition Modes (5, auto-selected or via `composition` field)
 
 | Mode | Description |
 |------|-------------|
@@ -103,6 +115,7 @@ Grammar picks a named variant per effect and samples params from its ranges.
 | `masked_split` | Spatial split via horizontal/vertical/diagonal masks |
 | `radial_masked` | Center vs edges with radial mask |
 | `noise_masked` | Organic noise-based region blending |
+| `sdf_masked` | SDF geometric mask (circle/square/ring shapes) |
 
 ## Background Fill (auto-selected, ~750k combinations)
 

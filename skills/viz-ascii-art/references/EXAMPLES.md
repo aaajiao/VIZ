@@ -419,10 +419,16 @@ result = subprocess.run(
     text=True
 )
 
-output = json.loads(result.stdout)
-if output['status'] == 'ok':
+if result.returncode != 0:
+    error = json.loads(result.stdout)
+    print(f"Error: {error['message']}")
+else:
+    output = json.loads(result.stdout)
     image_path = output['results'][0]['path']
     print(f"Generated: {image_path}")
+    if 'warnings' in output:
+        for w in output['warnings']:
+            print(f"  Warning: {w}")
 ```
 
 ### Batch Generation

@@ -46,8 +46,19 @@ stdin JSON 字段全部可选，CLI 参数会覆盖 stdin 中的同名值。
 
 ### stdout 输出
 
+**成功**：
 ```json
-{"status": "ok", "results": [{"path": "/home/user/VIZ/runs/euphoria/viz_20260203_120000_s42.png", "seed": 42, "format": "png"}], "emotion": "euphoria"}
+{"status": "ok", "results": [{"path": "/home/user/VIZ/runs/euphoria/viz_20260203_120000_s42.png", "seed": 42, "format": "png"}], "emotion": "euphoria", "resolution": [1080, 1080]}
+```
+
+**成功（含清洗警告）**——当输入值被截断或钳位时，输出包含 `warnings` 列表：
+```json
+{"status": "ok", "results": [...], "emotion": "joy", "resolution": [1080, 1080], "warnings": ["duration clamped from 100.0 to 30.0 (range 0.1-30.0)"]}
+```
+
+**错误**（exit code 1）：
+```json
+{"status": "error", "message": "Invalid --vad: vad requires exactly 3 values (V,A,D), got 2"}
 ```
 
 ### 完整参数
@@ -77,7 +88,8 @@ stdin JSON 字段全部可选，CLI 参数会覆盖 stdin 中的同名值。
 | `--composition` | str | 自动 | 合成模式：`blend` / `masked_split` / `radial_masked` / `noise_masked` / `sdf_masked` |
 | `--mask` | str | 自动 | 遮罩类型+参数，如 `radial:center_x=0.5,radius=0.3` |
 | `--variant` | str | 自动 | 强制效果变体名（如 `warped`、`alien`） |
-| `--palette` | list | 无 | 自定义调色盘（如 `255,0,0 0,255,0 0,0,255`） |
+| `--color-scheme` | str | 自动 | 配色方案（heat\|rainbow\|cool\|matrix\|plasma\|ocean\|fire\|default） |
+| `--palette` | list | 无 | 自定义调色盘（如 `255,0,0 0,255,0 0,0,255`），��盖 color-scheme |
 | `--width` | int | 1080 | 输出宽度（120-3840 像素） |
 | `--height` | int | 1080 | 输出高度（120-3840 像素） |
 | `--output-dir` | str | 必填 | 输出目录 |
@@ -150,10 +162,10 @@ echo '{"emotion":"bull","vocabulary":{"particles":"$€¥₿↑↓","kaomoji_moo
 
 ```bash
 # 基本转换
-python3 viz.py convert image.png
+python3 viz.py convert image.png --output-dir ./output
 
 # 指定字符集和情绪
-python3 viz.py convert chart.png --charset blocks --emotion bull
+python3 viz.py convert chart.png --charset blocks --emotion bull --output-dir ./output
 ```
 
 ### 字符集
@@ -187,8 +199,8 @@ python3 viz.py capabilities --format json  # 默认 JSON
   "effects": ["cppn", "flame", "moire", "noise_field", "plasma", "sdf_shapes", "wave", "..."],
   "kaomoji_moods": ["angry", "anxiety", "bored", "confused", "euphoria", "..."],
   "color_schemes": ["cool", "default", "fire", "heat", "matrix", "ocean", "plasma", "rainbow"],
-  "layouts": ["random_scatter", "grid_jitter", "spiral", "force_directed", "preset"],
-  "decorations": ["corners", "edges", "scattered", "minimal", "none", "frame", "grid_lines", "circuit"],
+  "layouts": ["force_directed", "grid_jitter", "preset", "random_scatter", "spiral"],
+  "decorations": ["circuit", "corners", "edges", "frame", "grid_lines", "minimal", "none", "scattered"],
   "gradients": ["classic", "smooth", "matrix", "plasma", "default", "blocks", "..."],
   "transforms": ["mirror_x", "mirror_y", "mirror_quad", "kaleidoscope", "tile", "rotate", "zoom", "spiral_warp", "polar_remap"],
   "postfx": ["threshold", "invert", "edge_detect", "scanlines", "vignette", "pixelate", "color_shift"],
@@ -196,7 +208,10 @@ python3 viz.py capabilities --format json  # 默认 JSON
   "composition_modes": ["blend", "masked_split", "radial_masked", "noise_masked", "sdf_masked"],
   "variants": {"plasma": ["classic", "warped", "noisy", "turbulent", "slow_morph"], "...": "..."},
   "input_schema": {"emotion": "string", "vocabulary": "dict", "transforms": "list[{type, ...params}]", "...": "..."},
-  "output_schema": {"status": "string", "results": "list[{path, seed, format}]", "...": "..."}
+  "output_schema": {
+    "generate": {"status": "string", "results": "list[{path, seed, format}]", "emotion": "string|null", "resolution": "[w, h]", "warnings": "list[string]|absent"},
+    "convert": {"status": "string", "path": "string", "size": "[w, h]", "charset": "string"}
+  }
 }
 ```
 

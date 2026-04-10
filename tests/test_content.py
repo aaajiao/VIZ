@@ -12,6 +12,7 @@ class TestMakeContent:
         assert result["duration"] == 3.0
         assert result["fps"] == 15
         assert result["variants"] == 1
+        assert result["_warnings"] == []
 
     def test_preserves_provided_values(self):
         data = {
@@ -84,6 +85,93 @@ class TestMakeContent:
         metrics = ["valid", 123, "also_valid", None]
         result = make_content({"metrics": metrics})
         assert result["metrics"] == ["valid", "also_valid"]
+
+    def test_meta_field_removed(self):
+        result = make_content({"meta": {"key": "value"}})
+        assert "meta" not in result
+
+
+class TestContentWarnings:
+    def test_no_warnings_for_valid_input(self):
+        result = make_content({"emotion": "joy", "duration": 3.0, "fps": 15})
+        assert result["_warnings"] == []
+
+    def test_warnings_for_clamped_duration(self):
+        result = make_content({"duration": 100})
+        warnings = result["_warnings"]
+        assert any("duration clamped" in w for w in warnings)
+
+    def test_warnings_for_clamped_fps(self):
+        result = make_content({"fps": 120})
+        warnings = result["_warnings"]
+        assert any("fps clamped" in w for w in warnings)
+
+    def test_warnings_for_clamped_variants(self):
+        result = make_content({"variants": 100})
+        warnings = result["_warnings"]
+        assert any("variants clamped" in w for w in warnings)
+
+    def test_warnings_for_truncated_headline(self):
+        result = make_content({"headline": "x" * 200})
+        warnings = result["_warnings"]
+        assert any("headline truncated" in w for w in warnings)
+
+    def test_warnings_for_truncated_title(self):
+        result = make_content({"title": "y" * 100})
+        warnings = result["_warnings"]
+        assert any("title truncated" in w for w in warnings)
+
+    def test_warnings_for_truncated_body(self):
+        result = make_content({"body": "z" * 600})
+        warnings = result["_warnings"]
+        assert any("body truncated" in w for w in warnings)
+
+    def test_warnings_for_dropped_palette_bad_type(self):
+        result = make_content({"palette": "bad"})
+        warnings = result["_warnings"]
+        assert any("palette dropped" in w for w in warnings)
+
+    def test_warnings_for_dropped_palette_too_few(self):
+        result = make_content({"palette": [[255, 0, 0]]})
+        warnings = result["_warnings"]
+        assert any("palette dropped" in w for w in warnings)
+
+    def test_warnings_for_clamped_width(self):
+        result = make_content({"width": 5})
+        warnings = result["_warnings"]
+        assert any("width clamped" in w for w in warnings)
+
+    def test_warnings_for_clamped_height(self):
+        result = make_content({"height": 5000})
+        warnings = result["_warnings"]
+        assert any("height clamped" in w for w in warnings)
+
+    def test_warnings_for_invalid_duration_type(self):
+        result = make_content({"duration": "bad"})
+        warnings = result["_warnings"]
+        assert any("duration" in w for w in warnings)
+
+    def test_warnings_for_invalid_width_type(self):
+        result = make_content({"width": "bad"})
+        warnings = result["_warnings"]
+        assert any("width ignored" in w for w in warnings)
+        assert result["width"] is None
+
+    def test_warnings_for_filtered_non_string_metric(self):
+        result = make_content({"metrics": ["valid", 123]})
+        warnings = result["_warnings"]
+        assert any("non-string metric dropped" in w for w in warnings)
+
+    def test_warnings_for_metrics_count_trimmed(self):
+        metrics = [f"m{i}" for i in range(15)]
+        result = make_content({"metrics": metrics})
+        warnings = result["_warnings"]
+        assert any("metrics trimmed" in w for w in warnings)
+
+    def test_multiple_warnings_accumulate(self):
+        result = make_content({"duration": 100, "fps": 120, "headline": "x" * 200})
+        warnings = result["_warnings"]
+        assert len(warnings) >= 3
 
 
 class TestContentHasData:

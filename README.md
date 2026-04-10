@@ -115,7 +115,8 @@ viz generate --emotion euphoria --seed 100 \
   --effect plasma --variant warped \
   --transforms kaleidoscope:segments=6 \
   --postfx vignette:strength=0.5 scanlines:spacing=4 \
-  --composition radial_masked
+  --composition radial_masked \
+  --output-dir ./runs/director-euphoria
 ```
 
 Details in [docs/composition.md](docs/composition.md).

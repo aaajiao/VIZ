@@ -387,6 +387,17 @@ echo '{"emotion": "euphoria", "width": 1080, "height": 1920}' | python3 viz.py g
 }
 ```
 
+当输入值被截断或钳位时（如 `duration` 超出范围、文本超长），输出包含 `warnings` 列表：
+```json
+{
+  "status": "ok",
+  "results": [...],
+  "emotion": "joy",
+  "resolution": [1080, 1080],
+  "warnings": ["duration clamped from 100.0 to 30.0 (range 0.1-30.0)", "headline truncated from 200 to 120 chars"]
+}
+```
+
 **多变体**:
 ```json
 {
@@ -400,10 +411,12 @@ echo '{"emotion": "euphoria", "width": 1080, "height": 1920}' | python3 viz.py g
 }
 ```
 
-**错误**:
+**错误**（exit code 1）:
 ```json
 {"status": "error", "message": "Invalid emotion name: xyz"}
 ```
+
+所有错误路径均以 exit code 1 退出，并在 stdout 输出结构化 JSON 错误。调用方应同时检查 exit code 和 `status` 字段。
 
 ---
 
