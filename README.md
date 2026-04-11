@@ -49,6 +49,35 @@ viz --version
 viz capabilities --format json
 ```
 
+## AI Agent Skill
+
+Install the `viz-ascii-art` skill so your AI coding agent knows how to use VIZ:
+
+```bash
+npx skills add aaajiao/VIZ --skill viz-ascii-art
+```
+
+Target a specific agent:
+
+```bash
+# Claude Code
+npx skills add aaajiao/VIZ --skill viz-ascii-art -a claude-code
+
+# OpenAI Codex
+npx skills add aaajiao/VIZ --skill viz-ascii-art -a codex
+
+# OpenClaw
+npx skills add aaajiao/VIZ --skill viz-ascii-art -a openclaw
+```
+
+Or install manually — copy `skills/viz-ascii-art/` into your agent's skills directory:
+
+| Agent | Skills directory |
+|-------|-----------------|
+| Claude Code | `.claude/skills/` or `~/.claude/skills/` |
+| Codex | `.codex/skills/` or `~/.codex/skills/` |
+| OpenClaw | `skills/` or `~/.openclaw/skills/` |
+
 ## Quick Start
 
 ```bash
