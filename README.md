@@ -46,6 +46,7 @@ Verify the CLI is available:
 
 ```bash
 viz --version
+viz --help
 viz capabilities --format json
 ```
 
